@@ -826,6 +826,56 @@
     }
   }
 
+  .action-needed-prompt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f5f5f7;
+    margin-top: 4px;
+    animation: gentlePulse 2s infinite alternate;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  @keyframes gentlePulse {
+    from { opacity: 0.9; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.02); }
+  }
+  .pulse-icon {
+    font-size: 1.1rem;
+    display: inline-block;
+  }
+  .active-player-name {
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    font-weight: 800;
+  }
+  .active-player-name.red {
+    color: var(--red-team);
+    background: rgba(255, 59, 48, 0.15);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+  }
+  .active-player-name.blue {
+    color: var(--blue-team);
+    background: rgba(10, 132, 255, 0.15);
+    border: 1px solid rgba(10, 132, 255, 0.3);
+  }
+  .active-player-name.is-you {
+    border-color: #FFD60A !important;
+    box-shadow: 0 0 10px rgba(255, 214, 10, 0.4);
+    transform: scale(1.04);
+    display: inline-block;
+  }
+  @media (max-width: 600px) {
+    .action-needed-prompt {
+      font-size: 0.8rem;
+      gap: 4px;
+      margin-top: 2px;
+    }
+  }
+
   /* Victory Modal Overlay */
   #victory-modal {
     position: fixed;
@@ -1354,6 +1404,7 @@
       if (data.player && data.player.id && data.player.id !== clientId) {
         roomRoster[data.player.id] = data.player;
         renderRosterUI();
+        if (gameState.status === "playing") renderHUD();
       }
       // If sync returned active game from host, sync state
       if (data.gameState && data.gameState.status === "playing" && gameState.status !== "playing") {
@@ -1364,8 +1415,12 @@
       if (data.player && data.player.id && data.player.id !== clientId) {
         roomRoster[data.player.id] = data.player;
         renderRosterUI();
+        if (gameState.status === "playing") renderHUD();
       }
     } else if (data.type === "START_GAME") {
+      if (data.roster) {
+        Object.assign(roomRoster, data.roster);
+      }
       gameState = data.state;
       startGameLocally();
     } else if (data.type === "RETURN_TO_LOBBY") {
@@ -1517,10 +1572,11 @@
     initNewMission(false);
     gameState.status = "playing";
 
-    // Broadcast START_GAME to the entire room
+    // Broadcast START_GAME to the entire room with current roster
     publishMessage({
       type: "START_GAME",
-      state: gameState
+      state: gameState,
+      roster: roomRoster
     });
 
     startGameLocally();
@@ -1530,15 +1586,15 @@
     gameState.status = "playing";
     switchScreen("game-screen");
 
-    // Update in-game player role badge
+    // Update in-game player role badge with player name
     const roleBadge = document.getElementById("in-game-role-badge");
     roleBadge.className = `my-role-badge ${myTeam}`;
     if (myRole === "spymaster") {
-      roleBadge.innerText = `👁️ ${myTeam.toUpperCase()} SPYMASTER (Secret Key Visible)`;
+      roleBadge.innerHTML = `<span>👤 <strong>${escapeHTML(playerName)}</strong> • 👁️ ${myTeam.toUpperCase()} SPYMASTER</span>`;
     } else if (myRole === "operative") {
-      roleBadge.innerText = `👥 ${myTeam.toUpperCase()} OPERATIVE (Guessing Mode)`;
+      roleBadge.innerHTML = `<span>👤 <strong>${escapeHTML(playerName)}</strong> • 👥 ${myTeam.toUpperCase()} OPERATIVE</span>`;
     } else {
-      roleBadge.innerText = `👀 SPECTATING`;
+      roleBadge.innerHTML = `<span>👤 <strong>${escapeHTML(playerName)}</strong> • 👀 SPECTATING</span>`;
     }
 
     renderBoard();
@@ -1639,28 +1695,114 @@
     updateRoleView();
   }
 
+  function escapeHTML(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function renderHUD() {
     document.getElementById("red-score-count").innerText = gameState.redLeft;
     document.getElementById("blue-score-count").innerText = gameState.blueLeft;
 
     const turnBadge = document.getElementById("turn-badge");
-    turnBadge.className = `turn-badge ${gameState.currentTurn}-turn`;
-    turnBadge.innerText = `${gameState.currentTurn === 'red' ? 'Red' : 'Blue'} Team's Turn`;
-
     const clueDisplay = document.getElementById("current-clue-display");
-    if (gameState.currentClue) {
-      const clueTeam = gameState.currentTurn;
+    const currentTeam = gameState.currentTurn;
+    const isRed = currentTeam === "red";
+    const teamLabel = isRed ? "RED" : "BLUE";
+    const teamIcon = isRed ? "🔴" : "🔵";
+
+    // Team players lookup from room roster
+    const players = Object.values(roomRoster);
+    const teamPlayers = players.filter(p => p.team === currentTeam);
+    const spymaster = teamPlayers.find(p => p.role === "spymaster");
+    const operatives = teamPlayers.filter(p => p.role === "operative");
+
+    turnBadge.className = `turn-badge ${currentTeam}-turn`;
+
+    if (gameState.winner) {
+      turnBadge.innerText = `🏆 ${gameState.winner.toUpperCase()} TEAM WINS!`;
       clueDisplay.innerHTML = `
-        <div class="hud-clue-card ${clueTeam}">
-          <span class="hud-team-tag">${clueTeam === 'red' ? '🔴 RED CLUE:' : '🔵 BLUE CLUE:'}</span>
-          <span class="hud-clue-word">"${gameState.currentClue.word}"</span>
-          <span class="hud-clue-count">(${gameState.currentClue.number} Cards)</span>
-          <span class="hud-guesses-left">• ${gameState.guessesLeft} guess${gameState.guessesLeft === 1 ? '' : 'es'} left</span>
+        <div class="action-needed-prompt" style="color: #FFD60A;">
+          <span class="pulse-icon">🎉</span>
+          <strong>${gameState.winner.toUpperCase()} TEAM</strong> won the mission!
         </div>
       `;
+    } else if (!gameState.currentClue) {
+      // ----------------------------------------------------------------------
+      // PHASE 1: Waiting for Spymaster Clue
+      // ----------------------------------------------------------------------
+      if (spymaster) {
+        const isMeSpymaster = spymaster.id === clientId;
+        if (isMeSpymaster) {
+          turnBadge.innerText = `${teamIcon} ${teamLabel} • YOUR CLUE!`;
+          clueDisplay.innerHTML = `
+            <div class="action-needed-prompt">
+              <span class="pulse-icon">🎯</span>
+              <span class="active-player-name ${currentTeam} is-you">${escapeHTML(spymaster.name)} (YOU)</span>, it's your turn to submit a clue below!
+            </div>
+          `;
+        } else {
+          turnBadge.innerText = `${teamIcon} ${teamLabel} • ${escapeHTML(spymaster.name)}'s Clue`;
+          clueDisplay.innerHTML = `
+            <div class="action-needed-prompt">
+              <span class="pulse-icon">⏳</span>
+              Waiting for Spymaster <span class="active-player-name ${currentTeam}">${escapeHTML(spymaster.name)}</span> to give a clue...
+            </div>
+          `;
+        }
+      } else {
+        turnBadge.innerText = `${teamIcon} ${teamLabel} Team's Turn`;
+        clueDisplay.innerHTML = `
+          <div class="action-needed-prompt">
+            <span class="pulse-icon">⏳</span>
+            Waiting for a <span class="active-player-name ${currentTeam}">${teamLabel} Spymaster</span> to join...
+          </div>
+        `;
+      }
     } else {
-      const activeTeamName = gameState.currentTurn === 'red' ? '🔴 Red Spymaster' : '🔵 Blue Spymaster';
-      clueDisplay.innerHTML = `<span style="color: #a1a1a6;">Waiting for <strong>${activeTeamName}</strong> to give a clue...</span>`;
+      // ----------------------------------------------------------------------
+      // PHASE 2: Clue is Active, Operatives Guessing
+      // ----------------------------------------------------------------------
+      const isMeOperative = operatives.some(p => p.id === clientId);
+
+      let opsHtml = "";
+      if (operatives.length > 0) {
+        opsHtml = operatives.map(p => {
+          const isMe = p.id === clientId;
+          return `<span class="active-player-name ${currentTeam}${isMe ? ' is-you' : ''}">${escapeHTML(p.name)}${isMe ? ' (YOU)' : ''}</span>`;
+        }).join(" ");
+      } else {
+        opsHtml = `<span class="active-player-name ${currentTeam}">${teamLabel} Operative</span>`;
+      }
+
+      if (isMeOperative) {
+        turnBadge.innerText = `${teamIcon} ${teamLabel} • YOUR TURN TO GUESS!`;
+      } else {
+        const opNameShort = operatives.length === 1 ? escapeHTML(operatives[0].name) : `${teamLabel} Operatives`;
+        turnBadge.innerText = `${teamIcon} ${teamLabel} • ${opNameShort} Guessing`;
+      }
+
+      const promptHtml = isMeOperative
+        ? `👉 ${opsHtml}, tap a card on the board to guess!`
+        : `🕵️ Waiting for guess from: ${opsHtml}`;
+
+      clueDisplay.innerHTML = `
+        <div class="hud-clue-card ${currentTeam}">
+          <span class="hud-team-tag">${teamIcon} ${teamLabel} CLUE:</span>
+          <span class="hud-clue-word">"${escapeHTML(gameState.currentClue.word)}"</span>
+          <span class="hud-clue-count">(${escapeHTML(gameState.currentClue.number)} Cards)</span>
+          <span class="hud-guesses-left">• ${gameState.guessesLeft} guess${gameState.guessesLeft === 1 ? '' : 'es'} left</span>
+        </div>
+        <div class="action-needed-prompt" style="${isMeOperative ? 'color: #30d158;' : ''}">
+          <span class="pulse-icon">${isMeOperative ? '👉' : '🕵️'}</span>
+          ${promptHtml}
+        </div>
+      `;
     }
 
     // A Spymaster can only give a clue if:
@@ -1678,6 +1820,18 @@
       gameState.lastClueTeam !== myTeam
     );
     spymasterBar.style.display = isMyTurnSpymaster ? "flex" : "none";
+
+    // Show End Turn button only when it's the active team's operative turn to guess
+    const endTurnBtn = document.getElementById("end-turn-btn");
+    if (endTurnBtn) {
+      const isMyTurnToGuess = (
+        myTeam === gameState.currentTurn &&
+        myRole === "operative" &&
+        gameState.currentClue &&
+        !gameState.winner
+      );
+      endTurnBtn.style.display = isMyTurnToGuess ? "inline-block" : "none";
+    }
   }
 
   function updateRoleView() {
@@ -1735,7 +1889,7 @@
       const teamBadge = currentTurn === "red" ? '<span class="log-badge red">🔴 RED GUESS</span>' : '<span class="log-badge blue">🔵 BLUE GUESS</span>';
       addLog(`
         ${teamBadge}
-        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff; font-size: 0.95rem;">"${card.word}"</strong></span>
+        <span><strong class="active-player-name ${currentTurn}">${escapeHTML(guesserName || 'Operative')}</strong> picked <strong style="color: #fff; font-size: 0.95rem;">"${escapeHTML(card.word)}"</strong></span>
         <span style="color: #32D74B; font-weight: 800;">✓ Correct Agent!</span>
       `, currentTurn);
 
@@ -1760,7 +1914,7 @@
       const winningTeam = currentTurn === "red" ? "blue" : "red";
       addLog(`
         <span class="log-badge assassin">☠️ ASSASSIN</span>
-        <span><strong>${guesserName || 'Operative'}</strong> touched the ASSASSIN (<strong style="color: #FF453A;">"${card.word}"</strong>)!</span>
+        <span><strong class="active-player-name ${currentTurn}">${escapeHTML(guesserName || 'Operative')}</strong> touched the ASSASSIN (<strong style="color: #FF453A;">"${escapeHTML(card.word)}"</strong>)!</span>
         <span style="color: #FF453A; font-weight: 800;">Instant Defeat!</span>
       `, "assassin");
       handleGameOver(winningTeam, `${currentTurn === 'red' ? 'Red' : 'Blue'} Team touched the Assassin! Instant loss!`);
@@ -1770,7 +1924,7 @@
       const teamBadge = currentTurn === "red" ? '<span class="log-badge red">🔴 RED GUESS</span>' : '<span class="log-badge blue">🔵 BLUE GUESS</span>';
       addLog(`
         ${teamBadge}
-        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff;">"${card.word}"</strong></span>
+        <span><strong class="active-player-name ${currentTurn}">${escapeHTML(guesserName || 'Operative')}</strong> picked <strong style="color: #fff;">"${escapeHTML(card.word)}"</strong></span>
         <span style="color: #C7B299; font-weight: 700;">⚪ Neutral Bystander! Turn ended.</span>
       `, "neutral");
       switchTurn();
@@ -1783,7 +1937,7 @@
 
       addLog(`
         ${teamBadge}
-        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff;">"${card.word}"</strong></span>
+        <span><strong class="active-player-name ${currentTurn}">${escapeHTML(guesserName || 'Operative')}</strong> picked <strong style="color: #fff;">"${escapeHTML(card.word)}"</strong></span>
         <span style="color: #FF453A; font-weight: 700;">— ${otherTeam.toUpperCase()} Agent! Turn ended.</span>
       `, otherTeam);
 
@@ -1858,17 +2012,25 @@
     const teamBadge = team === 'red' ? '<span class="log-badge red">🔴 RED CLUE</span>' : '<span class="log-badge blue">🔵 BLUE CLUE</span>';
     addLog(`
       ${teamBadge}
-      <span class="log-clue-highlight">"${clue.word}"</span>
-      <span class="log-clue-count">(${clue.number} cards)</span>
-      <span style="color: #a1a1a6; font-size: 0.82rem;">from <strong>${spymasterName || 'Spymaster'}</strong></span>
+      <span class="log-clue-highlight">"${escapeHTML(clue.word)}"</span>
+      <span class="log-clue-count">(${escapeHTML(clue.number)} cards)</span>
+      <span style="color: #a1a1a6; font-size: 0.82rem;">from <strong class="active-player-name ${team}">${escapeHTML(spymasterName || 'Spymaster')}</strong></span>
     `, team);
 
     renderHUD();
   }
 
   function handleEndTurnClick() {
+    if (myRole === "spymaster") {
+      addLog("<span class='log-badge system'>WAIT</span> Spymasters cannot pass! Only Operatives make guesses.", "system");
+      return;
+    }
     if (gameState.currentTurn !== myTeam) {
       addLog("<span class='log-badge system'>WAIT</span> You can only pass when it is your team's turn.", "system");
+      return;
+    }
+    if (!gameState.currentClue) {
+      addLog("<span class='log-badge system'>WAIT</span> Wait for your Spymaster to give a clue first.", "system");
       return;
     }
     publishMessage({
@@ -1883,7 +2045,7 @@
     const teamBadge = team === 'red' ? '<span class="log-badge red">🔴 RED PASS</span>' : '<span class="log-badge blue">🔵 BLUE PASS</span>';
     addLog(`
       ${teamBadge}
-      <span><strong>${pName || 'Team'}</strong> chose to end their guessing turn.</span>
+      <span><strong class="active-player-name ${team}">${escapeHTML(pName || 'Team')}</strong> passed their guessing turn.</span>
     `, team);
     switchTurn();
   }
@@ -1895,9 +2057,14 @@
     gameState.guessesLeft = 0;
 
     const nextTeamBadge = nextTurn === "red" ? '<span class="log-badge red">🔴 RED TURN</span>' : '<span class="log-badge blue">🔵 BLUE TURN</span>';
+    const nextSpy = Object.values(roomRoster).find(p => p.team === nextTurn && p.role === "spymaster");
+    const nextSpyHtml = nextSpy
+      ? `Waiting for <strong class="active-player-name ${nextTurn}">${escapeHTML(nextSpy.name)}</strong> to give a clue!`
+      : `Now <strong>${nextTurn === 'red' ? 'Red' : 'Blue'} Team</strong>'s turn!`;
+
     addLog(`
       ${nextTeamBadge}
-      <span>Turn ended. Now <strong>${nextTurn === 'red' ? 'Red' : 'Blue'} Team</strong>'s turn to play!</span>
+      <span>Turn ended. ${nextSpyHtml}</span>
     `, nextTurn);
 
     renderHUD();
