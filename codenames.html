@@ -14,11 +14,11 @@
     --card-bg: #181a22;
     --card-border: rgba(255, 255, 255, 0.08);
     --red-team: #FF3B30;
-    --red-team-dim: rgba(255, 59, 48, 0.18);
+    --red-team-dim: rgba(255, 59, 48, 0.16);
     --blue-team: #0A84FF;
-    --blue-team-dim: rgba(10, 132, 255, 0.18);
+    --blue-team-dim: rgba(10, 132, 255, 0.16);
     --neutral-card: #C7B299;
-    --neutral-card-dim: rgba(199, 178, 153, 0.18);
+    --neutral-card-dim: rgba(199, 178, 153, 0.16);
     --assassin-card: #1c1d24;
     --gold: #FFD60A;
   }
@@ -76,6 +76,7 @@
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.05em;
+    cursor: pointer;
   }
   .status-dot {
     width: 8px;
@@ -103,7 +104,7 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Lobby Modal / Screen */
+  /* SCREEN 1: LANDING / ENTER ROOM */
   .lobby-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -171,8 +172,166 @@
   .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
   .divider span { padding: 0 12px; }
 
-  /* GAMEPLAY LAYOUT */
-  /* Game Header HUD */
+  /* SCREEN 2: WAITING ROOM / TEAM SELECTION LOBBY */
+  .waiting-room-header {
+    text-align: center;
+    margin-bottom: 24px;
+    width: 100%;
+    max-width: 800px;
+  }
+  .room-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .copy-btn {
+    background: var(--blue-team);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .copy-btn:hover { background: #0071e3; }
+
+  /* Teams Columns Grid */
+  .teams-selection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 680px) {
+    .teams-selection-grid { grid-template-columns: 1fr; }
+  }
+
+  .team-lobby-card {
+    background: var(--card-bg);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .team-lobby-card.red {
+    border-color: rgba(255, 59, 48, 0.35);
+    background: linear-gradient(180deg, rgba(255, 59, 48, 0.08) 0%, var(--card-bg) 100%);
+  }
+  .team-lobby-card.blue {
+    border-color: rgba(10, 132, 255, 0.35);
+    background: linear-gradient(180deg, rgba(10, 132, 255, 0.08) 0%, var(--card-bg) 100%);
+  }
+
+  .team-lobby-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.4rem;
+    font-weight: 800;
+  }
+  .team-lobby-header.red { color: var(--red-team); }
+  .team-lobby-header.blue { color: var(--blue-team); }
+
+  .role-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .role-box-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8E8E93;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .player-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .player-pill.is-me {
+    border: 1px solid var(--gold);
+    color: var(--gold);
+  }
+
+  .join-slot-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.04);
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .join-slot-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-style: solid;
+  }
+  .join-slot-btn.joined {
+    background: rgba(50, 215, 75, 0.15);
+    border: 1px solid rgba(50, 215, 75, 0.4);
+    color: #32D74B;
+  }
+
+  /* Spectators / Unassigned Area */
+  .unassigned-card {
+    width: 100%;
+    max-width: 860px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .spectator-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .start-game-box {
+    width: 100%;
+    max-width: 860px;
+    text-align: center;
+  }
+
+  /* SCREEN 3: GAMEPLAY LAYOUT */
   .game-hud {
     width: 100%;
     display: flex;
@@ -231,8 +390,8 @@
     margin-top: 6px;
   }
 
-  /* Player Controls Bar */
-  .player-bar {
+  /* Player Identity Strip in Game */
+  .in-game-player-bar {
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -241,40 +400,18 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  .role-toggle-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 4px;
-    border-radius: 12px;
-  }
-  .role-btn {
+  .my-role-badge {
     padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    border: none;
-    color: #8E8E93;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.2s;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
-  .role-btn.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-  }
-  .team-picker-btn {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-  }
-  .team-picker-btn.red { background: rgba(255, 59, 48, 0.25); color: var(--red-team); }
-  .team-picker-btn.blue { background: rgba(10, 132, 255, 0.25); color: var(--blue-team); }
+  .my-role-badge.red { background: rgba(255, 59, 48, 0.2); color: var(--red-team); border: 1px solid var(--red-team); }
+  .my-role-badge.blue { background: rgba(10, 132, 255, 0.2); color: var(--blue-team); border: 1px solid var(--blue-team); }
+  .my-role-badge.spectator { background: rgba(255, 255, 255, 0.1); color: #8e8e93; }
 
   /* 5x5 BOARD GRID */
   .board-grid {
@@ -285,7 +422,6 @@
     max-width: 900px;
     margin-bottom: 20px;
   }
-
   @media (max-width: 600px) {
     .board-grid { gap: 6px; }
   }
@@ -387,7 +523,6 @@
   }
   body.spymaster-mode .code-card:not(.revealed).type-assassin .card-word { color: #FF453A; }
 
-  /* Spymaster Corner Tag */
   .spymaster-tag {
     display: none;
     position: absolute;
@@ -441,7 +576,7 @@
 
   /* End Turn Button */
   .end-turn-btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
     font-size: 0.95rem;
     font-weight: 700;
     border-radius: 12px;
@@ -519,13 +654,13 @@
   </div>
 </header>
 
-<!-- SCREEN 1: ROOM SELECTION / LOBBY JOIN -->
-<div id="lobby-screen" class="screen active">
+<!-- SCREEN 1: LANDING / CREATE OR JOIN ROOM -->
+<div id="landing-screen" class="screen active">
   <div class="lobby-card">
     <span style="font-size: 3.5rem; margin-bottom: 8px; display: block;">🕵️‍♂️</span>
     <h1 class="lobby-title">Codenames Online</h1>
     <p class="lobby-subtitle">
-      Two rival Spymasters know the secret identities of 25 agents. Can your team make contact with all your agents before the other team?
+      Two rival teams (Red vs Blue). Choose your teams and roles in the room before the secret grid is revealed!
     </p>
 
     <div class="input-group">
@@ -550,7 +685,102 @@
   </div>
 </div>
 
-<!-- SCREEN 2: ACTIVE GAME BOARD -->
+<!-- SCREEN 2: WAITING ROOM / TEAM SELECTION LOBBY -->
+<div id="lobby-screen" class="screen">
+  <div class="waiting-room-header">
+    <div class="room-banner">
+      <span>Room: <strong id="lobby-room-code-display" style="color: #fff;">----</strong></span>
+      <button class="copy-btn" onclick="copyInviteLink()">Copy Invite Link 📋</button>
+    </div>
+    <p style="color: #8E8E93; font-size: 0.95rem;">
+      Pick your team and role below. The cards will remain hidden until everyone is ready!
+    </p>
+  </div>
+
+  <!-- Red vs Blue Team Columns -->
+  <div class="teams-selection-grid">
+    <!-- RED TEAM COLUMN -->
+    <div class="team-lobby-card red">
+      <div class="team-lobby-header red">
+        <span>🔴 Red Team</span>
+        <span style="font-size: 0.9rem; font-weight: 700; color: #8E8E93;" id="red-players-count">0 Players</span>
+      </div>
+
+      <!-- Red Spymaster Slot -->
+      <div class="role-box">
+        <div class="role-box-title">
+          <span>👁️ Spymaster (1 Slot)</span>
+        </div>
+        <div id="red-spymaster-slot">
+          <button class="join-slot-btn" onclick="claimSlot('red', 'spymaster')">+ Become Red Spymaster</button>
+        </div>
+      </div>
+
+      <!-- Red Operatives List -->
+      <div class="role-box" style="flex: 1;">
+        <div class="role-box-title">
+          <span>👥 Operatives (Field Agents)</span>
+        </div>
+        <div id="red-operatives-list" style="margin-bottom: 10px;">
+          <!-- Red operative player pills -->
+        </div>
+        <button class="join-slot-btn" id="join-red-op-btn" onclick="claimSlot('red', 'operative')">+ Join Red Operatives</button>
+      </div>
+    </div>
+
+    <!-- BLUE TEAM COLUMN -->
+    <div class="team-lobby-card blue">
+      <div class="team-lobby-header blue">
+        <span>🔵 Blue Team</span>
+        <span style="font-size: 0.9rem; font-weight: 700; color: #8E8E93;" id="blue-players-count">0 Players</span>
+      </div>
+
+      <!-- Blue Spymaster Slot -->
+      <div class="role-box">
+        <div class="role-box-title">
+          <span>👁️ Spymaster (1 Slot)</span>
+        </div>
+        <div id="blue-spymaster-slot">
+          <button class="join-slot-btn" onclick="claimSlot('blue', 'spymaster')">+ Become Blue Spymaster</button>
+        </div>
+      </div>
+
+      <!-- Blue Operatives List -->
+      <div class="role-box" style="flex: 1;">
+        <div class="role-box-title">
+          <span>👥 Operatives (Field Agents)</span>
+        </div>
+        <div id="blue-operatives-list" style="margin-bottom: 10px;">
+          <!-- Blue operative player pills -->
+        </div>
+        <button class="join-slot-btn" id="join-blue-op-btn" onclick="claimSlot('blue', 'operative')">+ Join Blue Operatives</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spectators / Unassigned -->
+  <div class="unassigned-card">
+    <div>
+      <span style="font-weight: 700; font-size: 0.95rem; color: #8E8E93;">Waiting in Room:</span>
+      <div class="spectator-pills" id="spectators-list" style="margin-top: 6px;">
+        <!-- unassigned players -->
+      </div>
+    </div>
+    <button class="nav-btn" onclick="claimSlot('unassigned', 'spectator')">Spectate / Leave Team</button>
+  </div>
+
+  <!-- Launch Game Button -->
+  <div class="start-game-box">
+    <button class="btn-primary" style="font-size: 1.25rem; padding: 18px 36px;" onclick="requestStartGame()">
+      <span>Start Mission (Reveal Cards) 🚀</span>
+    </button>
+    <p style="color: #666; font-size: 0.85rem; margin-top: 10px;">
+      Once started, Spymasters will see the secret color key, and Operatives will see the word cards!
+    </p>
+  </div>
+</div>
+
+<!-- SCREEN 3: ACTIVE GAME BOARD -->
 <div id="game-screen" class="screen">
   
   <!-- Game HUD: Scores, Turn, Current Clue -->
@@ -580,22 +810,16 @@
     </div>
   </div>
 
-  <!-- Player Role & Team Controls Bar -->
-  <div class="player-bar">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <span style="font-size: 0.85rem; font-weight: 700; color: #8e8e93;">My Team:</span>
-      <button class="team-picker-btn red" id="pick-red-btn" onclick="selectTeam('red')">Red Team</button>
-      <button class="team-picker-btn blue" id="pick-blue-btn" onclick="selectTeam('blue')">Blue Team</button>
-    </div>
-
-    <div class="role-toggle-group">
-      <button class="role-btn active" id="role-op-btn" onclick="selectRole('operative')">Operative</button>
-      <button class="role-btn" id="role-spy-btn" onclick="selectRole('spymaster')">Spymaster 👁️</button>
+  <!-- In-Game Identity & Controls Strip -->
+  <div class="in-game-player-bar">
+    <div class="my-role-badge red" id="in-game-role-badge">
+      <span>● My Role: Red Operative</span>
     </div>
 
     <div style="display: flex; gap: 8px;">
       <button class="end-turn-btn" id="end-turn-btn" onclick="handleEndTurnClick()">End Turn →</button>
-      <button class="nav-btn" onclick="promptNewGame()">New Mission ↺</button>
+      <button class="nav-btn" onclick="returnToLobby()">Teams Lobby 👥</button>
+      <button class="nav-btn" onclick="promptNewGame()">Reshuffle ↺</button>
     </div>
   </div>
 
@@ -636,10 +860,8 @@
   <div class="victory-team-text" id="victory-winner-text">Red Team Wins!</div>
   <p class="victory-reason" id="victory-reason-text">All secret agents were successfully contacted!</p>
   <div style="display: flex; gap: 12px;">
-    <button class="btn-primary" onclick="initNewMission()">Play New Mission ↺</button>
-    <a href="index.html" style="text-decoration: none;">
-      <button class="btn-primary" style="background: rgba(255,255,255,0.15);">Games Hub</button>
-    </a>
+    <button class="btn-primary" onclick="returnToLobby()">Return to Lobby 👥</button>
+    <button class="btn-primary" style="background: rgba(255,255,255,0.15);" onclick="initNewMission(true)">New Cards ↺</button>
   </div>
 </div>
 
@@ -697,7 +919,7 @@
   ];
 
   /* ==========================================================================
-     2. NATIVE WEB AUDIO SYNTHESIZER
+     2. AUDIO SYNTHESIZER
      ========================================================================== */
   let audioCtx = null;
   let isMuted = false;
@@ -729,13 +951,11 @@
   }
 
   function playSuccessTone() {
-    playTone(523.25, 0.08, 'triangle', 0.2); // C5
-    setTimeout(() => playTone(659.25, 0.15, 'triangle', 0.2), 80); // E5
+    playTone(523.25, 0.08, 'triangle', 0.2);
+    setTimeout(() => playTone(659.25, 0.15, 'triangle', 0.2), 80);
   }
 
-  function playNeutralTone() {
-    playTone(350, 0.12, 'sine', 0.12);
-  }
+  function playNeutralTone() { playTone(350, 0.12, 'sine', 0.12); }
 
   function playAssassinTone() {
     playTone(150, 0.4, 'sawtooth', 0.3);
@@ -754,7 +974,7 @@
   }
 
   /* ==========================================================================
-     3. CLIENT PLAYER STATE & NETWORKING (Paho MQTT over WebSockets)
+     3. MULTIPLAYER ROOM & ROSTER STATE
      ========================================================================== */
   let client = null;
   let currentRoom = null;
@@ -762,19 +982,23 @@
   let clientId = "client_" + Math.random().toString(36).substring(2, 9);
   let playerName = "Agent " + Math.floor(Math.random() * 900 + 100);
 
-  // My Role & Team locally
-  let myTeam = "red"; // 'red' or 'blue'
-  let myRole = "operative"; // 'operative' or 'spymaster'
+  // My Role & Team
+  let myTeam = "unassigned"; // 'red', 'blue', or 'unassigned'
+  let myRole = "spectator";  // 'spymaster', 'operative', or 'spectator'
 
-  // Authoritative Game State (Synced across room)
+  // Room Roster: { [clientId]: { id, name, team, role } }
+  let roomRoster = {};
+
+  // Authoritative Game State
   let gameState = {
     room: "",
+    status: "lobby", // 'lobby' or 'playing'
     startingTeam: "red",
-    currentTurn: "red", // 'red' or 'blue'
+    currentTurn: "red",
     redLeft: 9,
     blueLeft: 8,
-    cards: [], // 25 items: { id, word, type: 'red'|'blue'|'neutral'|'assassin', revealed: bool }
-    currentClue: null, // { word, number }
+    cards: [],
+    currentClue: null,
     guessesLeft: 0,
     winner: null,
     reason: ""
@@ -789,10 +1013,10 @@
     gameState.room = currentRoom;
 
     document.getElementById("hud-room-code-text").innerText = `ROOM: ${currentRoom}`;
+    document.getElementById("lobby-room-code-display").innerText = currentRoom;
     const statusDot = document.getElementById("hud-status-dot");
     statusDot.className = "status-dot disconnected";
 
-    // Public broker: EMQX over WSS (port 8084)
     const host = "broker.emqx.io";
     const port = 8084;
     const path = "/mqtt";
@@ -820,28 +1044,32 @@
     const topic = `damfloc/codenames/${currentRoom}`;
     client.subscribe(topic, { qos: 1 });
 
-    addLog(`Connected to secure room <strong>${currentRoom}</strong>.`);
-    // Ask room for current state
+    // Register myself in roster
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      team: myTeam,
+      role: myRole
+    };
+
+    // Broadcast that I joined
+    publishMessage({
+      type: "PLAYER_JOIN",
+      player: roomRoster[clientId]
+    });
+
+    // Request full state & presence from room
     publishMessage({ type: "REQUEST_SYNC", sender: clientId });
 
-    // Switch to game screen
-    document.getElementById("lobby-screen").classList.remove("active");
-    document.getElementById("game-screen").classList.add("active");
-
-    // If host or first, generate board after 800ms if no sync arrived
-    setTimeout(() => {
-      if (gameState.cards.length === 0) {
-        initNewMission(false);
-      }
-    }, 700);
+    // Switch to Lobby Waiting Room
+    switchScreen("lobby-screen");
+    renderRosterUI();
   }
 
   function onConnectFailure(err) {
     isConnected = false;
     const statusDot = document.getElementById("hud-status-dot");
     statusDot.className = "status-dot disconnected";
-    addLog(`Network warning: ${err.errorMessage || 'Retrying connection...'}`);
-    // If first broker failed, try fallback
     setTimeout(() => {
       if (!isConnected && currentRoom) connectToRoom(currentRoom);
     }, 3000);
@@ -851,7 +1079,6 @@
     isConnected = false;
     const statusDot = document.getElementById("hud-status-dot");
     statusDot.className = "status-dot disconnected";
-    addLog(`Connection paused (${response.errorMessage}). Reconnecting...`);
     setTimeout(() => {
       if (currentRoom) connectToRoom(currentRoom);
     }, 2000);
@@ -876,19 +1103,37 @@
 
   function handleNetworkMessage(data) {
     if (data.type === "REQUEST_SYNC") {
-      // If we have active cards, broadcast sync to the room
-      if (gameState.cards && gameState.cards.length > 0) {
-        publishMessage({
-          type: "SYNC_STATE",
-          state: gameState
-        });
+      // Respond with my presence and current game state if any
+      publishMessage({
+        type: "PLAYER_SYNC",
+        player: roomRoster[clientId],
+        gameState: gameState.status === "playing" ? gameState : null,
+        target: data.sender
+      });
+    } else if (data.type === "PLAYER_JOIN" || data.type === "PLAYER_SYNC") {
+      if (data.player && data.player.id) {
+        roomRoster[data.player.id] = data.player;
+        renderRosterUI();
       }
-    } else if (data.type === "SYNC_STATE") {
-      if (data.state && data.state.cards && data.state.cards.length === 25) {
-        gameState = data.state;
-        renderBoard();
-        renderHUD();
+      // If sync returned active game, sync game state
+      if (data.gameState && data.gameState.status === "playing" && gameState.status !== "playing") {
+        gameState = data.gameState;
+        startGameLocally();
       }
+    } else if (data.type === "ROLE_UPDATE") {
+      if (data.player && data.player.id) {
+        roomRoster[data.player.id] = data.player;
+        renderRosterUI();
+      }
+    } else if (data.type === "START_GAME") {
+      gameState = data.state;
+      startGameLocally();
+    } else if (data.type === "RETURN_TO_LOBBY") {
+      gameState.status = "lobby";
+      switchScreen("lobby-screen");
+      document.getElementById("victory-modal").classList.remove("active");
+      renderRosterUI();
+      addLog(`Teams returned to Lobby.`);
     } else if (data.type === "REVEAL_CARD") {
       executeCardReveal(data.cardId, data.playerName);
     } else if (data.type === "GIVE_CLUE") {
@@ -900,22 +1145,184 @@
       renderBoard();
       renderHUD();
       document.getElementById("victory-modal").classList.remove("active");
-      addLog(`<strong>${data.playerName}</strong> started a new mission.`);
+      addLog(`<strong>${data.playerName}</strong> reshuffled with 25 new cards.`);
     }
   }
 
   /* ==========================================================================
-     5. GAME SETUP & AUTHORITATIVE BOARD GENERATOR
+     5. LOBBY ROSTER & TEAM SELECTION
+     ========================================================================== */
+  function claimSlot(team, role) {
+    initAudio();
+
+    // Check if spymaster slot is already occupied by someone else
+    if (role === "spymaster") {
+      const currentSpy = Object.values(roomRoster).find(p => p.team === team && p.role === "spymaster" && p.id !== clientId);
+      if (currentSpy) {
+        alert(`${currentSpy.name} is already the ${team.toUpperCase()} Spymaster!`);
+        return;
+      }
+    }
+
+    myTeam = team;
+    myRole = role;
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      team: myTeam,
+      role: myRole
+    };
+
+    publishMessage({
+      type: "ROLE_UPDATE",
+      player: roomRoster[clientId]
+    });
+
+    renderRosterUI();
+  }
+
+  function renderRosterUI() {
+    const players = Object.values(roomRoster);
+
+    // Filter by team and role
+    const redSpymaster = players.find(p => p.team === "red" && p.role === "spymaster");
+    const redOperatives = players.filter(p => p.team === "red" && p.role === "operative");
+    const blueSpymaster = players.find(p => p.team === "blue" && p.role === "spymaster");
+    const blueOperatives = players.filter(p => p.team === "blue" && p.role === "operative");
+    const spectators = players.filter(p => p.team === "unassigned" || p.role === "spectator");
+
+    // Red Team Count
+    document.getElementById("red-players-count").innerText = `${(redSpymaster ? 1 : 0) + redOperatives.length} Players`;
+    // Blue Team Count
+    document.getElementById("blue-players-count").innerText = `${(blueSpymaster ? 1 : 0) + blueOperatives.length} Players`;
+
+    // Red Spymaster Slot
+    const redSpyEl = document.getElementById("red-spymaster-slot");
+    if (redSpymaster) {
+      redSpyEl.innerHTML = `
+        <div class="player-pill ${redSpymaster.id === clientId ? 'is-me' : ''}">
+          <span>👁️ ${redSpymaster.name} ${redSpymaster.id === clientId ? '(You)' : ''}</span>
+          ${redSpymaster.id === clientId ? '<button onclick="claimSlot(\'unassigned\', \'spectator\')" style="background:none;border:none;color:#ff453a;cursor:pointer;font-weight:700;">Leave</button>' : ''}
+        </div>
+      `;
+    } else {
+      redSpyEl.innerHTML = `<button class="join-slot-btn" onclick="claimSlot('red', 'spymaster')">+ Become Red Spymaster</button>`;
+    }
+
+    // Red Operatives List
+    const redOpList = document.getElementById("red-operatives-list");
+    redOpList.innerHTML = "";
+    redOperatives.forEach(p => {
+      const div = document.createElement("div");
+      div.className = `player-pill ${p.id === clientId ? 'is-me' : ''}`;
+      div.innerHTML = `
+        <span>👥 ${p.name} ${p.id === clientId ? '(You)' : ''}</span>
+        ${p.id === clientId ? '<button onclick="claimSlot(\'unassigned\', \'spectator\')" style="background:none;border:none;color:#ff453a;cursor:pointer;font-weight:700;">Leave</button>' : ''}
+      `;
+      redOpList.appendChild(div);
+    });
+
+    // Blue Spymaster Slot
+    const blueSpyEl = document.getElementById("blue-spymaster-slot");
+    if (blueSpymaster) {
+      blueSpyEl.innerHTML = `
+        <div class="player-pill ${blueSpymaster.id === clientId ? 'is-me' : ''}">
+          <span>👁️ ${blueSpymaster.name} ${blueSpymaster.id === clientId ? '(You)' : ''}</span>
+          ${blueSpymaster.id === clientId ? '<button onclick="claimSlot(\'unassigned\', \'spectator\')" style="background:none;border:none;color:#ff453a;cursor:pointer;font-weight:700;">Leave</button>' : ''}
+        </div>
+      `;
+    } else {
+      blueSpyEl.innerHTML = `<button class="join-slot-btn" onclick="claimSlot('blue', 'spymaster')">+ Become Blue Spymaster</button>`;
+    }
+
+    // Blue Operatives List
+    const blueOpList = document.getElementById("blue-operatives-list");
+    blueOpList.innerHTML = "";
+    blueOperatives.forEach(p => {
+      const div = document.createElement("div");
+      div.className = `player-pill ${p.id === clientId ? 'is-me' : ''}`;
+      div.innerHTML = `
+        <span>👥 ${p.name} ${p.id === clientId ? '(You)' : ''}</span>
+        ${p.id === clientId ? '<button onclick="claimSlot(\'unassigned\', \'spectator\')" style="background:none;border:none;color:#ff453a;cursor:pointer;font-weight:700;">Leave</button>' : ''}
+      `;
+      blueOpList.appendChild(div);
+    });
+
+    // Spectators / Unassigned List
+    const specList = document.getElementById("spectators-list");
+    specList.innerHTML = "";
+    if (spectators.length === 0) {
+      specList.innerHTML = `<span style="font-size: 0.85rem; color: #666;">Everyone has chosen a team!</span>`;
+    } else {
+      spectators.forEach(p => {
+        const span = document.createElement("span");
+        span.style.padding = "4px 10px";
+        span.style.borderRadius = "999px";
+        span.style.background = "rgba(255,255,255,0.08)";
+        span.style.fontSize = "0.85rem";
+        span.style.fontWeight = "600";
+        span.innerText = `${p.name} ${p.id === clientId ? '(You)' : ''}`;
+        specList.appendChild(span);
+      });
+    }
+  }
+
+  /* ==========================================================================
+     6. GAME LAUNCH & BOARD REVEAL
+     ========================================================================== */
+  function requestStartGame() {
+    initAudio();
+    // Generate new board
+    initNewMission(false);
+    gameState.status = "playing";
+
+    // Broadcast START_GAME to the entire room
+    publishMessage({
+      type: "START_GAME",
+      state: gameState
+    });
+
+    startGameLocally();
+  }
+
+  function startGameLocally() {
+    gameState.status = "playing";
+    switchScreen("game-screen");
+
+    // Update in-game player role badge
+    const roleBadge = document.getElementById("in-game-role-badge");
+    roleBadge.className = `my-role-badge ${myTeam}`;
+    if (myRole === "spymaster") {
+      roleBadge.innerText = `👁️ ${myTeam.toUpperCase()} SPYMASTER (Secret Key Visible)`;
+    } else if (myRole === "operative") {
+      roleBadge.innerText = `👥 ${myTeam.toUpperCase()} OPERATIVE (Guessing Mode)`;
+    } else {
+      roleBadge.innerText = `👀 SPECTATING`;
+    }
+
+    renderBoard();
+    renderHUD();
+    playSuccessTone();
+    addLog(`Mission launched! The 25 cards have been dealt.`);
+  }
+
+  function returnToLobby() {
+    publishMessage({ type: "RETURN_TO_LOBBY" });
+    gameState.status = "lobby";
+    switchScreen("lobby-screen");
+    document.getElementById("victory-modal").classList.remove("active");
+    renderRosterUI();
+  }
+
+  /* ==========================================================================
+     7. BOARD GENERATOR & REVEAL MECHANICS
      ========================================================================== */
   function initNewMission(broadcast = true) {
-    // Pick 25 random unique words
     const shuffledWords = CODENAMES_WORDS.slice().sort(() => Math.random() - 0.5).slice(0, 25);
-
-    // Randomize starting team
     const startTeam = Math.random() < 0.5 ? "red" : "blue";
     const secondTeam = startTeam === "red" ? "blue" : "red";
 
-    // Card types array: 9 for starter, 8 for second, 7 neutral, 1 assassin
     let cardTypes = [
       ...Array(9).fill(startTeam),
       ...Array(8).fill(secondTeam),
@@ -925,6 +1332,7 @@
 
     gameState = {
       room: currentRoom,
+      status: "playing",
       startingTeam: startTeam,
       currentTurn: startTeam,
       redLeft: startTeam === "red" ? 9 : 8,
@@ -954,9 +1362,6 @@
     }
   }
 
-  /* ==========================================================================
-     6. BOARD & HUD RENDERING
-     ========================================================================== */
   function renderBoard() {
     const grid = document.getElementById("board-grid");
     grid.innerHTML = "";
@@ -966,7 +1371,6 @@
       cardEl.className = `code-card type-${card.type} ${card.revealed ? 'revealed' : ''}`;
       cardEl.id = `card-${card.id}`;
 
-      // Spymaster label tag in top right
       let tagText = "";
       if (card.type === 'red') tagText = "RED";
       else if (card.type === 'blue') tagText = "BLUE";
@@ -1000,7 +1404,6 @@
       clueDisplay.innerText = `Waiting for ${gameState.currentTurn === 'red' ? 'Red' : 'Blue'} Spymaster to give a clue...`;
     }
 
-    // Toggle Spymaster input bar
     const spymasterBar = document.getElementById("spymaster-input-bar");
     const isMyTurnSpymaster = (myRole === "spymaster" && myTeam === gameState.currentTurn && !gameState.currentClue && !gameState.winner);
     spymasterBar.style.display = isMyTurnSpymaster ? "flex" : "none";
@@ -1012,17 +1415,15 @@
     } else {
       document.body.classList.remove("spymaster-mode");
     }
-    renderHUD();
   }
 
   /* ==========================================================================
-     7. GAMEPLAY ACTIONS: GUESSING, CLUES, TURNS
+     8. TURNS, GUESSES & WINNER LOGIC
      ========================================================================== */
   function onCardClicked(cardId) {
     const card = gameState.cards[cardId];
     if (!card || card.revealed || gameState.winner) return;
 
-    // Only Operatives on the active turn can guess
     if (myRole === "spymaster") {
       addLog("Spymasters cannot tap cards! Only Operatives guess.");
       return;
@@ -1036,14 +1437,12 @@
       return;
     }
 
-    // Broadcast card reveal to room
     publishMessage({
       type: "REVEAL_CARD",
       cardId: cardId,
       playerName: playerName
     });
 
-    // Execute locally
     executeCardReveal(cardId, playerName);
   }
 
@@ -1053,21 +1452,17 @@
 
     card.revealed = true;
     const cardEl = document.getElementById(`card-${cardId}`);
-    if (cardEl) {
-      cardEl.classList.add("revealed");
-    }
+    if (cardEl) cardEl.classList.add("revealed");
 
     const currentTurn = gameState.currentTurn;
 
     if (card.type === currentTurn) {
-      // Correct guess!
       playSuccessTone();
       if (currentTurn === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
       else gameState.blueLeft = Math.max(0, gameState.blueLeft - 1);
 
       addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Correct agent!`);
 
-      // Check win
       if (gameState.redLeft === 0) {
         handleGameOver("red", "Red Team successfully located all their secret agents!");
         return;
@@ -1077,7 +1472,6 @@
         return;
       }
 
-      // Decrement guesses
       if (typeof gameState.guessesLeft === 'number') {
         gameState.guessesLeft--;
         if (gameState.guessesLeft <= 0) {
@@ -1086,19 +1480,16 @@
         }
       }
     } else if (card.type === "assassin") {
-      // Instant loss!
       playAssassinTone();
       const winningTeam = currentTurn === "red" ? "blue" : "red";
       addLog(`☠️ <strong>${guesserName || 'Operative'}</strong> contacted the ASSASSIN (<strong>${card.word}</strong>)!`);
       handleGameOver(winningTeam, `${currentTurn === 'red' ? 'Red' : 'Blue'} Team touched the Assassin! Instant loss!`);
       return;
     } else if (card.type === "neutral") {
-      // Bystander -> turn ends
       playNeutralTone();
       addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Innocent Bystander! Turn ended.`);
       switchTurn();
     } else {
-      // Picked opposing team's card -> gives them a point and turn ends!
       playNeutralTone();
       const otherTeam = currentTurn === "red" ? "blue" : "red";
       if (otherTeam === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
@@ -1138,7 +1529,6 @@
 
     const clueData = { word, number: num };
 
-    // Broadcast
     publishMessage({
       type: "GIVE_CLUE",
       clue: clueData,
@@ -1201,26 +1591,6 @@
     renderHUD();
   }
 
-  /* ==========================================================================
-     8. PLAYER ROLE & TEAM SELECTION
-     ========================================================================== */
-  function selectTeam(team) {
-    myTeam = team;
-    document.getElementById("pick-red-btn").style.outline = team === 'red' ? '2px solid #FF3B30' : 'none';
-    document.getElementById("pick-blue-btn").style.outline = team === 'blue' ? '2px solid #0A84FF' : 'none';
-    addLog(`You are now on <strong>${team.toUpperCase()} TEAM</strong>.`);
-    renderHUD();
-  }
-
-  function selectRole(role) {
-    initAudio();
-    myRole = role;
-    document.getElementById("role-op-btn").classList.toggle("active", role === 'operative');
-    document.getElementById("role-spy-btn").classList.toggle("active", role === 'spymaster');
-    updateRoleView();
-    addLog(`You switched to <strong>${role.toUpperCase()}</strong> mode.`);
-  }
-
   function promptNewGame() {
     if (confirm("Start a new Codenames mission with 25 fresh cards?")) {
       initNewMission(true);
@@ -1228,8 +1598,15 @@
   }
 
   /* ==========================================================================
-     9. LOBBY, ROOM CREATION & SHARING
+     9. SCREEN SWITCHING, ROOM CREATION & SHARING
      ========================================================================== */
+  function switchScreen(screenId) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add("active");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function createRoom() {
     const nameInput = document.getElementById("player-name-input").value.trim();
     if (nameInput) playerName = nameInput;
@@ -1270,7 +1647,6 @@
 
   /* Auto-join from URL parameter (e.g. codenames.html?room=SPY-123) */
   window.addEventListener('DOMContentLoaded', () => {
-    selectTeam('red');
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
     if (roomParam) {
