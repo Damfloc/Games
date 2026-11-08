@@ -1239,18 +1239,26 @@
     const port = 8084;
     const path = "/mqtt";
 
-    client = new Paho.MQTT.Client(host, port, path, clientId);
-    client.onConnectionLost = onConnectionLost;
-    client.onMessageArrived = onMessageArrived;
+    try {
+      if (typeof Paho !== "undefined" && Paho.MQTT) {
+        client = new Paho.MQTT.Client(host, port, path, clientId);
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
 
-    client.connect({
-      useSSL: true,
-      timeout: 5,
-      keepAliveInterval: 30,
-      cleanSession: true,
-      onSuccess: onConnectSuccess,
-      onFailure: onConnectFailure
-    });
+        client.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: onConnectSuccess,
+          onFailure: onConnectFailure
+        });
+      } else {
+        console.warn("Paho MQTT library not ready yet.");
+      }
+    } catch (e) {
+      console.warn("MQTT connection error:", e);
+    }
   }
 
   function onConnectSuccess() {
@@ -1281,8 +1289,9 @@
   function onConnectFailure(err) {
     isConnected = false;
     updateNetworkStatus("disconnected");
-    alert("Connection to game room failed. Retrying...");
-    setTimeout(() => connectToRoom(currentRoom), 2500);
+    setTimeout(() => {
+      if (!isConnected && currentRoom) connectToRoom(currentRoom);
+    }, 2500);
   }
 
   function onConnectionLost(responseObject) {
@@ -1433,17 +1442,15 @@
      ========================================================================== */
   function createRoom() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your Agent Name first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("imposter_player_name", playerName); } catch (e) {}
 
     const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-    connectToRoom(code);
 
     // I am the host
     roomRoster[clientId] = {
@@ -1458,25 +1465,27 @@
     document.getElementById("entry-box").style.display = "none";
     document.getElementById("room-dashboard").style.display = "block";
     renderRosterUI();
+
+    connectToRoom(code);
   }
 
   function joinRoomByInput() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your Agent Name first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("imposter_player_name", playerName); } catch (e) {}
 
-    const code = document.getElementById("room-code-input").value.trim().toUpperCase();
+    const codeInput = document.getElementById("room-code-input");
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
     if (!code || code.length < 3) {
       alert("Please enter a valid room code!");
+      if (codeInput) codeInput.focus();
       return;
     }
-    connectToRoom(code);
 
     roomRoster[clientId] = {
       id: clientId,
@@ -1489,6 +1498,8 @@
     document.getElementById("entry-box").style.display = "none";
     document.getElementById("room-dashboard").style.display = "block";
     renderRosterUI();
+
+    connectToRoom(code);
   }
 
   function savePlayerName() {

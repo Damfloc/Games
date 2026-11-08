@@ -426,6 +426,11 @@
     border-color: var(--yes-green);
     background: rgba(48, 209, 88, 0.08);
   }
+  .headband-card.is-eliminated {
+    border-color: var(--no-red);
+    background: rgba(255, 69, 58, 0.12);
+    box-shadow: 0 0 16px rgba(255, 69, 58, 0.25);
+  }
 
   /* Physical Headband Graphic */
   .headband-strap {
@@ -461,6 +466,46 @@
     background: rgba(48, 209, 88, 0.2);
     border-color: var(--yes-green);
     color: #30D158;
+  }
+  .headband-word-tag.eliminated {
+    background: rgba(255, 69, 58, 0.25);
+    border-color: var(--no-red);
+    color: #ff453a;
+  }
+
+  .action-tab-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .btn-action-tab {
+    flex: 1;
+    padding: 12px 10px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: 2px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn-action-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .btn-action-tab.active {
+    background: rgba(255, 214, 10, 0.15);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    box-shadow: 0 0 16px rgba(255, 214, 10, 0.25);
+  }
+  .btn-action-tab.danger.active {
+    background: rgba(255, 69, 58, 0.2);
+    border-color: var(--no-red);
+    color: #ff453a;
+    box-shadow: 0 0 16px rgba(255, 69, 58, 0.35);
   }
 
   .my-headband-hero {
@@ -558,6 +603,247 @@
     font-size: 0.9rem;
     font-weight: 700;
     margin-top: 10px;
+  }
+
+  /* =========================================================================
+     INDIVIDUAL PLAYER CLUE & GUESS DOSSIER STYLES
+     ========================================================================= */
+  .history-dossier-box {
+    width: 100%;
+    margin-top: 18px;
+    background: rgba(18, 18, 22, 0.88);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .history-tabs-container {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 10px;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .history-tabs-container::-webkit-scrollbar {
+    height: 4px;
+  }
+  .history-tabs-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+
+  .history-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .history-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+  .history-tab-btn.active {
+    background: rgba(255, 214, 10, 0.16);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    box-shadow: 0 0 12px rgba(255, 214, 10, 0.25);
+  }
+  .history-tab-btn .tab-count-badge {
+    background: rgba(255, 255, 255, 0.14);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .history-tab-btn.active .tab-count-badge {
+    background: var(--accent-gold);
+    color: #000;
+  }
+
+  .history-active-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .history-entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .history-entry-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 12px 14px;
+    transition: border-color 0.2s;
+  }
+  .history-entry-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .history-entry-card.is-live {
+    border-color: var(--accent-gold);
+    background: rgba(255, 214, 10, 0.06);
+    box-shadow: 0 0 12px rgba(255, 214, 10, 0.15);
+  }
+
+  .history-entry-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .history-entry-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .history-entry-badge.question {
+    background: rgba(10, 132, 255, 0.18);
+    color: #5ac8fa;
+    border: 1px solid rgba(10, 132, 255, 0.3);
+  }
+  .history-entry-badge.guess-correct {
+    background: rgba(48, 209, 88, 0.2);
+    color: var(--yes-green);
+    border: 1px solid var(--yes-green);
+  }
+  .history-entry-badge.guess-wrong {
+    background: rgba(255, 69, 58, 0.2);
+    color: var(--no-red);
+    border: 1px solid var(--no-red);
+  }
+  .history-entry-badge.live {
+    background: rgba(255, 214, 10, 0.2);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+  }
+
+  .history-q-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+    margin: 4px 0 8px;
+  }
+
+  .history-tally-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .tally-pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tally-pill.yes { background: rgba(48, 209, 88, 0.18); color: var(--yes-green); border: 1px solid rgba(48, 209, 88, 0.35); }
+  .tally-pill.no { background: rgba(255, 69, 58, 0.18); color: #ff6961; border: 1px solid rgba(255, 69, 58, 0.35); }
+  .tally-pill.maybe { background: rgba(255, 159, 10, 0.18); color: var(--maybe-yellow); border: 1px solid rgba(255, 159, 10, 0.35); }
+
+  .history-voters-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .history-voters-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .history-voter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .history-voter-chip.yes {
+    border-color: rgba(48, 209, 88, 0.35);
+    background: rgba(48, 209, 88, 0.1);
+    color: #30D158;
+  }
+  .history-voter-chip.no {
+    border-color: rgba(255, 69, 58, 0.35);
+    background: rgba(255, 69, 58, 0.1);
+    color: #ff453a;
+  }
+  .history-voter-chip.maybe {
+    border-color: rgba(255, 159, 10, 0.35);
+    background: rgba(255, 159, 10, 0.1);
+    color: var(--maybe-yellow);
+  }
+  .history-voter-chip.pending {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: #8e8e93;
+  }
+
+  .history-empty-state {
+    text-align: center;
+    padding: 24px 12px;
+    color: #8e8e93;
+  }
+
+  .btn-card-history {
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-card-history:hover {
+    background: rgba(255, 214, 10, 0.15);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
   }
 
   /* Word inspiration chips */
@@ -776,9 +1062,14 @@
     <p style="font-size: 0.82rem; color: #8e8e93; margin-top: 6px;">
       Everyone else can see your word! Ask Yes / No questions on your turn to figure out who or what you are!
     </p>
-    <button class="btn-secondary" onclick="togglePeekModal()" style="width: auto; margin: 10px auto 0; font-size: 0.75rem; padding: 4px 12px; border-color: rgba(255, 255, 255, 0.15);">
-      👁️ Give Up & Peek Word
-    </button>
+    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+      <button class="btn-secondary" id="btn-peek-word" onclick="togglePeekModal()" style="width: auto; font-size: 0.75rem; padding: 5px 12px; border-color: rgba(255, 255, 255, 0.15);">
+        👁️ Give Up & Peek Word
+      </button>
+      <button class="btn-secondary" id="btn-view-my-clues" onclick="viewMyHistoryTab()" style="width: auto; font-size: 0.75rem; padding: 5px 12px; border-color: rgba(255, 214, 10, 0.4); color: var(--accent-gold);">
+        📜 My Clues & Guesses (0)
+      </button>
+    </div>
   </div>
 
   <!-- OTHER PLAYERS' HEADBANDS (You can see all of these!) -->
@@ -800,6 +1091,9 @@
       <span>🟢 0 YES</span> • <span>🔴 0 NO</span> • <span>🟡 0 MAYBE</span>
     </div>
 
+    <!-- Turn Advance Countdown Banner -->
+    <div id="vote-countdown-status" style="font-size: 0.82rem; font-weight: 700; color: var(--accent-gold); margin-top: 8px; display: none;"></div>
+
     <!-- Voting buttons for everyone else -->
     <div id="voter-buttons-panel" style="margin-top: 12px;">
       <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 6px;">Answer the question:</div>
@@ -820,41 +1114,100 @@
   <!-- ACTIVE PLAYER CONTROLS (Only visible on your turn) -->
   <div class="card-box" id="my-turn-controls" style="display: none;">
     <div class="card-box-header">
-      <span>Your Turn Controls</span>
-      <span style="color: var(--accent-gold);">Ask or Guess!</span>
+      <span>Your Turn</span>
+      <span style="color: var(--accent-gold); font-weight: 800;">Choose 1 Action</span>
     </div>
 
-    <!-- Question Input -->
-    <label class="input-label">Ask Everyone a Question</label>
-    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-      <input type="text" id="my-question-input" class="text-input" placeholder="Type your question..." maxlength="60" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button class="btn-primary" onclick="submitMyQuestion()" style="width: auto; padding: 0 16px; white-space: nowrap;">Ask 📢</button>
+    <!-- Action Choice Tabs (Only 1 allowed per turn!) -->
+    <div class="action-tab-group" id="turn-action-tabs">
+      <button class="btn-action-tab active" id="tab-btn-question" onclick="selectTurnAction('question')">
+        ❓ Ask Question
+      </button>
+      <button class="btn-action-tab danger" id="tab-btn-guess" onclick="selectTurnAction('guess')">
+        🎯 Make Final Guess
+      </button>
     </div>
 
-    <!-- Quick Question Suggestions -->
-    <div class="chips-scroll">
-      <span class="chip" onclick="fillQuestion('Am I an animal or living thing?')">🐾 Living thing?</span>
-      <span class="chip" onclick="fillQuestion('Can you eat or drink me?')">🍕 Edible?</span>
-      <span class="chip" onclick="fillQuestion('Am I larger than a microwave?')">📦 Bigger than a box?</span>
-      <span class="chip" onclick="fillQuestion('Am I usually found indoors?')">🏠 Indoors?</span>
-      <span class="chip" onclick="fillQuestion('Do people use me every day?')">⚡ Used every day?</span>
+    <!-- Panel 1: Ask a Question -->
+    <div id="panel-ask-question">
+      <label class="input-label">Ask Everyone a Question</label>
+      <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 8px;">
+        Others will answer Yes, No, or Sometimes. Once answered, turn passes automatically.
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="my-question-input" class="text-input" placeholder="Type your question..." maxlength="60" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="btn-primary" id="btn-ask-submit" onclick="submitMyQuestion()" style="width: auto; padding: 0 16px; white-space: nowrap;">Ask 📢</button>
+      </div>
+
+      <!-- Quick Question Suggestions -->
+      <div class="chips-scroll" id="question-chips-row">
+        <span class="chip" onclick="fillQuestion('Am I an animal or living thing?')">🐾 Living thing?</span>
+        <span class="chip" onclick="fillQuestion('Can you eat or drink me?')">🍕 Edible?</span>
+        <span class="chip" onclick="fillQuestion('Am I larger than a microwave?')">📦 Bigger than a box?</span>
+        <span class="chip" onclick="fillQuestion('Am I usually found indoors?')">🏠 Indoors?</span>
+        <span class="chip" onclick="fillQuestion('Do people use me every day?')">⚡ Used every day?</span>
+      </div>
     </div>
 
-    <div style="margin: 14px 0; border-top: 1px dashed rgba(255, 255, 255, 0.1);"></div>
+    <!-- Panel 2: Make Final Guess (High Stakes!) -->
+    <div id="panel-make-guess" style="display: none;">
+      <div style="background: rgba(255, 69, 58, 0.15); border: 1.5px solid var(--no-red); border-radius: 14px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-weight: 800; color: #ff453a; font-size: 0.92rem; margin-bottom: 4px;">⚠️ HIGH STAKES: ONE GUESS ONLY!</div>
+        <div style="font-size: 0.82rem; color: #e5e5ea; line-height: 1.45;">
+          • <strong>Correct:</strong> You solve your headband and win (+100 pts)!<br>
+          • <strong>Wrong:</strong> You are <strong>OUT</strong> of the game! Your headband item will be revealed to you, and you can only answer questions for others.
+        </div>
+      </div>
 
-    <!-- Guess My Identity -->
-    <label class="input-label" style="color: var(--accent-gold);">Ready to Guess What You Are?</label>
-    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <input type="text" id="my-guess-input" class="text-input" placeholder="Enter your guess..." maxlength="30" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
-      <button class="btn-primary" onclick="submitMyGuess()" style="width: auto; padding: 0 16px; white-space: nowrap; background: linear-gradient(135deg, #30D158, #0A84FF);">Guess 🎯</button>
+      <label class="input-label" style="color: var(--accent-gold);">What Is on Your Headband?</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="my-guess-input" class="text-input" placeholder="Enter your guess..." maxlength="30" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        <button class="btn-primary" id="btn-guess-submit" onclick="submitMyGuess()" style="width: auto; padding: 0 16px; white-space: nowrap; background: linear-gradient(135deg, #ff453a, #ff9f0a);">Guess 🎯</button>
+      </div>
     </div>
 
-    <button class="btn-secondary" onclick="passTurnToNextPlayer()">Done / Pass Turn ➡️</button>
+    <!-- Waiting Banner (Shown after 1 action is submitted) -->
+    <div id="action-submitted-banner" style="display: none; padding: 12px; text-align: center; background: rgba(10, 132, 255, 0.15); border: 1px solid rgba(10, 132, 255, 0.35); border-radius: 12px; margin-top: 10px; font-size: 0.88rem; font-weight: 700; color: #fff;">
+      📢 Waiting for all players to answer... Turn will advance automatically!
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+      <button class="btn-secondary" onclick="passTurnToNextPlayer()" style="width: auto; padding: 6px 14px; font-size: 0.8rem; border-color: rgba(255,255,255,0.15);">Pass Turn ➡️</button>
+    </div>
   </div>
 
   <!-- GUEST OBSERVATION PANEL (When it's someone else's turn) -->
   <div id="other-turn-hint" style="text-align: center; color: #8e8e93; font-size: 0.85rem; margin-top: 10px;">
     Listen closely and be ready to answer Yes, No, or Sometimes!
+  </div>
+
+  <!-- INDIVIDUAL PLAYER CLUE & GUESS DOSSIER -->
+  <div class="card-box history-dossier-box" id="individual-history-section">
+    <div class="card-box-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.15rem;">📜</span>
+        <div>
+          <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">Player Clue & Guess Dossier</div>
+          <div style="font-size: 0.75rem; color: #8e8e93; font-weight: 500;">Individual history of each person's questions, voter answers & guesses</div>
+        </div>
+      </div>
+      <span class="badge" id="history-total-count" style="font-size: 0.75rem; background: rgba(255,255,255,0.08); color: #fff;">0 entries</span>
+    </div>
+
+    <!-- Scrollable Horizontal Player Filter Tabs -->
+    <div class="history-tabs-container" id="history-player-tabs">
+      <!-- Injected dynamically: [ 🌟 You (2) ] [ 🦁 Diego (1) ] ... -->
+    </div>
+
+    <!-- Active Player Dossier Header -->
+    <div class="history-active-header" id="history-active-player-header">
+      <!-- Injected: Player name, avatar, and solved/eliminated status -->
+    </div>
+
+    <!-- List of Clues and Guesses for the selected player -->
+    <div class="history-entries-list" id="history-entries-container">
+      <!-- Injected: Questions with Yes/No/Sometimes breakdown, and guesses -->
+    </div>
   </div>
 
   <div style="display: flex; gap: 10px; width: 100%; margin-top: 16px;">
@@ -992,6 +1345,12 @@
     playTone(150, 0.25, 'sawtooth', 0.25);
   }
 
+  function playEliminationSound() {
+    playTone(280, 0.15, 'sawtooth', 0.25);
+    setTimeout(() => playTone(200, 0.25, 'sawtooth', 0.3), 120);
+    setTimeout(() => playTone(130, 0.45, 'sawtooth', 0.35), 260);
+  }
+
   function playVictorySound() {
     [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
       setTimeout(() => playTone(f, 0.25, 'triangle', 0.25), idx * 100);
@@ -1029,9 +1388,14 @@
     speakerOrder: [],
     wordAssignments: {}, // { [targetPlayerId]: { authorId, authorName, word } }
     solvedPlayers: {}, // { [playerId]: true }
-    activeQuestion: null // { authorId, authorName, text, votes: { [playerId]: 'yes'|'no'|'maybe' } }
+    eliminatedPlayers: {}, // { [playerId]: { guess, actualWord } }
+    turnActionTaken: false,
+    nextTurnTimer: null,
+    activeQuestion: null, // { qId, authorId, authorName, text, votes: { [playerId]: 'yes'|'no'|'maybe' }, timestamp }
+    playerHistories: {} // { [playerId]: [ { type: 'question'|'guess', ... } ] }
   };
 
+  let activeHistoryPlayerId = null;
   const seenMessageIds = new Set();
 
   function connectToRoom(roomCode) {
@@ -1047,18 +1411,26 @@
     const port = 8084;
     const path = "/mqtt";
 
-    client = new Paho.MQTT.Client(host, port, path, clientId);
-    client.onConnectionLost = onConnectionLost;
-    client.onMessageArrived = onMessageArrived;
+    try {
+      if (typeof Paho !== "undefined" && Paho.MQTT) {
+        client = new Paho.MQTT.Client(host, port, path, clientId);
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
 
-    client.connect({
-      useSSL: true,
-      timeout: 5,
-      keepAliveInterval: 30,
-      cleanSession: true,
-      onSuccess: onConnectSuccess,
-      onFailure: onConnectFailure
-    });
+        client.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: onConnectSuccess,
+          onFailure: onConnectFailure
+        });
+      } else {
+        console.warn("Paho MQTT library not ready yet.");
+      }
+    } catch (e) {
+      console.warn("MQTT connection error:", e);
+    }
   }
 
   function onConnectSuccess() {
@@ -1148,6 +1520,7 @@
         Object.assign(gameState, data.state);
         renderCategoryVotingUI();
         updateSettingsUI();
+        renderPlayerHistoryUI();
         if (data.state.status !== "lobby" && gameState.status === "lobby") {
           syncToActiveGameState();
         }
@@ -1161,6 +1534,7 @@
           if (roomRoster[playerIds[0]]) roomRoster[playerIds[0]].isHost = true;
         }
         renderRosterUI();
+        renderPlayerHistoryUI();
       }
     } else if (data.type === "SETTINGS_UPDATE") {
       if (data.selectedCategory) gameState.selectedCategory = data.selectedCategory;
@@ -1192,19 +1566,36 @@
     } else if (data.type === "SUBMIT_QUESTION") {
       gameState.activeQuestion = data.question;
       showActiveQuestionLocally();
+      renderPlayerHistoryUI();
     } else if (data.type === "QUESTION_VOTE") {
       if (gameState.activeQuestion) {
         if (!gameState.activeQuestion.votes) gameState.activeQuestion.votes = {};
         gameState.activeQuestion.votes[data.playerId] = data.response;
         updateQuestionVotesUI();
+        renderPlayerHistoryUI();
+        checkIfAllVotesCast();
       }
     } else if (data.type === "GUESS_RESULT") {
       handleGuessResult(data);
     } else if (data.type === "NEXT_TURN") {
+      if (data.archivedQuestion || gameState.activeQuestion) {
+        archiveQuestion(data.archivedQuestion || gameState.activeQuestion);
+      }
+      if (gameState.nextTurnTimer) {
+        clearTimeout(gameState.nextTurnTimer);
+        gameState.nextTurnTimer = null;
+      }
       gameState.speakerIndex = data.speakerIndex;
       gameState.activeQuestion = null;
+      gameState.turnActionTaken = false;
+      const box = document.getElementById("question-display-box");
+      if (box) box.style.display = "none";
       updateTurnUI();
+      renderPlayerHistoryUI();
     } else if (data.type === "REVEAL_ALL") {
+      if (gameState.activeQuestion) {
+        archiveQuestion(gameState.activeQuestion);
+      }
       gameState = data.state;
       if (data.roster) Object.assign(roomRoster, data.roster);
       showRecapLocally();
@@ -1255,17 +1646,15 @@
      ========================================================================== */
   function createRoom() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your Player Name first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Player " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("headbands_player_name", playerName); } catch (e) {}
 
     const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-    connectToRoom(code);
 
     roomRoster[clientId] = {
       id: clientId,
@@ -1280,25 +1669,27 @@
     document.getElementById("room-dashboard").style.display = "block";
     renderRosterUI();
     renderCategoryVotingUI();
+
+    connectToRoom(code);
   }
 
   function joinRoomByInput() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your Player Name first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Player " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("headbands_player_name", playerName); } catch (e) {}
 
-    const code = document.getElementById("room-code-input").value.trim().toUpperCase();
+    const codeInput = document.getElementById("room-code-input");
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
     if (!code || code.length < 3) {
       alert("Please enter a valid room code!");
+      if (codeInput) codeInput.focus();
       return;
     }
-    connectToRoom(code);
 
     roomRoster[clientId] = {
       id: clientId,
@@ -1311,7 +1702,8 @@
     document.getElementById("entry-box").style.display = "none";
     document.getElementById("room-dashboard").style.display = "block";
     renderRosterUI();
-    renderCategoryVotingUI();
+
+    connectToRoom(code);
   }
 
   function copyRoomLink() {
@@ -1505,6 +1897,8 @@
     gameState.targetMap = targetMap;
     gameState.wordAssignments = {};
     gameState.solvedPlayers = {};
+    gameState.eliminatedPlayers = {};
+    gameState.playerHistories = {};
     gameState.speakerIndex = 0;
     gameState.speakerOrder = shuffledIds;
 
@@ -1626,9 +2020,22 @@
   /* =========================================================================
      7. PHASE 2: MAIN HEADBAND GAMEPLAY (The Forehead Arena)
      ========================================================================= */
+  let selectedTurnMode = "question";
+
   function startGameLocally() {
     switchScreen("game-screen");
     playVictorySound();
+
+    if (!gameState.solvedPlayers) gameState.solvedPlayers = {};
+    if (!gameState.eliminatedPlayers) gameState.eliminatedPlayers = {};
+    if (!gameState.playerHistories) gameState.playerHistories = {};
+    activeHistoryPlayerId = clientId;
+    gameState.turnActionTaken = false;
+    gameState.activeQuestion = null;
+    if (gameState.nextTurnTimer) {
+      clearTimeout(gameState.nextTurnTimer);
+      gameState.nextTurnTimer = null;
+    }
 
     document.getElementById("hud-category-name").innerText = `Category: ${gameState.selectedCategory.name}`;
     const hostEndBtn = document.getElementById("host-conclude-btn");
@@ -1636,19 +2043,41 @@
 
     renderHeadbandsGrid();
     updateTurnUI();
+    renderPlayerHistoryUI();
   }
 
   function renderHeadbandsGrid() {
     const myAssignment = (gameState.wordAssignments && gameState.wordAssignments[clientId]);
     const myHeadbandEl = document.getElementById("my-headband-text");
+    const myDescEl = document.getElementById("my-headband-desc");
+    const btnPeek = document.getElementById("btn-peek-word");
+    const myCluesBtn = document.getElementById("btn-view-my-clues");
     const isMySolved = gameState.solvedPlayers && gameState.solvedPlayers[clientId];
+    const isMyEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[clientId];
 
     if (isMySolved && myAssignment) {
       myHeadbandEl.className = "headband-word-tag solved";
       myHeadbandEl.innerText = `🎉 "${myAssignment.word}" (SOLVED!)`;
+      if (myDescEl) myDescEl.innerHTML = `<span style="color:var(--yes-green); font-weight:700;">🎉 You solved your headband! Help others guess theirs by voting on their questions!</span>`;
+      if (btnPeek) btnPeek.style.display = "none";
+    } else if (isMyEliminated && myAssignment) {
+      myHeadbandEl.className = "headband-word-tag eliminated";
+      myHeadbandEl.innerText = `❌ "${myAssignment.word}" (ELIMINATED)`;
+      if (myDescEl) myDescEl.innerHTML = `<span style="color:var(--no-red); font-weight:700;">❌ You guessed wrong and are OUT! Your secret word is revealed above. You can still vote Yes / No / Sometimes on others' questions!</span>`;
+      if (btnPeek) btnPeek.style.display = "none";
     } else {
       myHeadbandEl.className = "headband-word-tag hidden-word";
       myHeadbandEl.innerText = "❓ ??? (SECRET ON YOUR HEADBAND)";
+      if (myDescEl) myDescEl.innerText = "Everyone else can see your word! Ask Yes / No questions on your turn to figure out who or what you are!";
+      if (btnPeek) btnPeek.style.display = "block";
+    }
+
+    // Update My Clues button label
+    if (myCluesBtn) {
+      const myHistory = (gameState.playerHistories && gameState.playerHistories[clientId]) || [];
+      let myCount = myHistory.length;
+      if (gameState.activeQuestion && gameState.activeQuestion.authorId === clientId) myCount++;
+      myCluesBtn.innerText = `📜 My Clues & Guesses (${myCount})`;
     }
 
     // Render other players
@@ -1664,61 +2093,200 @@
       const assignment = gameState.wordAssignments ? gameState.wordAssignments[p.id] : null;
       const wordText = assignment ? assignment.word : "???";
       const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[p.id];
+      const isEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[p.id];
       const isTurn = p.id === activeSpeakerId;
 
+      const pHistory = (gameState.playerHistories && gameState.playerHistories[p.id]) || [];
+      let pHistoryCount = pHistory.length;
+      if (gameState.activeQuestion && gameState.activeQuestion.authorId === p.id) pHistoryCount++;
+
       const card = document.createElement("div");
-      card.className = `headband-card ${isTurn ? 'is-active-turn' : ''} ${isSolved ? 'is-solved' : ''}`;
+      let cardClass = "headband-card";
+      let tagClass = "headband-word-tag";
+      let statusHtml = "";
+
+      if (isSolved) {
+        cardClass += " is-solved";
+        tagClass += " solved";
+        statusHtml = `<span style="color:var(--yes-green); font-weight:800;">✓ SOLVED (+100)</span>`;
+      } else if (isEliminated) {
+        cardClass += " is-eliminated";
+        tagClass += " eliminated";
+        statusHtml = `<span style="color:var(--no-red); font-weight:800;">❌ OUT (Eliminated)</span>`;
+      } else {
+        if (isTurn) {
+          cardClass += " is-active-turn";
+          statusHtml = `<span style="color:var(--accent-gold); font-weight:800;">⭐ Taking Turn...</span>`;
+        } else {
+          statusHtml = `<span style="color:#8e8e93; font-weight:600;">Headband</span>`;
+        }
+      }
+
+      card.className = cardClass;
       card.id = `headband-card-${p.id}`;
       card.innerHTML = `
         <div class="headband-strap"></div>
         <div class="player-avatar">${p.avatar}</div>
         <div style="font-weight:700; font-size:0.9rem; margin-bottom:2px;">${escapeHTML(p.name)}</div>
-        <div class="headband-word-tag ${isSolved ? 'solved' : ''}">
+        <div class="${tagClass}">
           ${escapeHTML(wordText)}
         </div>
-        <div style="font-size:0.72rem; color:${isSolved ? 'var(--yes-green)' : (isTurn ? 'var(--accent-gold)' : '#8e8e93')}; font-weight:700;">
-          ${isSolved ? '✓ SOLVED!' : (isTurn ? 'Asking Questions...' : 'Headband')}
+        <div style="font-size:0.72rem; margin-top:2px;">
+          ${statusHtml}
         </div>
+        <button class="btn-card-history" onclick="viewPlayerHistoryTab('${p.id}')">
+          📜 Clues (${pHistoryCount})
+        </button>
       `;
       grid.appendChild(card);
     });
   }
 
+  function selectTurnAction(mode) {
+    if (gameState.turnActionTaken) return;
+    selectedTurnMode = mode;
+    const tabQ = document.getElementById("tab-btn-question");
+    const tabG = document.getElementById("tab-btn-guess");
+    const panelQ = document.getElementById("panel-ask-question");
+    const panelG = document.getElementById("panel-make-guess");
+
+    if (mode === "question") {
+      if (tabQ) tabQ.classList.add("active");
+      if (tabG) tabG.classList.remove("active");
+      if (panelQ) panelQ.style.display = "block";
+      if (panelG) panelG.style.display = "none";
+    } else {
+      if (tabG) tabG.classList.add("active");
+      if (tabQ) tabQ.classList.remove("active");
+      if (panelG) panelG.style.display = "block";
+      if (panelQ) panelQ.style.display = "none";
+    }
+  }
+
   function updateTurnUI() {
     renderHeadbandsGrid();
 
-    const activeSpeakerId = gameState.speakerOrder[gameState.speakerIndex];
+    const order = gameState.speakerOrder || Object.keys(roomRoster);
+    if (!order || order.length === 0) return;
+
+    // Check remaining active players (neither solved nor eliminated)
+    const remainingEligible = order.filter(id => 
+      !(gameState.solvedPlayers && gameState.solvedPlayers[id]) &&
+      !(gameState.eliminatedPlayers && gameState.eliminatedPlayers[id])
+    );
+
+    if (remainingEligible.length === 0) {
+      if (isCurrentUserHost()) concludeRound();
+      return;
+    }
+
+    // If current speaker is solved or eliminated, advance
+    const activeSpeakerId = order[gameState.speakerIndex];
+    const isSpeakerSolved = gameState.solvedPlayers && gameState.solvedPlayers[activeSpeakerId];
+    const isSpeakerEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[activeSpeakerId];
+
+    if (isSpeakerSolved || isSpeakerEliminated) {
+      if (isCurrentUserHost()) {
+        passTurnToNextPlayer();
+        return;
+      }
+    }
+
     const activePlayer = roomRoster[activeSpeakerId] || { name: "Player", avatar: "👤" };
     const isMyTurn = activeSpeakerId === clientId;
+    const isMeSolved = gameState.solvedPlayers && gameState.solvedPlayers[clientId];
+    const isMeEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[clientId];
 
-    document.getElementById("hud-turn-player").innerText = isMyTurn ? "🌟 IT IS YOUR TURN TO ASK!" : `${activePlayer.avatar} ${activePlayer.name}'s Turn`;
+    const hudPlayer = document.getElementById("hud-turn-player");
+    if (hudPlayer) {
+      if (isMyTurn && !isMeSolved && !isMeEliminated) {
+        hudPlayer.innerText = "🌟 IT IS YOUR TURN (Choose 1: Ask or Guess)";
+      } else {
+        hudPlayer.innerText = `${activePlayer.avatar} ${activePlayer.name}'s Turn`;
+      }
+    }
 
     const myControls = document.getElementById("my-turn-controls");
     const otherHint = document.getElementById("other-turn-hint");
-    if (myControls) myControls.style.display = isMyTurn ? "block" : "none";
-    if (otherHint) otherHint.style.display = isMyTurn ? "none" : "block";
 
-    if (isMyTurn) playTone(587.33, 0.15, 'triangle', 0.25);
+    if (isMyTurn && !isMeSolved && !isMeEliminated) {
+      if (myControls) myControls.style.display = "block";
+      if (otherHint) otherHint.style.display = "none";
+
+      gameState.turnActionTaken = false;
+      selectTurnAction("question");
+
+      const banner = document.getElementById("action-submitted-banner");
+      if (banner) banner.style.display = "none";
+      const tabs = document.getElementById("turn-action-tabs");
+      if (tabs) tabs.style.pointerEvents = "auto";
+      const btnAsk = document.getElementById("btn-ask-submit");
+      if (btnAsk) btnAsk.disabled = false;
+      const btnGuess = document.getElementById("btn-guess-submit");
+      if (btnGuess) btnGuess.disabled = false;
+
+      const qInput = document.getElementById("my-question-input");
+      if (qInput) { qInput.disabled = false; qInput.value = ""; }
+      const gInput = document.getElementById("my-guess-input");
+      if (gInput) { gInput.disabled = false; gInput.value = ""; }
+
+      playTone(587.33, 0.15, 'triangle', 0.25);
+    } else {
+      if (myControls) myControls.style.display = "none";
+      if (otherHint) {
+        otherHint.style.display = "block";
+        if (isMeEliminated) {
+          otherHint.innerHTML = `<span style="color:var(--no-red); font-weight:700;">❌ You are eliminated from guessing.</span> You can see your word above, and can vote Yes / No / Sometimes on others' questions!`;
+        } else if (isMeSolved) {
+          otherHint.innerHTML = `<span style="color:var(--yes-green); font-weight:700;">🎉 You solved your headband!</span> Help others by voting Yes / No / Sometimes on their questions!`;
+        } else {
+          otherHint.innerText = `Listen closely and be ready to answer Yes, No, or Sometimes on your screen!`;
+        }
+      }
+    }
   }
 
   function fillQuestion(q) {
+    if (gameState.turnActionTaken) return;
     const input = document.getElementById("my-question-input");
     if (input) input.value = q;
     playTone(523.25, 0.05, 'sine', 0.1);
   }
 
   function submitMyQuestion() {
+    if (gameState.turnActionTaken) return;
     const input = document.getElementById("my-question-input");
     const text = input ? input.value.trim() : "";
-    if (!text) return;
+    if (!text) {
+      showToast("Please enter a question to ask!");
+      if (input) input.focus();
+      return;
+    }
 
+    gameState.turnActionTaken = true;
+
+    // Lock UI: 1 action per turn allowed
+    const btnAsk = document.getElementById("btn-ask-submit");
+    if (btnAsk) btnAsk.disabled = true;
+    if (input) input.disabled = true;
+    const tabs = document.getElementById("turn-action-tabs");
+    if (tabs) tabs.style.pointerEvents = "none";
+
+    const banner = document.getElementById("action-submitted-banner");
+    if (banner) {
+      banner.style.display = "block";
+      banner.innerText = "📢 Question sent! Waiting for all players to answer Yes / No / Sometimes...";
+    }
+
+    const qId = "q_" + clientId + "_" + Date.now();
     gameState.activeQuestion = {
+      qId: qId,
       authorId: clientId,
       authorName: playerName,
       text: text,
-      votes: {}
+      votes: {},
+      timestamp: Date.now()
     };
-    input.value = "";
 
     publishMessage({
       type: "SUBMIT_QUESTION",
@@ -1726,6 +2294,7 @@
     });
 
     showActiveQuestionLocally();
+    renderPlayerHistoryUI();
   }
 
   function showActiveQuestionLocally() {
@@ -1737,6 +2306,9 @@
     document.getElementById("question-author-tag").innerText = `${q.authorName} asks:`;
     document.getElementById("active-question-content").innerText = `"${q.text}"`;
 
+    const countdownEl = document.getElementById("vote-countdown-status");
+    if (countdownEl) countdownEl.style.display = "none";
+
     // Reset vote buttons styling
     document.querySelectorAll(".btn-vote-resp").forEach(b => b.classList.remove("selected"));
 
@@ -1747,6 +2319,7 @@
 
     playTone(659.25, 0.15, 'sine', 0.2);
     updateQuestionVotesUI();
+    renderPlayerHistoryUI();
   }
 
   function castQuestionResponse(response) {
@@ -1770,6 +2343,8 @@
     });
 
     updateQuestionVotesUI();
+    renderPlayerHistoryUI();
+    checkIfAllVotesCast();
   }
 
   function updateQuestionVotesUI() {
@@ -1788,20 +2363,59 @@
     }
   }
 
+  function checkIfAllVotesCast() {
+    if (!gameState.activeQuestion) return;
+    // Eligible voters are everyone except the question author
+    const eligibleVoters = Object.keys(roomRoster).filter(id => id !== gameState.activeQuestion.authorId);
+    const votes = gameState.activeQuestion.votes || {};
+    const votesCount = Object.keys(votes).length;
+
+    if (votesCount >= eligibleVoters.length && eligibleVoters.length > 0) {
+      // All answers in! Show countdown and auto advance
+      const countdownEl = document.getElementById("vote-countdown-status");
+      if (countdownEl) {
+        countdownEl.style.display = "block";
+        countdownEl.innerText = "✓ All answers in! Advancing to next player in 2s...";
+      }
+
+      if (!gameState.nextTurnTimer) {
+        playChime();
+        gameState.nextTurnTimer = setTimeout(() => {
+          gameState.nextTurnTimer = null;
+          if (gameState.activeQuestion && (gameState.activeQuestion.authorId === clientId || isCurrentUserHost())) {
+            passTurnToNextPlayer();
+          }
+        }, 2200);
+      }
+    }
+  }
+
   function submitMyGuess() {
+    if (gameState.turnActionTaken) return;
     const input = document.getElementById("my-guess-input");
     const guess = input ? input.value.trim() : "";
-    if (!guess) return;
+    if (!guess) {
+      showToast("Please enter your guess!");
+      if (input) input.focus();
+      return;
+    }
 
     const myAssignment = (gameState.wordAssignments && gameState.wordAssignments[clientId]);
     if (!myAssignment) return;
+
+    gameState.turnActionTaken = true;
+
+    // Lock UI: 1 action per turn allowed
+    const btnGuess = document.getElementById("btn-guess-submit");
+    if (btnGuess) btnGuess.disabled = true;
+    if (input) input.disabled = true;
+    const tabs = document.getElementById("turn-action-tabs");
+    if (tabs) tabs.style.pointerEvents = "none";
 
     const actualWord = myAssignment.word.toLowerCase().replace(/^(a|an|the)\s+/, "").trim();
     const cleanGuess = guess.toLowerCase().replace(/^(a|an|the)\s+/, "").trim();
 
     const isCorrect = cleanGuess === actualWord || actualWord.includes(cleanGuess) || cleanGuess.includes(actualWord);
-
-    input.value = "";
 
     publishMessage({
       type: "GUESS_RESULT",
@@ -1822,11 +2436,20 @@
   }
 
   function handleGuessResult(data) {
+    if (!gameState.playerHistories) gameState.playerHistories = {};
+    if (!gameState.playerHistories[data.playerId]) gameState.playerHistories[data.playerId] = [];
+    gameState.playerHistories[data.playerId].push({
+      type: "guess",
+      guess: data.guess,
+      actualWord: data.actualWord,
+      isCorrect: data.isCorrect,
+      timestamp: Date.now()
+    });
+
     if (data.isCorrect) {
       if (!gameState.solvedPlayers) gameState.solvedPlayers = {};
       gameState.solvedPlayers[data.playerId] = true;
 
-      // Award points
       if (roomRoster[data.playerId]) {
         roomRoster[data.playerId].score = (roomRoster[data.playerId].score || 0) + 100;
       }
@@ -1834,32 +2457,400 @@
       playVictorySound();
       fireConfetti();
       showToast(`🎉 ${data.playerName} GUESSED IT! The word was "${data.actualWord}"!`);
-
-      renderHeadbandsGrid();
-
-      // Check if everyone solved their words
-      const total = Object.keys(roomRoster).length;
-      const solvedCount = Object.keys(gameState.solvedPlayers).length;
-      if (solvedCount >= total && isCurrentUserHost()) {
-        setTimeout(concludeRound, 2000);
-      }
     } else {
-      playBuzzer();
-      showToast(`❌ ${data.playerName} guessed "${data.guess}" - Not quite!`);
+      // WRONG: OUT and eliminated from guessing!
+      if (!gameState.eliminatedPlayers) gameState.eliminatedPlayers = {};
+      gameState.eliminatedPlayers[data.playerId] = {
+        guess: data.guess,
+        actualWord: data.actualWord
+      };
+
+      playEliminationSound();
+      showToast(`❌ ${data.playerName} guessed "${data.guess}" and was WRONG! They are OUT! (Word: "${data.actualWord}")`);
+    }
+
+    renderHeadbandsGrid();
+    renderPlayerHistoryUI();
+
+    // After brief reveal pause, auto-advance to next player
+    if (!gameState.nextTurnTimer) {
+      gameState.nextTurnTimer = setTimeout(() => {
+        gameState.nextTurnTimer = null;
+        if (data.playerId === clientId || isCurrentUserHost()) {
+          passTurnToNextPlayer();
+        }
+      }, 2800);
     }
   }
 
+  /* =========================================================================
+     INDIVIDUAL PLAYER CLUE & GUESS ARCHIVE AND DOSSIER LOGIC
+     ========================================================================= */
+  function archiveQuestion(q) {
+    if (!q || !q.authorId || !q.text) return;
+    if (!gameState.playerHistories) gameState.playerHistories = {};
+    if (!gameState.playerHistories[q.authorId]) gameState.playerHistories[q.authorId] = [];
+
+    const list = gameState.playerHistories[q.authorId];
+    const qId = q.qId || (q.authorId + "_" + (q.timestamp || Date.now()));
+    const alreadyExists = list.some(item => item.type === "question" && item.qId === qId);
+    if (alreadyExists) return;
+
+    // Calculate votes tally and details
+    const votes = q.votes || {};
+    let yes = 0, no = 0, maybe = 0;
+    const voterDetails = [];
+    Object.keys(votes).forEach(pid => {
+      const resp = votes[pid];
+      if (resp === 'yes') yes++;
+      else if (resp === 'no') no++;
+      else if (resp === 'maybe') maybe++;
+      const p = roomRoster[pid] || { name: "Player", avatar: "👤" };
+      voterDetails.push({
+        playerId: pid,
+        name: p.name,
+        avatar: p.avatar,
+        response: resp
+      });
+    });
+
+    list.push({
+      type: "question",
+      qId: qId,
+      text: q.text,
+      authorId: q.authorId,
+      authorName: q.authorName,
+      votes: votes,
+      voterDetails: voterDetails,
+      tally: { yes, no, maybe },
+      timestamp: q.timestamp || Date.now()
+    });
+
+    renderPlayerHistoryUI();
+    renderHeadbandsGrid();
+  }
+
+  function viewMyHistoryTab() {
+    selectHistoryPlayer(clientId);
+    const el = document.getElementById("individual-history-section");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function viewPlayerHistoryTab(playerId) {
+    selectHistoryPlayer(playerId);
+    const el = document.getElementById("individual-history-section");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function selectHistoryPlayer(playerId) {
+    activeHistoryPlayerId = playerId;
+    renderPlayerHistoryUI();
+  }
+
+  function renderPlayerHistoryUI() {
+    const tabsContainer = document.getElementById("history-player-tabs");
+    const headerContainer = document.getElementById("history-active-player-header");
+    const entriesContainer = document.getElementById("history-entries-container");
+    const totalCountBadge = document.getElementById("history-total-count");
+
+    if (!tabsContainer || !entriesContainer) return;
+
+    const playerIds = Object.keys(roomRoster);
+    if (playerIds.length === 0) return;
+
+    // Default to clientId or first player if activeHistoryPlayerId not valid
+    if (!activeHistoryPlayerId || !roomRoster[activeHistoryPlayerId]) {
+      activeHistoryPlayerId = roomRoster[clientId] ? clientId : playerIds[0];
+    }
+
+    if (!gameState.playerHistories) gameState.playerHistories = {};
+
+    // Calculate total entries across all players
+    let totalEntries = 0;
+    Object.values(gameState.playerHistories).forEach(arr => { totalEntries += (arr || []).length; });
+    if (gameState.activeQuestion) totalEntries++;
+    if (totalCountBadge) {
+      totalCountBadge.innerText = `${totalEntries} total ${totalEntries === 1 ? 'action' : 'actions'}`;
+    }
+
+    // 1. Render Horizontal Tabs (You first, then rest)
+    tabsContainer.innerHTML = "";
+    const sortedPlayerIds = [
+      ...(roomRoster[clientId] ? [clientId] : []),
+      ...playerIds.filter(id => id !== clientId)
+    ];
+
+    sortedPlayerIds.forEach(pid => {
+      const p = roomRoster[pid];
+      if (!p) return;
+
+      const pHistory = gameState.playerHistories[pid] || [];
+      let count = pHistory.length;
+      if (gameState.activeQuestion && gameState.activeQuestion.authorId === pid) {
+        count++;
+      }
+
+      const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[pid];
+      const isEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[pid];
+      const isSelected = pid === activeHistoryPlayerId;
+
+      let statusIcon = "";
+      if (isSolved) statusIcon = " ✓";
+      else if (isEliminated) statusIcon = " ❌";
+
+      const isMe = pid === clientId;
+      const tabBtn = document.createElement("button");
+      tabBtn.className = `history-tab-btn ${isSelected ? 'active' : ''}`;
+      tabBtn.onclick = () => selectHistoryPlayer(pid);
+      tabBtn.innerHTML = `
+        <span>${isMe ? "🌟 You" : `${p.avatar} ${escapeHTML(p.name)}`}${statusIcon}</span>
+        <span class="tab-count-badge">${count}</span>
+      `;
+      tabsContainer.appendChild(tabBtn);
+    });
+
+    // 2. Render Header for the active player
+    const targetPlayer = roomRoster[activeHistoryPlayerId] || { name: "Player", avatar: "👤" };
+    const isTargetMe = activeHistoryPlayerId === clientId;
+    const isTargetSolved = gameState.solvedPlayers && gameState.solvedPlayers[activeHistoryPlayerId];
+    const isTargetEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[activeHistoryPlayerId];
+    const targetHistory = gameState.playerHistories[activeHistoryPlayerId] || [];
+
+    let statusPillHtml = "";
+    if (isTargetSolved) {
+      statusPillHtml = `<span class="badge" style="background: rgba(48,209,88,0.2); color: var(--yes-green); border: 1px solid var(--yes-green); font-weight: 800;">🎉 Headband Solved (+100)</span>`;
+    } else if (isTargetEliminated) {
+      const elim = gameState.eliminatedPlayers[activeHistoryPlayerId];
+      const wordMsg = elim && elim.actualWord ? `"${escapeHTML(elim.actualWord)}"` : "item";
+      statusPillHtml = `<span class="badge" style="background: rgba(255,69,58,0.2); color: var(--no-red); border: 1px solid var(--no-red); font-weight: 800;">❌ OUT (${wordMsg})</span>`;
+    } else {
+      statusPillHtml = `<span class="badge" style="background: rgba(255,214,10,0.15); color: var(--accent-gold); border: 1px solid rgba(255,214,10,0.3); font-weight: 700;">🔍 Actively Investigating</span>`;
+    }
+
+    if (headerContainer) {
+      headerContainer.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">${targetPlayer.avatar}</span>
+          <div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">
+              ${isTargetMe ? "Your Personal Clue Log" : `${escapeHTML(targetPlayer.name)}'s Clue Log`}
+            </div>
+            <div style="font-size: 0.75rem; color: #8e8e93;">
+              ${targetHistory.length} recorded ${targetHistory.length === 1 ? 'clue/guess' : 'clues/guesses'}
+            </div>
+          </div>
+        </div>
+        <div>${statusPillHtml}</div>
+      `;
+    }
+
+    // 3. Render Entries List
+    entriesContainer.innerHTML = "";
+
+    const isCurrentlyAsking = gameState.activeQuestion && gameState.activeQuestion.authorId === activeHistoryPlayerId;
+
+    // If completely empty
+    if (targetHistory.length === 0 && !isCurrentlyAsking) {
+      entriesContainer.innerHTML = `
+        <div class="history-empty-state">
+          <div style="font-size: 2.2rem; margin-bottom: 6px;">📋</div>
+          <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">No questions or guesses recorded yet</div>
+          <div style="font-size: 0.8rem; color: #8e8e93; margin-top: 4px; line-height: 1.4;">
+            ${isTargetMe 
+              ? "When it's your turn, ask questions or make a guess! All player responses will be filed here." 
+              : `When ${escapeHTML(targetPlayer.name)} asks questions or makes a guess, player responses will appear here.`}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // If active question is in progress for this player, show live card at top
+    if (isCurrentlyAsking) {
+      const q = gameState.activeQuestion;
+      const votes = q.votes || {};
+      let yes = 0, no = 0, maybe = 0;
+      Object.values(votes).forEach(v => {
+        if (v === 'yes') yes++;
+        else if (v === 'no') no++;
+        else if (v === 'maybe') maybe++;
+      });
+
+      // Eligible voters (everyone except question author)
+      const eligibleVoters = playerIds.filter(id => id !== activeHistoryPlayerId);
+
+      const liveCard = document.createElement("div");
+      liveCard.className = "history-entry-card is-live";
+      liveCard.innerHTML = `
+        <div class="history-entry-top">
+          <span class="history-entry-badge live">🔴 LIVE QUESTION (VOTING NOW)</span>
+          <span style="font-size: 0.72rem; color: var(--accent-gold); font-weight: 700;">${Object.keys(votes).length}/${eligibleVoters.length} Answered</span>
+        </div>
+        <div class="history-q-text">"${escapeHTML(q.text)}"</div>
+        <div class="history-tally-bar">
+          <span class="tally-pill yes">🟢 ${yes} YES</span>
+          <span class="tally-pill no">🔴 ${no} NO</span>
+          <span class="tally-pill maybe">🟡 ${maybe} SOMETIMES</span>
+        </div>
+        <div class="history-voters-label">Incoming Answers:</div>
+        <div class="history-voters-grid">
+          ${eligibleVoters.map(vid => {
+            const vp = roomRoster[vid] || { name: "Player", avatar: "👤" };
+            const resp = votes[vid];
+            if (resp) {
+              const chipClass = resp === 'yes' ? 'yes' : (resp === 'no' ? 'no' : 'maybe');
+              const text = resp === 'yes' ? '🟢 YES' : (resp === 'no' ? '🔴 NO' : '🟡 SOMETIMES');
+              return `<div class="history-voter-chip ${chipClass}"><span>${vp.avatar} ${escapeHTML(vp.name)}:</span><strong>${text}</strong></div>`;
+            } else {
+              return `<div class="history-voter-chip pending"><span>${vp.avatar} ${escapeHTML(vp.name)}:</span><strong>⏳ Thinking...</strong></div>`;
+            }
+          }).join('')}
+        </div>
+      `;
+      entriesContainer.appendChild(liveCard);
+    }
+
+    // Render past entries (newest on top, numbered chronologically)
+    let qCounter = 0;
+    const numberedItems = targetHistory.map(item => {
+      if (item.type === "question") {
+        qCounter++;
+        return { ...item, qNumber: qCounter };
+      }
+      return item;
+    });
+
+    // Reverse for display so latest is at the top
+    const reversed = [...numberedItems].reverse();
+
+    reversed.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "history-entry-card";
+
+      if (item.type === "question") {
+        const tally = item.tally || { yes: 0, no: 0, maybe: 0 };
+        const voters = item.voterDetails || [];
+
+        card.innerHTML = `
+          <div class="history-entry-top">
+            <span class="history-entry-badge question">❓ QUESTION #${item.qNumber}</span>
+            <span style="font-size: 0.72rem; color: #8e8e93;">Answered</span>
+          </div>
+          <div class="history-q-text">"${escapeHTML(item.text)}"</div>
+          <div class="history-tally-bar">
+            <span class="tally-pill yes">🟢 ${tally.yes} YES</span>
+            <span class="tally-pill no">🔴 ${tally.no} NO</span>
+            <span class="tally-pill maybe">🟡 ${tally.maybe} SOMETIMES</span>
+          </div>
+          <div class="history-voters-label">Other Players' Responses:</div>
+          <div class="history-voters-grid">
+            ${voters.length > 0 ? voters.map(v => {
+              const chipClass = v.response === 'yes' ? 'yes' : (v.response === 'no' ? 'no' : 'maybe');
+              const text = v.response === 'yes' ? '🟢 YES' : (v.response === 'no' ? '🔴 NO' : '🟡 SOMETIMES');
+              return `<div class="history-voter-chip ${chipClass}"><span>${v.avatar} ${escapeHTML(v.name)}:</span><strong>${text}</strong></div>`;
+            }).join('') : '<span style="font-size:0.75rem; color:#8e8e93;">No individual answers recorded</span>'}
+          </div>
+        `;
+      } else if (item.type === "guess") {
+        if (item.isCorrect) {
+          card.style.borderColor = "rgba(48, 209, 88, 0.4)";
+          card.style.background = "rgba(48, 209, 88, 0.08)";
+          card.innerHTML = `
+            <div class="history-entry-top">
+              <span class="history-entry-badge guess-correct">🎯 FINAL GUESS — SOLVED!</span>
+              <span style="font-size: 0.75rem; color: var(--yes-green); font-weight: 800;">+100 PTS</span>
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: var(--yes-green); margin: 6px 0;">
+              🎉 Guessed "${escapeHTML(item.guess)}" — CORRECT!
+            </div>
+            <div style="font-size: 0.82rem; color: #e5e5ea; line-height: 1.45;">
+              Successfully identified the item on their headband and solved it!
+            </div>
+          `;
+        } else {
+          card.style.borderColor = "rgba(255, 69, 58, 0.4)";
+          card.style.background = "rgba(255, 69, 58, 0.08)";
+          card.innerHTML = `
+            <div class="history-entry-top">
+              <span class="history-entry-badge guess-wrong">🎯 FINAL GUESS — WRONG</span>
+              <span style="font-size: 0.75rem; color: var(--no-red); font-weight: 800;">ELIMINATED</span>
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: var(--no-red); margin: 6px 0;">
+              ❌ Guessed "${escapeHTML(item.guess)}" — WRONG!
+            </div>
+            <div style="font-size: 0.82rem; color: #e5e5ea; line-height: 1.45;">
+              Eliminated from guessing. The secret word on their headband was: <strong>"${escapeHTML(item.actualWord)}"</strong>.
+            </div>
+          `;
+        }
+      }
+
+      entriesContainer.appendChild(card);
+    });
+  }
+
   function passTurnToNextPlayer() {
+    if (gameState.activeQuestion) {
+      archiveQuestion(gameState.activeQuestion);
+    }
+    const box = document.getElementById("question-display-box");
+    if (box) box.style.display = "none";
+
+    if (gameState.nextTurnTimer) {
+      clearTimeout(gameState.nextTurnTimer);
+      gameState.nextTurnTimer = null;
+    }
+
     const order = gameState.speakerOrder || Object.keys(roomRoster);
-    gameState.speakerIndex = (gameState.speakerIndex + 1) % order.length;
+    if (!order || order.length === 0) return;
+
+    // Remaining eligible players who are neither solved nor eliminated
+    const remainingEligible = order.filter(id => 
+      !(gameState.solvedPlayers && gameState.solvedPlayers[id]) && 
+      !(gameState.eliminatedPlayers && gameState.eliminatedPlayers[id])
+    );
+
+    // If nobody left to guess/ask, game round concludes!
+    if (remainingEligible.length === 0) {
+      if (isCurrentUserHost()) {
+        concludeRound();
+      }
+      return;
+    }
+
+    // Find next eligible index starting from speakerIndex + 1
+    let nextIndex = gameState.speakerIndex;
+    let found = false;
+    for (let i = 1; i <= order.length; i++) {
+      const idx = (gameState.speakerIndex + i) % order.length;
+      const pid = order[idx];
+      const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[pid];
+      const isEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[pid];
+      if (!isSolved && !isEliminated) {
+        nextIndex = idx;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      if (isCurrentUserHost()) concludeRound();
+      return;
+    }
+
+    const previousQuestion = gameState.activeQuestion;
+    gameState.speakerIndex = nextIndex;
     gameState.activeQuestion = null;
+    gameState.turnActionTaken = false;
 
     publishMessage({
       type: "NEXT_TURN",
-      speakerIndex: gameState.speakerIndex
+      speakerIndex: gameState.speakerIndex,
+      archivedQuestion: previousQuestion
     });
 
     updateTurnUI();
+    renderPlayerHistoryUI();
   }
 
   function togglePeekModal() {
@@ -1878,6 +2869,16 @@
      8. PHASE 3: ROUND RECAP & SCOREBOARD
      ========================================================================= */
   function concludeRound() {
+    if (gameState.activeQuestion) {
+      archiveQuestion(gameState.activeQuestion);
+    }
+    const box = document.getElementById("question-display-box");
+    if (box) box.style.display = "none";
+
+    if (gameState.nextTurnTimer) {
+      clearTimeout(gameState.nextTurnTimer);
+      gameState.nextTurnTimer = null;
+    }
     gameState.status = "recap";
     publishMessage({
       type: "REVEAL_ALL",
@@ -1892,7 +2893,7 @@
     playVictorySound();
     fireConfetti();
 
-    // Render list of words and authors
+    // Render list of words and authors with Solved vs Eliminated distinction
     const list = document.getElementById("round-recap-list");
     list.innerHTML = "";
 
@@ -1900,6 +2901,16 @@
       const p = roomRoster[pId];
       const assignment = gameState.wordAssignments ? gameState.wordAssignments[pId] : null;
       const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[pId];
+      const isEliminated = gameState.eliminatedPlayers && gameState.eliminatedPlayers[pId];
+
+      let statusHtml = "";
+      if (isSolved) {
+        statusHtml = `<span style="color:var(--yes-green); font-weight:800; font-size:1.05rem;">🎉 Guessed (+100)</span>`;
+      } else if (isEliminated) {
+        statusHtml = `<span style="color:var(--no-red); font-weight:800; font-size:0.95rem;">❌ Eliminated<br><span style="font-size:0.75rem; color:#8e8e93; font-weight:normal;">Guessed: "${escapeHTML(isEliminated.guess)}"</span></span>`;
+      } else {
+        statusHtml = `<span style="color:#8e8e93; font-weight:700;">Unsolved</span>`;
+      }
 
       const div = document.createElement("div");
       div.className = "score-row";
@@ -1909,8 +2920,8 @@
           <div style="font-size:1.15rem; font-weight:800; color:var(--accent-gold);">${assignment ? escapeHTML(assignment.word) : "???"}</div>
           <div style="font-size:0.75rem; color:#8e8e93;">Written by ${assignment ? escapeHTML(assignment.authorName) : "Friend"}</div>
         </div>
-        <div style="font-size:1.1rem; font-weight:800; color:${isSolved ? 'var(--yes-green)' : 'var(--no-red)'};">
-          ${isSolved ? '✓ Guessed (+100)' : '❌ Unsolved'}
+        <div style="text-align:right;">
+          ${statusHtml}
         </div>
       `;
       list.appendChild(div);
@@ -1948,6 +2959,7 @@
   function returnToLobby() {
     publishMessage({ type: "RETURN_TO_LOBBY" });
     gameState.status = "lobby";
+    gameState.playerHistories = {};
     switchScreen("lobby-screen");
     renderRosterUI();
   }

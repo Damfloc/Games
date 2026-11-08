@@ -1291,19 +1291,26 @@
     const port = 8084;
     const path = "/mqtt";
 
-    client = new Paho.MQTT.Client(host, port, path, clientId);
+    try {
+      if (typeof Paho !== "undefined" && Paho.MQTT) {
+        client = new Paho.MQTT.Client(host, port, path, clientId);
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
 
-    client.onConnectionLost = onConnectionLost;
-    client.onMessageArrived = onMessageArrived;
-
-    client.connect({
-      useSSL: true,
-      timeout: 5,
-      keepAliveInterval: 30,
-      cleanSession: true,
-      onSuccess: onConnectSuccess,
-      onFailure: onConnectFailure
-    });
+        client.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: onConnectSuccess,
+          onFailure: onConnectFailure
+        });
+      } else {
+        console.warn("Paho MQTT library not ready yet.");
+      }
+    } catch (e) {
+      console.warn("MQTT connection error:", e);
+    }
   }
 
   function onConnectSuccess() {
@@ -2105,36 +2112,72 @@
 
   function createRoom() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your spy codename first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("codenames_player_name", playerName); } catch (e) {}
 
     const randomCode = "SPY-" + Math.floor(100 + Math.random() * 900);
+    currentRoom = randomCode;
+    gameState.room = currentRoom;
+
+    // Immediately switch to lobby screen so the UI transitions instantly
+    switchScreen("lobby-screen");
+    const lobbyDisplay = document.getElementById("lobby-room-code-display");
+    if (lobbyDisplay) lobbyDisplay.innerText = currentRoom;
+    const hudDisplay = document.getElementById("hud-room-code-text");
+    if (hudDisplay) hudDisplay.innerText = `ROOM: ${currentRoom}`;
+
+    // Register local player in roster
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      team: myTeam,
+      role: myRole
+    };
+    renderRosterUI();
+
     connectToRoom(randomCode);
   }
 
   function joinEnteredRoom() {
     const nameInput = document.getElementById("player-name-input");
-    const nameVal = nameInput ? nameInput.value.trim() : "";
+    let nameVal = nameInput ? nameInput.value.trim() : "";
     if (!nameVal) {
-      alert("Please enter your spy codename first!");
-      if (nameInput) nameInput.focus();
-      return;
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
     }
     playerName = nameVal;
     try { localStorage.setItem("codenames_player_name", playerName); } catch (e) {}
 
-    const codeInput = document.getElementById("room-code-input").value.trim().toUpperCase();
-    if (!codeInput) {
+    const codeInput = document.getElementById("room-code-input");
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
+    if (!code) {
       alert("Please enter a room code.");
+      if (codeInput) codeInput.focus();
       return;
     }
-    connectToRoom(codeInput);
+    currentRoom = code;
+    gameState.room = currentRoom;
+
+    switchScreen("lobby-screen");
+    const lobbyDisplay = document.getElementById("lobby-room-code-display");
+    if (lobbyDisplay) lobbyDisplay.innerText = currentRoom;
+    const hudDisplay = document.getElementById("hud-room-code-text");
+    if (hudDisplay) hudDisplay.innerText = `ROOM: ${currentRoom}`;
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      team: myTeam,
+      role: myRole
+    };
+    renderRosterUI();
+
+    connectToRoom(code);
   }
 
   function copyInviteLink() {
