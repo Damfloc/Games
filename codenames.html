@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Codenames Online - Games Hub</title>
+<!-- Paho MQTT for Serverless Real-Time WebSockets on GitHub Pages -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+  :root {
+    --bg-dark: #0f1015;
+    --card-bg: #181a22;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --red-team: #FF3B30;
+    --red-team-dim: rgba(255, 59, 48, 0.18);
+    --blue-team: #0A84FF;
+    --blue-team-dim: rgba(10, 132, 255, 0.18);
+    --neutral-card: #C7B299;
+    --neutral-card-dim: rgba(199, 178, 153, 0.18);
+    --assassin-card: #1c1d24;
+    --gold: #FFD60A;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-dark);
+    color: #f5f5f7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Top Navigation */
+  .top-bar {
+    width: 100%;
+    max-width: 1100px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+  }
+  .nav-btn {
+    color: #8E8E93;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    cursor: pointer;
+  }
+  .nav-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  /* Room & Network Badge */
+  .room-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #32D74B;
+    box-shadow: 0 0 8px #32D74B;
+  }
+  .status-dot.disconnected { background: #FF453A; box-shadow: 0 0 8px #FF453A; }
+
+  /* Screens */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1080px;
+    padding: 10px 16px 40px;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Lobby Modal / Screen */
+  .lobby-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 36px 28px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.5);
+    margin-top: 20px;
+  }
+  .lobby-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; }
+  .lobby-subtitle { color: #8e8e93; font-size: 0.95rem; margin-bottom: 28px; line-height: 1.5; }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    margin-bottom: 18px;
+  }
+  .input-label { font-size: 0.85rem; font-weight: 700; color: #a1a1a6; text-transform: uppercase; letter-spacing: 0.05em; }
+  .text-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: var(--blue-team); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: var(--blue-team);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { background: #0071e3; transform: translateY(-2px); }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: #555;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+  .divider span { padding: 0 12px; }
+
+  /* GAMEPLAY LAYOUT */
+  /* Game Header HUD */
+  .game-hud {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .team-score-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-radius: 14px;
+  }
+  .team-score-badge.red {
+    background: var(--red-team-dim);
+    border: 1px solid rgba(255, 59, 48, 0.35);
+    color: var(--red-team);
+  }
+  .team-score-badge.blue {
+    background: var(--blue-team-dim);
+    border: 1px solid rgba(10, 132, 255, 0.35);
+    color: var(--blue-team);
+  }
+  .score-number { font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .score-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
+
+  .turn-announcer {
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+  }
+  .turn-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .turn-badge.red-turn { background: var(--red-team); color: #fff; box-shadow: 0 0 16px rgba(255, 59, 48, 0.4); }
+  .turn-badge.blue-turn { background: var(--blue-team); color: #fff; box-shadow: 0 0 16px rgba(10, 132, 255, 0.4); }
+
+  .clue-banner {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f5f5f7;
+    margin-top: 6px;
+  }
+
+  /* Player Controls Bar */
+  .player-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .role-toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .role-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: none;
+    color: #8E8E93;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .role-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+  .team-picker-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+  .team-picker-btn.red { background: rgba(255, 59, 48, 0.25); color: var(--red-team); }
+  .team-picker-btn.blue { background: rgba(10, 132, 255, 0.25); color: var(--blue-team); }
+
+  /* 5x5 BOARD GRID */
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .board-grid { gap: 6px; }
+  }
+
+  /* The Card */
+  .code-card {
+    background: #232530;
+    border: 2px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    aspect-ratio: 1.55;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s, border-color 0.18s, background-color 0.2s;
+    overflow: hidden;
+  }
+  .code-card:hover:not(.revealed):not(.disabled-hover) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .code-card:active:not(.revealed) { transform: scale(0.97); }
+
+  .card-word {
+    font-size: clamp(0.75rem, 2vw, 1.15rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.2;
+    z-index: 2;
+    color: #e5e5ea;
+  }
+
+  /* REVEALED CARD STYLES */
+  .code-card.revealed {
+    cursor: default;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .code-card.revealed.type-red {
+    background: var(--red-team) !important;
+    border-color: #ff6961 !important;
+  }
+  .code-card.revealed.type-red .card-word { color: #fff; }
+
+  .code-card.revealed.type-blue {
+    background: var(--blue-team) !important;
+    border-color: #5ac8fa !important;
+  }
+  .code-card.revealed.type-blue .card-word { color: #fff; }
+
+  .code-card.revealed.type-neutral {
+    background: #8a7a68 !important;
+    border-color: #a39380 !important;
+  }
+  .code-card.revealed.type-neutral .card-word { color: rgba(255,255,255,0.7); }
+
+  .code-card.revealed.type-assassin {
+    background: #000000 !important;
+    border-color: #ff453a !important;
+    animation: flashAssassin 0.6s ease-out;
+  }
+  .code-card.revealed.type-assassin .card-word { color: #ff453a; }
+
+  @keyframes flashAssassin {
+    0% { transform: scale(1.15); box-shadow: 0 0 30px #ff453a; }
+    100% { transform: scale(1); }
+  }
+
+  /* SPYMASTER VIEW STYLES (When NOT revealed yet) */
+  body.spymaster-mode .code-card:not(.revealed).type-red {
+    border: 2px solid var(--red-team);
+    background: rgba(255, 59, 48, 0.22);
+  }
+  body.spymaster-mode .code-card:not(.revealed).type-red .card-word { color: #ff9f98; }
+
+  body.spymaster-mode .code-card:not(.revealed).type-blue {
+    border: 2px solid var(--blue-team);
+    background: rgba(10, 132, 255, 0.22);
+  }
+  body.spymaster-mode .code-card:not(.revealed).type-blue .card-word { color: #82c0ff; }
+
+  body.spymaster-mode .code-card:not(.revealed).type-neutral {
+    border: 2px dashed rgba(199, 178, 153, 0.4);
+    background: rgba(199, 178, 153, 0.1);
+  }
+  body.spymaster-mode .code-card:not(.revealed).type-neutral .card-word { color: #C7B299; }
+
+  body.spymaster-mode .code-card:not(.revealed).type-assassin {
+    border: 2px solid #FF453A;
+    background: #111;
+    box-shadow: inset 0 0 12px rgba(255, 69, 58, 0.4);
+  }
+  body.spymaster-mode .code-card:not(.revealed).type-assassin .card-word { color: #FF453A; }
+
+  /* Spymaster Corner Tag */
+  .spymaster-tag {
+    display: none;
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+  body.spymaster-mode .code-card:not(.revealed) .spymaster-tag { display: block; }
+
+  /* Clue Input Bar (For Active Spymaster) */
+  .clue-input-bar {
+    width: 100%;
+    max-width: 900px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .clue-input {
+    flex: 2;
+    min-width: 160px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+    text-transform: uppercase;
+  }
+  .clue-number-select {
+    flex: 1;
+    min-width: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 12px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+  }
+  .clue-number-select option { background: #17181e; color: #fff; }
+
+  /* End Turn Button */
+  .end-turn-btn {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .end-turn-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.02); }
+
+  /* Game Log / Terminal */
+  .log-panel {
+    width: 100%;
+    max-width: 900px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-family: ui-monospace, Menlo, Monaco, monospace;
+    font-size: 0.85rem;
+    color: #8e8e93;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .log-entry { line-height: 1.4; }
+  .log-entry strong { color: #f5f5f7; }
+
+  /* Victory Modal Overlay */
+  #victory-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 16, 21, 0.94);
+    backdrop-filter: blur(12px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    text-align: center;
+  }
+  #victory-modal.active { display: flex; }
+  .victory-trophy { font-size: 4.5rem; margin-bottom: 8px; }
+  .victory-team-text { font-size: 2.8rem; font-weight: 900; margin-bottom: 12px; }
+  .victory-reason { font-size: 1.15rem; color: #a1a1a6; margin-bottom: 28px; }
+
+  /* Canvas Confetti */
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Top Bar -->
+<header class="top-bar">
+  <a href="index.html" class="nav-btn">← Games Hub</a>
+  
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <div class="room-badge" id="hud-room-badge" onclick="copyInviteLink()" title="Click to copy invite link">
+      <span class="status-dot" id="hud-status-dot"></span>
+      <span id="hud-room-code-text">ROOM: ----</span>
+      <span style="font-size: 0.75rem; color: #8e8e93;">📋 Copy</span>
+    </div>
+    <button class="nav-btn" onclick="toggleMute()" id="sound-btn">🔊</button>
+  </div>
+</header>
+
+<!-- SCREEN 1: ROOM SELECTION / LOBBY JOIN -->
+<div id="lobby-screen" class="screen active">
+  <div class="lobby-card">
+    <span style="font-size: 3.5rem; margin-bottom: 8px; display: block;">🕵️‍♂️</span>
+    <h1 class="lobby-title">Codenames Online</h1>
+    <p class="lobby-subtitle">
+      Two rival Spymasters know the secret identities of 25 agents. Can your team make contact with all your agents before the other team?
+    </p>
+
+    <div class="input-group">
+      <label class="input-label">Your Spy Codename</label>
+      <input type="text" class="text-input" id="player-name-input" placeholder="e.g. Agent Phoenix" maxlength="16">
+    </div>
+
+    <button class="btn-primary" onclick="createRoom()">
+      <span>Create New Room</span>
+    </button>
+
+    <div class="divider"><span>OR JOIN AN EXISTING ROOM</span></div>
+
+    <div class="input-group">
+      <label class="input-label">Room Code</label>
+      <input type="text" class="text-input" id="room-code-input" placeholder="e.g. SPY-42" maxlength="12" style="text-transform: uppercase;">
+    </div>
+
+    <button class="btn-primary" style="background: rgba(255,255,255,0.12);" onclick="joinEnteredRoom()">
+      <span>Enter Room →</span>
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN 2: ACTIVE GAME BOARD -->
+<div id="game-screen" class="screen">
+  
+  <!-- Game HUD: Scores, Turn, Current Clue -->
+  <div class="game-hud">
+    <!-- Red Score -->
+    <div class="team-score-badge red">
+      <div class="score-number" id="red-score-count">9</div>
+      <div>
+        <div class="score-label">Red Team</div>
+        <div style="font-size: 0.75rem; opacity: 0.8;">Agents Left</div>
+      </div>
+    </div>
+
+    <!-- Turn Indicator & Clue Display -->
+    <div class="turn-announcer">
+      <span class="turn-badge red-turn" id="turn-badge">Red Team's Turn</span>
+      <div class="clue-banner" id="current-clue-display">Waiting for Spymaster's Clue...</div>
+    </div>
+
+    <!-- Blue Score -->
+    <div class="team-score-badge blue">
+      <div class="score-number" id="blue-score-count">8</div>
+      <div>
+        <div class="score-label">Blue Team</div>
+        <div style="font-size: 0.75rem; opacity: 0.8;">Agents Left</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Role & Team Controls Bar -->
+  <div class="player-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 0.85rem; font-weight: 700; color: #8e8e93;">My Team:</span>
+      <button class="team-picker-btn red" id="pick-red-btn" onclick="selectTeam('red')">Red Team</button>
+      <button class="team-picker-btn blue" id="pick-blue-btn" onclick="selectTeam('blue')">Blue Team</button>
+    </div>
+
+    <div class="role-toggle-group">
+      <button class="role-btn active" id="role-op-btn" onclick="selectRole('operative')">Operative</button>
+      <button class="role-btn" id="role-spy-btn" onclick="selectRole('spymaster')">Spymaster 👁️</button>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button class="end-turn-btn" id="end-turn-btn" onclick="handleEndTurnClick()">End Turn →</button>
+      <button class="nav-btn" onclick="promptNewGame()">New Mission ↺</button>
+    </div>
+  </div>
+
+  <!-- Spymaster Clue Input Bar (Visible when it's your turn as Spymaster) -->
+  <div class="clue-input-bar" id="spymaster-input-bar" style="display: none;">
+    <span style="font-weight: 800; font-size: 0.9rem; color: #FFD60A;">Spymaster Clue:</span>
+    <input type="text" class="clue-input" id="clue-word-input" placeholder="ONE-WORD CLUE" maxlength="15">
+    <select class="clue-number-select" id="clue-num-select">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="0">0 (Zero)</option>
+      <option value="∞">∞</option>
+    </select>
+    <button class="btn-primary" style="flex: 1; padding: 12px 18px;" onclick="submitClue()">Give Clue →</button>
+  </div>
+
+  <!-- 5x5 BOARD GRID -->
+  <div class="board-grid" id="board-grid">
+    <!-- 25 cards generated dynamically -->
+  </div>
+
+  <!-- Mission Activity Log -->
+  <div class="log-panel" id="log-panel">
+    <div class="log-entry">Mission initialized. Awaiting Spymaster orders.</div>
+  </div>
+</div>
+
+<!-- VICTORY MODAL OVERLAY -->
+<div id="victory-modal">
+  <div class="victory-trophy">🏆</div>
+  <div class="victory-team-text" id="victory-winner-text">Red Team Wins!</div>
+  <p class="victory-reason" id="victory-reason-text">All secret agents were successfully contacted!</p>
+  <div style="display: flex; gap: 12px;">
+    <button class="btn-primary" onclick="initNewMission()">Play New Mission ↺</button>
+    <a href="index.html" style="text-decoration: none;">
+      <button class="btn-primary" style="background: rgba(255,255,255,0.15);">Games Hub</button>
+    </a>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     1. MASTER WORD LIST (300+ Dual-Meaning Codenames Words)
+     ========================================================================== */
+  const CODENAMES_WORDS = [
+    "AFRICA", "AGENT", "AIR", "ALIEN", "ALPS", "AMAZON", "AMBULANCE", "AMERICA",
+    "ANGEL", "ANTARCTICA", "APPLE", "ARM", "ATLANTIS", "AUSTRALIA", "AZTEC", "BACK",
+    "BALL", "BAND", "BANK", "BAR", "BARK", "BAT", "BATTERY", "BEACH", "BEAR", "BEAT",
+    "BED", "BEIJING", "BELL", "BELT", "BERLIN", "BERMUDA", "BERRY", "BILL", "BLOCK",
+    "BLOW", "BOARD", "BOLT", "BOMB", "BOND", "BOOM", "BOOT", "BOTTLE", "BOW", "BOX",
+    "BRIDGE", "BRUSH", "BUCK", "BUFFALO", "BUG", "BUGLE", "BUTTON", "CALF", "CANADA",
+    "CAP", "CAPITAL", "CAR", "CARD", "CARROT", "CASINO", "CAST", "CAT", "CELL",
+    "CENTAUR", "CENTER", "CHAIR", "CHANGE", "CHARGE", "CHECK", "CHEST", "CHICK",
+    "CHINA", "CHOCOLATE", "CHURCH", "CIRCLE", "CLIFF", "CLOAK", "CLUB", "CODE",
+    "COLD", "COMIC", "COMPOUND", "CONCERT", "CONDUCTOR", "CONTRACT", "COOK", "COPPER",
+    "COTTON", "COURT", "COVER", "CRANE", "CRASH", "CRICKET", "CROSS", "CROWN", "CYCLE",
+    "CZECH", "DANCE", "DATE", "DAY", "DEATH", "DECK", "DEGREE", "DIAMOND", "DICE",
+    "DINOSAUR", "DISEASE", "DOCTOR", "DOG", "DRAFT", "DRAGON", "DRESS", "DRILL", "DROP",
+    "DUCK", "DWARF", "EAGLE", "EGYPT", "EMBASSY", "ENGINE", "ENGLAND", "EUROPE", "EYE",
+    "FACE", "FAIR", "FALL", "FAN", "FENCE", "FIELD", "FIGHTER", "FIGURE", "FILE", "FILM",
+    "FIRE", "FISH", "FLUTE", "FLY", "FOOT", "FORCE", "FOREST", "FORK", "FRANCE", "GAME",
+    "GAS", "GENIUS", "GERMANY", "GHOST", "GIANT", "GLASS", "GLOVE", "GOLD", "GRACE",
+    "GRASS", "GREECE", "GREEN", "GROUND", "HAM", "HAND", "HAWK", "HEAD", "HEART",
+    "HELICOPTER", "HIMALAYAS", "HOLE", "HOLLYWOOD", "HONEY", "HOOD", "HOOK", "HORN",
+    "HORSE", "HORSESHOE", "HOSPITAL", "HOTEL", "ICE", "ICE CREAM", "INDIA", "IRON",
+    "IVORY", "JAM", "JET", "JUPITER", "KANGAROO", "KETCHUP", "KEY", "KID", "KING",
+    "KIWI", "KNIFE", "KNIGHT", "LAB", "LAP", "LASER", "LAWYER", "LEAD", "LEMON",
+    "LEPRECHAUN", "LIFE", "LIGHT", "LIMOUSINE", "LINE", "LINK", "LION", "LITTER",
+    "LOCH NESS", "LOCK", "LOG", "LONDON", "LUCK", "MAIL", "MAMMOTH", "MANICURE",
+    "MAPLE", "MARCH", "MASS", "MATCH", "MERCURY", "MILLIONAIRE", "MINE", "MINT",
+    "MISSILE", "MODEL", "MOLE", "MOON", "MOSCOW", "MOUNT", "MOUSE", "MOUTH", "MUG",
+    "NAIL", "NEEDLE", "NET", "NEW YORK", "NIGHT", "NINJA", "NOTE", "NOVEL", "NURSE",
+    "NUT", "OCTOPUS", "OIL", "OLIVE", "OLYMPUS", "OPERA", "ORANGE", "ORGAN", "PALM",
+    "PAN", "PANTS", "PAPER", "PARK", "PART", "PASS", "PASTE", "PENGUIN", "PHOENIX",
+    "PIANO", "PIE", "PILOT", "PIN", "PIPE", "PIRATE", "PISTOL", "PIT", "PITCH",
+    "PLANE", "PLASTIC", "PLATE", "PLATYPUS", "PLAY", "PLOT", "POINT", "POISON", "POLE",
+    "POLICE", "POOL", "PORT", "POST", "POUND", "PRESS", "PRINCESS", "PUMPKIN", "PUPIL",
+    "PYRAMID", "QUEEN", "RABBIT", "RACKET", "RAY", "REVOLUTION", "RING", "ROBIN",
+    "ROBOT", "ROCK", "ROME", "ROOT", "ROSE", "ROULETTE", "ROUND", "ROW", "RULER",
+    "SATELLITE", "SATURN", "SCALE", "SCHOOL", "SCIENTIST", "SCORPION", "SCREEN",
+    "SCUBA DIVER", "SEAL", "SERVER", "SHADOW", "SHAKESPEARE", "SHARK", "SHIP", "SHOE",
+    "SHOP", "SHOT", "SINK", "SKYSCRAPER", "SLIP", "SLUG", "SMUGGLER", "SNOW", "SNOWMAN",
+    "SOCK", "SOLDIER", "SOUL", "SOUND", "SPACE", "SPELL", "SPIDER", "SPIKE", "SPINE",
+    "SPOT", "SPRING", "SPY", "SQUARE", "STADIUM", "STAFF", "STAR", "STATE", "STICK",
+    "STOCK", "STRAW", "STREAM", "STRIKE", "STRING", "SUB", "SUGAR", "SUIT", "SUPERHERO",
+    "SWING", "SWITCH", "TABLE", "TABLET", "TAG", "TAIL", "TAP", "TEACHER", "TELESCOPE",
+    "TEMPLE", "THEATER", "THIEF", "THUMB", "TICK", "TIE", "TIME", "TOKYO", "TOOTH",
+    "TORCH", "TOWER", "TRACK", "TRAIN", "TRIANGLE", "TRIP", "TRUNK", "TUBE", "TURKEY",
+    "UNDERTAKER", "UNICORN", "VACUUM", "VAN", "VET", "WAKE", "WALL", "WAR", "WASHER",
+    "WASHINGTON", "WATCH", "WATER", "WAVE", "WEB", "WELL", "WHALE", "WHIP", "WIND",
+    "WITCH", "WORM", "YARD"
+  ];
+
+  /* ==========================================================================
+     2. NATIVE WEB AUDIO SYNTHESIZER
+     ========================================================================== */
+  let audioCtx = null;
+  let isMuted = false;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+    if (isMuted) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playSuccessTone() {
+    playTone(523.25, 0.08, 'triangle', 0.2); // C5
+    setTimeout(() => playTone(659.25, 0.15, 'triangle', 0.2), 80); // E5
+  }
+
+  function playNeutralTone() {
+    playTone(350, 0.12, 'sine', 0.12);
+  }
+
+  function playAssassinTone() {
+    playTone(150, 0.4, 'sawtooth', 0.3);
+    setTimeout(() => playTone(90, 0.6, 'sawtooth', 0.4), 200);
+  }
+
+  function playVictoryFanfare() {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      setTimeout(() => playTone(f, 0.3, 'triangle', 0.25), idx * 130);
+    });
+  }
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    document.getElementById("sound-btn").innerText = isMuted ? "🔇" : "🔊";
+  }
+
+  /* ==========================================================================
+     3. CLIENT PLAYER STATE & NETWORKING (Paho MQTT over WebSockets)
+     ========================================================================== */
+  let client = null;
+  let currentRoom = null;
+  let isConnected = false;
+  let clientId = "client_" + Math.random().toString(36).substring(2, 9);
+  let playerName = "Agent " + Math.floor(Math.random() * 900 + 100);
+
+  // My Role & Team locally
+  let myTeam = "red"; // 'red' or 'blue'
+  let myRole = "operative"; // 'operative' or 'spymaster'
+
+  // Authoritative Game State (Synced across room)
+  let gameState = {
+    room: "",
+    startingTeam: "red",
+    currentTurn: "red", // 'red' or 'blue'
+    redLeft: 9,
+    blueLeft: 8,
+    cards: [], // 25 items: { id, word, type: 'red'|'blue'|'neutral'|'assassin', revealed: bool }
+    currentClue: null, // { word, number }
+    guessesLeft: 0,
+    winner: null,
+    reason: ""
+  };
+
+  /* ==========================================================================
+     4. NETWORKING: CONNECT & SYNC OVER FREE SECURE PUBLIC WEBSOCKETS
+     ========================================================================== */
+  function connectToRoom(roomCode) {
+    initAudio();
+    currentRoom = roomCode.toUpperCase().trim();
+    gameState.room = currentRoom;
+
+    document.getElementById("hud-room-code-text").innerText = `ROOM: ${currentRoom}`;
+    const statusDot = document.getElementById("hud-status-dot");
+    statusDot.className = "status-dot disconnected";
+
+    // Public broker: EMQX over WSS (port 8084)
+    const host = "broker.emqx.io";
+    const port = 8084;
+    const path = "/mqtt";
+
+    client = new Paho.MQTT.Client(host, port, path, clientId);
+
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+
+    client.connect({
+      useSSL: true,
+      timeout: 5,
+      keepAliveInterval: 30,
+      cleanSession: true,
+      onSuccess: onConnectSuccess,
+      onFailure: onConnectFailure
+    });
+  }
+
+  function onConnectSuccess() {
+    isConnected = true;
+    const statusDot = document.getElementById("hud-status-dot");
+    statusDot.className = "status-dot";
+
+    const topic = `damfloc/codenames/${currentRoom}`;
+    client.subscribe(topic, { qos: 1 });
+
+    addLog(`Connected to secure room <strong>${currentRoom}</strong>.`);
+    // Ask room for current state
+    publishMessage({ type: "REQUEST_SYNC", sender: clientId });
+
+    // Switch to game screen
+    document.getElementById("lobby-screen").classList.remove("active");
+    document.getElementById("game-screen").classList.add("active");
+
+    // If host or first, generate board after 800ms if no sync arrived
+    setTimeout(() => {
+      if (gameState.cards.length === 0) {
+        initNewMission(false);
+      }
+    }, 700);
+  }
+
+  function onConnectFailure(err) {
+    isConnected = false;
+    const statusDot = document.getElementById("hud-status-dot");
+    statusDot.className = "status-dot disconnected";
+    addLog(`Network warning: ${err.errorMessage || 'Retrying connection...'}`);
+    // If first broker failed, try fallback
+    setTimeout(() => {
+      if (!isConnected && currentRoom) connectToRoom(currentRoom);
+    }, 3000);
+  }
+
+  function onConnectionLost(response) {
+    isConnected = false;
+    const statusDot = document.getElementById("hud-status-dot");
+    statusDot.className = "status-dot disconnected";
+    addLog(`Connection paused (${response.errorMessage}). Reconnecting...`);
+    setTimeout(() => {
+      if (currentRoom) connectToRoom(currentRoom);
+    }, 2000);
+  }
+
+  function publishMessage(payload) {
+    if (!client || !isConnected) return;
+    try {
+      const message = new Paho.MQTT.Message(JSON.stringify(payload));
+      message.destinationName = `damfloc/codenames/${currentRoom}`;
+      message.qos = 1;
+      client.send(message);
+    } catch(e) {}
+  }
+
+  function onMessageArrived(message) {
+    try {
+      const data = JSON.parse(message.payloadString);
+      handleNetworkMessage(data);
+    } catch(e) {}
+  }
+
+  function handleNetworkMessage(data) {
+    if (data.type === "REQUEST_SYNC") {
+      // If we have active cards, broadcast sync to the room
+      if (gameState.cards && gameState.cards.length > 0) {
+        publishMessage({
+          type: "SYNC_STATE",
+          state: gameState
+        });
+      }
+    } else if (data.type === "SYNC_STATE") {
+      if (data.state && data.state.cards && data.state.cards.length === 25) {
+        gameState = data.state;
+        renderBoard();
+        renderHUD();
+      }
+    } else if (data.type === "REVEAL_CARD") {
+      executeCardReveal(data.cardId, data.playerName);
+    } else if (data.type === "GIVE_CLUE") {
+      executeGiveClue(data.clue, data.team, data.playerName);
+    } else if (data.type === "END_TURN") {
+      executeEndTurn(data.team, data.playerName);
+    } else if (data.type === "NEW_GAME") {
+      gameState = data.state;
+      renderBoard();
+      renderHUD();
+      document.getElementById("victory-modal").classList.remove("active");
+      addLog(`<strong>${data.playerName}</strong> started a new mission.`);
+    }
+  }
+
+  /* ==========================================================================
+     5. GAME SETUP & AUTHORITATIVE BOARD GENERATOR
+     ========================================================================== */
+  function initNewMission(broadcast = true) {
+    // Pick 25 random unique words
+    const shuffledWords = CODENAMES_WORDS.slice().sort(() => Math.random() - 0.5).slice(0, 25);
+
+    // Randomize starting team
+    const startTeam = Math.random() < 0.5 ? "red" : "blue";
+    const secondTeam = startTeam === "red" ? "blue" : "red";
+
+    // Card types array: 9 for starter, 8 for second, 7 neutral, 1 assassin
+    let cardTypes = [
+      ...Array(9).fill(startTeam),
+      ...Array(8).fill(secondTeam),
+      ...Array(7).fill("neutral"),
+      "assassin"
+    ].sort(() => Math.random() - 0.5);
+
+    gameState = {
+      room: currentRoom,
+      startingTeam: startTeam,
+      currentTurn: startTeam,
+      redLeft: startTeam === "red" ? 9 : 8,
+      blueLeft: startTeam === "blue" ? 9 : 8,
+      cards: shuffledWords.map((word, idx) => ({
+        id: idx,
+        word: word,
+        type: cardTypes[idx],
+        revealed: false
+      })),
+      currentClue: null,
+      guessesLeft: 0,
+      winner: null,
+      reason: ""
+    };
+
+    renderBoard();
+    renderHUD();
+    document.getElementById("victory-modal").classList.remove("active");
+
+    if (broadcast) {
+      publishMessage({
+        type: "NEW_GAME",
+        state: gameState,
+        playerName: playerName
+      });
+    }
+  }
+
+  /* ==========================================================================
+     6. BOARD & HUD RENDERING
+     ========================================================================== */
+  function renderBoard() {
+    const grid = document.getElementById("board-grid");
+    grid.innerHTML = "";
+
+    gameState.cards.forEach(card => {
+      const cardEl = document.createElement("div");
+      cardEl.className = `code-card type-${card.type} ${card.revealed ? 'revealed' : ''}`;
+      cardEl.id = `card-${card.id}`;
+
+      // Spymaster label tag in top right
+      let tagText = "";
+      if (card.type === 'red') tagText = "RED";
+      else if (card.type === 'blue') tagText = "BLUE";
+      else if (card.type === 'assassin') tagText = "☠️";
+      else tagText = "—";
+
+      cardEl.innerHTML = `
+        <span class="spymaster-tag">${tagText}</span>
+        <span class="card-word">${card.word}</span>
+      `;
+
+      cardEl.onclick = () => onCardClicked(card.id);
+      grid.appendChild(cardEl);
+    });
+
+    updateRoleView();
+  }
+
+  function renderHUD() {
+    document.getElementById("red-score-count").innerText = gameState.redLeft;
+    document.getElementById("blue-score-count").innerText = gameState.blueLeft;
+
+    const turnBadge = document.getElementById("turn-badge");
+    turnBadge.className = `turn-badge ${gameState.currentTurn}-turn`;
+    turnBadge.innerText = `${gameState.currentTurn === 'red' ? 'Red' : 'Blue'} Team's Turn`;
+
+    const clueDisplay = document.getElementById("current-clue-display");
+    if (gameState.currentClue) {
+      clueDisplay.innerHTML = `Clue: <strong>${gameState.currentClue.word}</strong> (${gameState.currentClue.number}) • <em>${gameState.guessesLeft} guess${gameState.guessesLeft === 1 ? '' : 'es'} left</em>`;
+    } else {
+      clueDisplay.innerText = `Waiting for ${gameState.currentTurn === 'red' ? 'Red' : 'Blue'} Spymaster to give a clue...`;
+    }
+
+    // Toggle Spymaster input bar
+    const spymasterBar = document.getElementById("spymaster-input-bar");
+    const isMyTurnSpymaster = (myRole === "spymaster" && myTeam === gameState.currentTurn && !gameState.currentClue && !gameState.winner);
+    spymasterBar.style.display = isMyTurnSpymaster ? "flex" : "none";
+  }
+
+  function updateRoleView() {
+    if (myRole === "spymaster") {
+      document.body.classList.add("spymaster-mode");
+    } else {
+      document.body.classList.remove("spymaster-mode");
+    }
+    renderHUD();
+  }
+
+  /* ==========================================================================
+     7. GAMEPLAY ACTIONS: GUESSING, CLUES, TURNS
+     ========================================================================== */
+  function onCardClicked(cardId) {
+    const card = gameState.cards[cardId];
+    if (!card || card.revealed || gameState.winner) return;
+
+    // Only Operatives on the active turn can guess
+    if (myRole === "spymaster") {
+      addLog("Spymasters cannot tap cards! Only Operatives guess.");
+      return;
+    }
+    if (myTeam !== gameState.currentTurn) {
+      addLog(`It is not your team's turn to guess.`);
+      return;
+    }
+    if (!gameState.currentClue) {
+      addLog("Wait for your Spymaster to give a clue before guessing!");
+      return;
+    }
+
+    // Broadcast card reveal to room
+    publishMessage({
+      type: "REVEAL_CARD",
+      cardId: cardId,
+      playerName: playerName
+    });
+
+    // Execute locally
+    executeCardReveal(cardId, playerName);
+  }
+
+  function executeCardReveal(cardId, guesserName) {
+    const card = gameState.cards[cardId];
+    if (!card || card.revealed || gameState.winner) return;
+
+    card.revealed = true;
+    const cardEl = document.getElementById(`card-${cardId}`);
+    if (cardEl) {
+      cardEl.classList.add("revealed");
+    }
+
+    const currentTurn = gameState.currentTurn;
+
+    if (card.type === currentTurn) {
+      // Correct guess!
+      playSuccessTone();
+      if (currentTurn === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
+      else gameState.blueLeft = Math.max(0, gameState.blueLeft - 1);
+
+      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Correct agent!`);
+
+      // Check win
+      if (gameState.redLeft === 0) {
+        handleGameOver("red", "Red Team successfully located all their secret agents!");
+        return;
+      }
+      if (gameState.blueLeft === 0) {
+        handleGameOver("blue", "Blue Team successfully located all their secret agents!");
+        return;
+      }
+
+      // Decrement guesses
+      if (typeof gameState.guessesLeft === 'number') {
+        gameState.guessesLeft--;
+        if (gameState.guessesLeft <= 0) {
+          addLog(`${currentTurn === 'red' ? 'Red' : 'Blue'} Team finished all permitted guesses.`);
+          switchTurn();
+        }
+      }
+    } else if (card.type === "assassin") {
+      // Instant loss!
+      playAssassinTone();
+      const winningTeam = currentTurn === "red" ? "blue" : "red";
+      addLog(`☠️ <strong>${guesserName || 'Operative'}</strong> contacted the ASSASSIN (<strong>${card.word}</strong>)!`);
+      handleGameOver(winningTeam, `${currentTurn === 'red' ? 'Red' : 'Blue'} Team touched the Assassin! Instant loss!`);
+      return;
+    } else if (card.type === "neutral") {
+      // Bystander -> turn ends
+      playNeutralTone();
+      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Innocent Bystander! Turn ended.`);
+      switchTurn();
+    } else {
+      // Picked opposing team's card -> gives them a point and turn ends!
+      playNeutralTone();
+      const otherTeam = currentTurn === "red" ? "blue" : "red";
+      if (otherTeam === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
+      else gameState.blueLeft = Math.max(0, gameState.blueLeft - 1);
+
+      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Opponent's agent! Turn ended.`);
+
+      if (gameState.redLeft === 0) {
+        handleGameOver("red", "Red Team won because the opponent revealed their final agent!");
+        return;
+      }
+      if (gameState.blueLeft === 0) {
+        handleGameOver("blue", "Blue Team won because the opponent revealed their final agent!");
+        return;
+      }
+
+      switchTurn();
+    }
+
+    renderHUD();
+  }
+
+  function submitClue() {
+    const wordInput = document.getElementById("clue-word-input");
+    const numSelect = document.getElementById("clue-num-select");
+    const word = wordInput.value.trim().toUpperCase();
+    const num = numSelect.value;
+
+    if (!word) {
+      alert("Please enter a one-word clue.");
+      return;
+    }
+    if (word.includes(" ")) {
+      alert("Clues must be exactly ONE word!");
+      return;
+    }
+
+    const clueData = { word, number: num };
+
+    // Broadcast
+    publishMessage({
+      type: "GIVE_CLUE",
+      clue: clueData,
+      team: gameState.currentTurn,
+      playerName: playerName
+    });
+
+    executeGiveClue(clueData, gameState.currentTurn, playerName);
+    wordInput.value = "";
+  }
+
+  function executeGiveClue(clue, team, spymasterName) {
+    initAudio();
+    playSuccessTone();
+    gameState.currentClue = clue;
+    gameState.guessesLeft = clue.number === "∞" ? 99 : (parseInt(clue.number, 10) + 1);
+
+    addLog(`Spymaster <strong>${spymasterName || 'Spymaster'}</strong> (${team.toUpperCase()}) gave clue: <strong>${clue.word}</strong> (${clue.number})`);
+    renderHUD();
+  }
+
+  function handleEndTurnClick() {
+    if (gameState.currentTurn !== myTeam) {
+      addLog("You can only pass when it is your team's turn.");
+      return;
+    }
+    publishMessage({
+      type: "END_TURN",
+      team: gameState.currentTurn,
+      playerName: playerName
+    });
+    executeEndTurn(gameState.currentTurn, playerName);
+  }
+
+  function executeEndTurn(team, pName) {
+    addLog(`<strong>${pName || 'Team'}</strong> ended their guessing turn.`);
+    switchTurn();
+  }
+
+  function switchTurn() {
+    gameState.currentTurn = gameState.currentTurn === "red" ? "blue" : "red";
+    gameState.currentClue = null;
+    gameState.guessesLeft = 0;
+    renderHUD();
+  }
+
+  function handleGameOver(winnerTeam, reason) {
+    gameState.winner = winnerTeam;
+    gameState.reason = reason;
+
+    playVictoryFanfare();
+    fireConfetti();
+
+    const winnerText = document.getElementById("victory-winner-text");
+    winnerText.innerText = `${winnerTeam.toUpperCase()} TEAM WINS!`;
+    winnerText.style.color = winnerTeam === "red" ? "var(--red-team)" : "var(--blue-team)";
+    document.getElementById("victory-reason-text").innerText = reason;
+    document.getElementById("victory-modal").classList.add("active");
+
+    renderHUD();
+  }
+
+  /* ==========================================================================
+     8. PLAYER ROLE & TEAM SELECTION
+     ========================================================================== */
+  function selectTeam(team) {
+    myTeam = team;
+    document.getElementById("pick-red-btn").style.outline = team === 'red' ? '2px solid #FF3B30' : 'none';
+    document.getElementById("pick-blue-btn").style.outline = team === 'blue' ? '2px solid #0A84FF' : 'none';
+    addLog(`You are now on <strong>${team.toUpperCase()} TEAM</strong>.`);
+    renderHUD();
+  }
+
+  function selectRole(role) {
+    initAudio();
+    myRole = role;
+    document.getElementById("role-op-btn").classList.toggle("active", role === 'operative');
+    document.getElementById("role-spy-btn").classList.toggle("active", role === 'spymaster');
+    updateRoleView();
+    addLog(`You switched to <strong>${role.toUpperCase()}</strong> mode.`);
+  }
+
+  function promptNewGame() {
+    if (confirm("Start a new Codenames mission with 25 fresh cards?")) {
+      initNewMission(true);
+    }
+  }
+
+  /* ==========================================================================
+     9. LOBBY, ROOM CREATION & SHARING
+     ========================================================================== */
+  function createRoom() {
+    const nameInput = document.getElementById("player-name-input").value.trim();
+    if (nameInput) playerName = nameInput;
+
+    const randomCode = "SPY-" + Math.floor(100 + Math.random() * 900);
+    connectToRoom(randomCode);
+  }
+
+  function joinEnteredRoom() {
+    const nameInput = document.getElementById("player-name-input").value.trim();
+    if (nameInput) playerName = nameInput;
+
+    const codeInput = document.getElementById("room-code-input").value.trim();
+    if (!codeInput) {
+      alert("Please enter a room code.");
+      return;
+    }
+    connectToRoom(codeInput);
+  }
+
+  function copyInviteLink() {
+    const url = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert(`Room Link Copied to Clipboard!\n\nSend this link to friends:\n${url}`);
+    }).catch(() => {
+      prompt("Copy room link:", url);
+    });
+  }
+
+  function addLog(html) {
+    const panel = document.getElementById("log-panel");
+    const div = document.createElement("div");
+    div.className = "log-entry";
+    div.innerHTML = `• ${html}`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  /* Auto-join from URL parameter (e.g. codenames.html?room=SPY-123) */
+  window.addEventListener('DOMContentLoaded', () => {
+    selectTeam('red');
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+      document.getElementById("room-code-input").value = roomParam;
+      connectToRoom(roomParam);
+    }
+  });
+
+  /* ==========================================================================
+     10. CELEBRATORY CANVAS CONFETTI
+     ========================================================================== */
+  function fireConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ["#FF3B30", "#0A84FF", "#FFD60A", "#32D74B", "#ffffff"];
+
+    for (let i = 0; i < 140; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 18,
+        vy: (Math.random() - 0.5) * 18 - 6,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rSpeed: (Math.random() - 0.5) * 12,
+        life: 150
+      });
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        if (p.life > 0) {
+          alive = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.22;
+          p.rotation += p.rSpeed;
+          p.life--;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.life / 150;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+      if (alive) requestAnimationFrame(render);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    requestAnimationFrame(render);
+  }
+</script>
+</body>
+</html>
