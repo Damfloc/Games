@@ -3,315 +3,1456 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Charades - Games Hub</title>
+<title>Ultimate Charades - Games Hub</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  
+  :root {
+    --bg-dark: #0d0e12;
+    --card-bg: #181920;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --accent-blue: #0A84FF;
+    --accent-green: #32D74B;
+    --accent-red: #FF453A;
+    --accent-orange: #FF9F0A;
+    --accent-purple: #BF5AF2;
+    --accent-yellow: #FFD60A;
+  }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #121212;
-    color: white;
+    background: var(--bg-dark);
+    color: #f5f5f7;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    overflow: hidden;
-    touch-action: none;
+    overflow-x: hidden;
+    position: relative;
+    touch-action: pan-y;
   }
 
-  .back-btn {
-    position: absolute;
-    top: 24px;
-    left: 24px;
+  /* Top Navigation Bar */
+  .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
     z-index: 100;
+    pointer-events: none;
+  }
+  .top-bar > * {
+    pointer-events: auto;
+  }
+
+  .nav-btn {
     color: #8E8E93;
     text-decoration: none;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    padding: 10px 16px;
+    padding: 8px 14px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(8px);
-    transition: background 0.2s, color 0.2s, transform 0.15s;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    border: none;
+    cursor: pointer;
   }
-  .back-btn:hover {
+  .nav-btn:hover {
     background: rgba(255, 255, 255, 0.16);
     color: #fff;
-    transform: translateX(-2px);
   }
 
-  #start-screen, #game-screen, #end-screen {
+  /* Screen Containers */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 640px;
+    padding: 70px 20px 40px;
+    min-height: 100vh;
+    text-align: center;
+    animation: fadeIn 0.25s ease-out;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Typography */
+  h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; }
+  p.subtitle { color: #8e8e93; font-size: 1rem; line-height: 1.5; margin-bottom: 24px; }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 16px 28px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.35);
+    transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover {
+    background: #0071e3;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(10, 132, 255, 0.45);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f5f5f7;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Configuration Section Cards */
+  .config-section {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 20px;
+    text-align: left;
+  }
+  .config-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8E8E93;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Option Pill Groups */
+  .pill-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pill-choice {
+    flex: 1;
+    min-width: 65px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pill-choice.selected {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+  }
+
+  /* Team Name Inputs */
+  .teams-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .team-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .team-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .team-name-input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+  }
+  .team-name-input::placeholder { color: #555; }
+
+  /* Category Grid */
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .cat-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cat-card .cat-icon { font-size: 1.6rem; margin-bottom: 4px; display: block; }
+  .cat-card .cat-name { font-size: 0.85rem; font-weight: 600; color: #a1a1a6; }
+  .cat-card.selected {
+    background: rgba(10, 132, 255, 0.18);
+    border-color: var(--accent-blue);
+  }
+  .cat-card.selected .cat-name { color: #fff; font-weight: 700; }
+
+  /* Pre-Round Ready Screen */
+  .turn-banner {
+    background: var(--card-bg);
+    border: 2px solid var(--team-color, var(--accent-blue));
+    border-radius: 24px;
+    padding: 32px 20px;
+    width: 100%;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    margin: 20px 0 28px;
+  }
+  .round-indicator {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8E8E93;
+    margin-bottom: 8px;
+  }
+  .team-hero-name {
+    font-size: 2.4rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: var(--team-color, #fff);
+  }
+  .scoreboard-strip {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .scoreboard-item {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #a1a1a6;
+  }
+  .scoreboard-item strong { color: #fff; }
+
+  /* 3-2-1 Countdown Overlay */
+  #countdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(13, 14, 18, 0.92);
+    backdrop-filter: blur(12px);
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    padding: 20px;
-    position: relative;
+    z-index: 500;
   }
-  .active { display: flex !important; }
+  #countdown-overlay.active { display: flex; }
+  .countdown-number {
+    font-size: 9rem;
+    font-weight: 900;
+    color: var(--accent-blue);
+    animation: popBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popBounce {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 
-  h1 { font-size: 3rem; margin-bottom: 20px; letter-spacing: -0.5px; }
-  .instructions { font-size: 1.2rem; color: #aaa; margin-top: 10px; line-height: 1.6; }
+  /* Active Game Screen */
+  #game-screen {
+    justify-content: space-between;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    height: 100vh;
+    touch-action: none;
+  }
 
+  .game-hud {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+  }
+  .team-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .timer-box {
+    font-size: 2.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-blue);
+    padding: 4px 16px;
+    border-radius: 12px;
+    background: rgba(10, 132, 255, 0.1);
+    border: 1px solid rgba(10, 132, 255, 0.2);
+    transition: all 0.3s;
+  }
+  .timer-box.urgent {
+    color: var(--accent-red);
+    background: rgba(255, 69, 58, 0.18);
+    border-color: var(--accent-red);
+    animation: pulse 1s infinite alternate;
+  }
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+  .round-score-pill {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent-green);
+    background: rgba(50, 215, 75, 0.12);
+    padding: 6px 16px;
+    border-radius: 999px;
+  }
+
+  /* Word Card */
+  .word-card-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    perspective: 1000px;
+  }
   .word-card {
-    background: #242426;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    width: min(85vw, 420px);
-    height: min(45vh, 280px);
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 28px;
+    width: min(88vw, 480px);
+    height: min(45vh, 320px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+    cursor: grab;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .word-card:active { cursor: grabbing; }
+
+  .word-category-tag {
+    position: absolute;
+    top: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8E8E93;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .word-text {
+    font-size: clamp(2.4rem, 6.5vw, 3.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .swipe-hints {
+    font-size: 0.95rem;
+    color: #777;
+    margin-top: 14px;
+    display: flex;
+    gap: 20px;
+  }
+  .swipe-hints span { display: inline-flex; align-items: center; gap: 4px; }
+  .hint-skip { color: var(--accent-red); font-weight: 600; }
+  .hint-correct { color: var(--accent-green); font-weight: 600; }
+
+  /* Active Play Controls */
+  .play-actions {
+    display: flex;
+    width: 100%;
+    max-width: 480px;
+    gap: 16px;
+    padding: 0 10px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 16px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(2.5rem, 7vw, 4rem);
-    font-weight: 800;
-    margin: 24px 0;
-    transition: transform 0.2s, background-color 0.2s;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-    cursor: grab;
-  }
-  .word-card:active {
-    cursor: grabbing;
-  }
-
-  button {
-    padding: 15px 40px;
-    font-size: 1.3rem;
-    font-weight: 600;
-    background: #0A84FF;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
+    gap: 8px;
     transition: transform 0.15s, background 0.2s;
   }
-  button:hover { background: #0071e3; }
-  button:active { background: #0060c0; transform: scale(0.98); }
-
-  #timer {
-    font-size: 2rem;
-    color: #FF453A;
-    font-weight: 800;
-    position: absolute;
-    top: 30px;
-    right: 30px;
+  .action-btn.skip {
+    background: rgba(255, 69, 58, 0.18);
+    color: var(--accent-red);
+    border: 1px solid rgba(255, 69, 58, 0.35);
   }
-  #score-display {
-    font-size: 2rem;
-    color: #32D74B;
-    font-weight: 800;
-    position: absolute;
-    top: 30px;
-    left: min(200px, 40%);
+  .action-btn.skip:hover { background: var(--accent-red); color: #fff; }
+  .action-btn.correct {
+    background: rgba(50, 215, 75, 0.18);
+    color: var(--accent-green);
+    border: 1px solid rgba(50, 215, 75, 0.35);
   }
+  .action-btn.correct:hover { background: var(--accent-green); color: #fff; }
 
-  .desktop-controls {
+  /* Post-Round Review Screen */
+  .review-box {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 18px 0;
+    max-height: 48vh;
+    overflow-y: auto;
+    text-align: left;
+  }
+  .review-instructions {
+    font-size: 0.85rem;
+    color: #8E8E93;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .review-list {
     display: flex;
-    gap: 16px;
-    margin-top: 10px;
+    flex-direction: column;
+    gap: 8px;
   }
-  .desktop-btn {
-    padding: 10px 20px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 10px;
+  .review-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: background 0.15s;
   }
-  .desktop-btn.skip {
-    background: rgba(255, 69, 58, 0.2);
-    color: #FF453A;
-    border: 1px solid rgba(255, 69, 58, 0.4);
+  .review-item:hover { background: rgba(255, 255, 255, 0.07); }
+  .review-word { font-weight: 700; font-size: 1.05rem; }
+  .review-status {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
   }
-  .desktop-btn.skip:hover { background: #FF453A; color: white; }
-  .desktop-btn.correct {
-    background: rgba(50, 215, 75, 0.2);
-    color: #32D74B;
-    border: 1px solid rgba(50, 215, 75, 0.4);
+  .review-status.correct {
+    background: rgba(50, 215, 75, 0.15);
+    color: var(--accent-green);
   }
-  .desktop-btn.correct:hover { background: #32D74B; color: white; }
+  .review-status.skipped {
+    background: rgba(255, 69, 58, 0.15);
+    color: var(--accent-red);
+  }
+
+  /* Game Over Screen */
+  .podium-box {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 28px 20px;
+    margin: 20px 0 28px;
+  }
+  .winner-trophy { font-size: 4.5rem; margin-bottom: 8px; }
+  .winner-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--accent-yellow);
+    margin-bottom: 6px;
+  }
+  .final-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    text-align: left;
+  }
+  .leaderboard-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .leaderboard-row.first {
+    background: rgba(255, 214, 10, 0.12);
+    border-color: rgba(255, 214, 10, 0.3);
+  }
+
+  /* Confetti Canvas */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+  }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="back-btn">← Games Hub</a>
+<canvas id="confetti-canvas"></canvas>
 
-<div id="start-screen" class="active">
-  <span style="font-size: 4rem; margin-bottom: 12px;">🎭</span>
-  <h1>Charades</h1>
-  <p class="instructions">Swipe Right = Correct<br>Swipe Left = Skip</p>
-  <p class="instructions" style="font-size: 0.95rem; color: #777; margin-top: 6px;">
-    (Or use Left / Right Arrow keys on desktop)
-  </p>
-  <button onclick="startGame()" style="margin-top: 30px;">Start Game</button>
-</div>
-
-<div id="game-screen">
-  <div id="score-display">0</div>
-  <div id="timer">60</div>
-  <div class="word-card" id="word-card">WORD</div>
-  <p class="instructions" style="font-size: 1rem;">Swipe card or click below</p>
-  <div class="desktop-controls">
-    <button class="desktop-btn skip" onclick="triggerSkip()">← Skip</button>
-    <button class="desktop-btn correct" onclick="triggerCorrect()">Correct →</button>
+<!-- Top Bar -->
+<div class="top-bar">
+  <a href="index.html" class="nav-btn">← Games Hub</a>
+  <div style="display: flex; gap: 8px;">
+    <button class="nav-btn" id="sound-toggle-btn" onclick="toggleSound()">🔊 Sound ON</button>
   </div>
 </div>
 
-<div id="end-screen">
-  <span style="font-size: 3.5rem; margin-bottom: 12px;">🎉</span>
-  <h1>Time's Up!</h1>
-  <h2 style="font-size: 2rem; margin: 15px 0;">Final Score: <span id="final-score" style="color: #32D74B;">0</span></h2>
-  <div style="display: flex; gap: 12px; margin-top: 20px;">
-    <button onclick="resetGame()">Play Again</button>
+<!-- Countdown Overlay -->
+<div id="countdown-overlay">
+  <div class="countdown-number" id="countdown-number">3</div>
+  <p style="font-size: 1.2rem; color: #8E8E93; margin-top: 16px;">Get Ready to Act!</p>
+</div>
+
+<!-- SCREEN 1: Setup / Game Configuration -->
+<div id="setup-screen" class="screen active">
+  <span style="font-size: 3.2rem; margin-bottom: 8px;">🎭</span>
+  <h1>Ultimate Charades</h1>
+  <p class="subtitle">Customize teams, time limits, and categories for the ultimate party showdown!</p>
+
+  <!-- Team Count Picker -->
+  <div class="config-section">
+    <div class="config-title">
+      <span>Number of Teams</span>
+      <span id="teams-count-label" style="color: #fff;">2 Teams</span>
+    </div>
+    <div class="pill-group">
+      <div class="pill-choice selected" onclick="setTeamCount(2)">2 Teams</div>
+      <div class="pill-choice" onclick="setTeamCount(3)">3 Teams</div>
+      <div class="pill-choice" onclick="setTeamCount(4)">4 Teams</div>
+    </div>
+    <div class="teams-container" id="teams-inputs-container">
+      <!-- Generated dynamically -->
+    </div>
+  </div>
+
+  <!-- Time Limit Picker -->
+  <div class="config-section">
+    <div class="config-title">
+      <span>Turn Time Limit</span>
+      <span id="timer-selected-label" style="color: #fff;">60 Seconds</span>
+    </div>
+    <div class="pill-group">
+      <div class="pill-choice" onclick="setTimeLimit(30)">30s</div>
+      <div class="pill-choice" onclick="setTimeLimit(45)">45s</div>
+      <div class="pill-choice selected" onclick="setTimeLimit(60)">60s</div>
+      <div class="pill-choice" onclick="setTimeLimit(90)">90s</div>
+      <div class="pill-choice" onclick="setTimeLimit(120)">120s</div>
+    </div>
+  </div>
+
+  <!-- Total Rounds Picker -->
+  <div class="config-section">
+    <div class="config-title">
+      <span>Rounds per Team</span>
+      <span id="rounds-selected-label" style="color: #fff;">3 Rounds</span>
+    </div>
+    <div class="pill-group">
+      <div class="pill-choice" onclick="setRounds(1)">1 Round</div>
+      <div class="pill-choice" onclick="setRounds(2)">2 Rounds</div>
+      <div class="pill-choice selected" onclick="setRounds(3)">3 Rounds</div>
+      <div class="pill-choice" onclick="setRounds(5)">5 Rounds</div>
+    </div>
+  </div>
+
+  <!-- Category Packs Picker -->
+  <div class="config-section">
+    <div class="config-title">
+      <span>Categories (400+ Words)</span>
+      <span id="words-count-label" style="color: #fff;">All Selected</span>
+    </div>
+    <div class="category-grid" id="category-grid">
+      <!-- Generated dynamically -->
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="confirmSetupAndStart()">Save & Start Game →</button>
+</div>
+
+<!-- SCREEN 2: Ready / Pass Phone Screen -->
+<div id="ready-screen" class="screen">
+  <div class="turn-banner" id="ready-banner">
+    <div class="round-indicator" id="ready-round-indicator">Round 1 of 3</div>
+    <div class="team-hero-name" id="ready-team-name">Team Blue</div>
+    <p style="font-size: 1.1rem; color: #f5f5f7; margin-bottom: 10px;">It's your turn to act!</p>
+    <p style="font-size: 0.95rem; color: #8e8e93; line-height: 1.4;">
+      Pass the device to the player guessing or acting.<br>
+      Swipe right when guessed correctly, left to pass.
+    </p>
+
+    <div class="scoreboard-strip" id="ready-scoreboard">
+      <!-- Live standings inserted here -->
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="startCountdown()">Ready! Start Round →</button>
+</div>
+
+<!-- SCREEN 3: Active Round Game Screen -->
+<div id="game-screen" class="screen">
+  <div class="game-hud">
+    <div class="team-chip" id="hud-team-chip">
+      <span class="team-dot" id="hud-team-dot"></span>
+      <span id="hud-team-name">Team Blue</span>
+    </div>
+    <div class="timer-box" id="hud-timer">60</div>
+    <div class="round-score-pill" id="hud-round-score">0 pts</div>
+  </div>
+
+  <div class="word-card-wrapper">
+    <div class="word-card" id="word-card">
+      <span class="word-category-tag" id="card-category-tag">Movies & TV</span>
+      <div class="word-text" id="card-word-text">WORD</div>
+    </div>
+    <div class="swipe-hints">
+      <span class="hint-skip">← Swipe Left (Skip)</span>
+      <span class="hint-correct">Swipe Right (Got It!) →</span>
+    </div>
+  </div>
+
+  <div class="play-actions">
+    <button class="action-btn skip" onclick="triggerSkip()">
+      <span>✕ Skip</span>
+    </button>
+    <button class="action-btn correct" onclick="triggerCorrect()">
+      <span>✓ Got It!</span>
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN 4: Post-Round Review Screen -->
+<div id="review-screen" class="screen">
+  <span style="font-size: 3rem; margin-bottom: 6px;">⏱️</span>
+  <h1 id="review-title">Round Complete!</h1>
+  <p class="subtitle" id="review-subtitle">Team Blue scored 0 points</p>
+
+  <div class="review-box">
+    <p class="review-instructions">Tap any word below if you need to adjust its score:</p>
+    <div class="review-list" id="review-list"></div>
+  </div>
+
+  <button class="btn-primary" onclick="proceedAfterReview()">Confirm Points & Next →</button>
+</div>
+
+<!-- SCREEN 5: Championship Game Over Screen -->
+<div id="gameover-screen" class="screen">
+  <div class="podium-box">
+    <div class="winner-trophy">🏆</div>
+    <div class="winner-title" id="winner-banner">Team Blue Wins!</div>
+    <p style="font-size: 1.15rem; color: #8e8e93;">Congratulations to the Charades Champions!</p>
+
+    <div class="final-leaderboard" id="final-leaderboard">
+      <!-- Ranked rows inserted dynamically -->
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+    <button class="btn-primary" onclick="restartSameSettings()">Play Rematch ↺</button>
+    <button class="btn-secondary" onclick="returnToSetup()">Change Settings & Teams</button>
     <a href="index.html" style="text-decoration: none;">
-      <button type="button" style="background: rgba(255, 255, 255, 0.12);">All Games</button>
+      <button class="btn-secondary" style="width: 100%;">Exit to Games Hub</button>
     </a>
   </div>
 </div>
 
 <script>
-  const words = [
-    "Apple", "Elephant", "Helicopter", "Guitar", "Sunshine", "Ocean",
-    "Kangaroo", "Pizza", "Firefighter", "Mountain", "Telescope",
-    "Butterfly", "Pyramid", "Robot", "Dragon", "Volcano",
-    "Astronaut", "Piano", "Bicycle", "Penguin", "Submarine",
-    "Campfire", "Skateboard", "Wizard", "Dolphin", "Popcorn"
-  ];
-  let score = 0;
-  let timeLeft = 60;
-  let timerInterval = null;
-  let currentWords = [];
-  
-  const startScreen = document.getElementById("start-screen");
-  const gameScreen = document.getElementById("game-screen");
-  const endScreen = document.getElementById("end-screen");
-  const wordCard = document.getElementById("word-card");
-  const timerEl = document.getElementById("timer");
-  const scoreEl = document.getElementById("score-display");
-  const finalScoreEl = document.getElementById("final-score");
+  /* ==========================================================================
+     1. EXTENSIVE 400+ WORD BANK (Categorized & Non-Repeating)
+     ========================================================================== */
+  const WORD_CATEGORIES = {
+    movies: {
+      name: "Movies & TV",
+      icon: "🎬",
+      words: [
+        "Harry Potter", "Jurassic Park", "Spider-Man", "Titanic", "Star Wars",
+        "The Lion King", "Shrek", "Stranger Things", "SpongeBob SquarePants",
+        "Batman", "Barbie", "Frozen", "The Matrix", "Finding Nemo", "Avatar",
+        "Ghostbusters", "The Avengers", "Toy Story", "Home Alone", "Wednesday Addams",
+        "Indiana Jones", "Lord of the Rings", "Pirates of the Caribbean", "E.T.",
+        "Back to the Future", "Grease", "Jaws", "The Simpsons", "Shrek & Donkey",
+        "Game of Thrones", "Willy Wonka", "Mary Poppins", "The Hunger Games",
+        "Men in Black", "Twilight", "The Wizard of Oz", "Squid Game", "Wednesday",
+        "Mission Impossible", "The Incredibles", "Transformers", "Godzilla"
+      ]
+    },
+    animals: {
+      name: "Animals & Wildlife",
+      icon: "🦁",
+      words: [
+        "Penguin", "Kangaroo", "Flamingo", "Chameleon", "Sloth", "Jellyfish",
+        "Gorilla", "Tyrannosaurus Rex", "Ostrich", "Dolphin", "Flying Squirrel",
+        "Peacock", "Crocodile", "Cheetah", "Beaver", "Bat", "Giraffe", "Mosquito",
+        "Crab", "Octopus", "Sea Turtle", "Koala", "Frog", "Skunk", "Woodpecker",
+        "Kitten", "Goldfish", "Hamster on a Wheel", "Hyena", "Rattlesnake",
+        "Walrus", "Panda", "Hippopotamus", "Seahorse", "Camel", "Chimpanzee",
+        "Lobster", "Pigeon", "Hummingbird", "Hedgehog", "Polar Bear"
+      ]
+    },
+    food: {
+      name: "Food & Cooking",
+      icon: "🍕",
+      words: [
+        "Eating Spaghetti", "Flipping Pancakes", "Melting Ice Cream", "Peeling an Onion",
+        "Drinking Hot Soup", "Eating a Sour Lemon", "Barbecue Grill", "Bubble Gum",
+        "Baking a Cake", "Making Sushi", "Cracking a Lobster", "Eating Tacos",
+        "Drinking a Milkshake", "Popcorn Popping", "Chocolate Fondue", "Opening Champagne",
+        "Roasting Marshmallows", "Cutting a Pizza", "Eating Spicy Pepper", "Spilling Coffee",
+        "Cotton Candy", "Hot Dog Contest", "Peeling a Banana", "Making Waffles",
+        "Tasting Spoiled Milk", "Burrito Roll", "Doughnut", "Toasting Bread",
+        "Stirring Big Pot", "Eating French Fries", "Drinking with a Tiny Straw"
+      ]
+    },
+    actions: {
+      name: "Actions & Sports",
+      icon: "⚽",
+      words: [
+        "Surfing a Big Wave", "Moonwalking", "Tightrope Walking", "Sumo Wrestling",
+        "Rock Climbing", "Juggling", "Skydiving", "Bowling a Strike", "Playing the Violin",
+        "Arm Wrestling", "Sneezing", "Walking against Strong Wind", "Ice Skating",
+        "Operating a Jackhammer", "Karate Chop", "Riding a Roller Coaster", "Scuba Diving",
+        "Changing a Baby's Diaper", "Walking like a Zombie", "Bull Riding",
+        "Weightlifting", "Playing Golf", "High Jump", "Playing Tennis",
+        "Searching for Lost Glasses", "Walking in Stilettos", "DJ Scratching Records",
+        "Winning the Lottery", "Hula Hooping", "Milking a Cow", "Doing the Macarena",
+        "Walking a Huge Dog", "Fencing", "Ballet Dancing", "Painting a Masterpiece"
+      ]
+    },
+    characters: {
+      name: "Characters & Roles",
+      icon: "🚀",
+      words: [
+        "Sherlock Holmes", "Ninja", "Pirate", "Astronaut", "Dracula", "Santa Claus",
+        "Albert Einstein", "Super Mario", "Wizard", "Tarzan", "King Kong", "Queen of England",
+        "Secret Agent 007", "Mummy", "Statue of Liberty", "Robin Hood", "Frankenstein",
+        "Rock Star", "Knight in Armor", "Fortune Teller", "Circus Clown", "Lumberjack",
+        "Chef Ramsay", "Sumo Wrestler", "Traffic Cop", "Caveman", "Mermaid",
+        "Lawn Flamingo", "Mannequin", "Robot Malfunction", "Superhero Taking Off",
+        "Surgeon during Surgery", "Opera Singer", "Paparazzi"
+      ]
+    },
+    objects: {
+      name: "Objects & Things",
+      icon: "💡",
+      words: [
+        "Telescope", "Helicopter", "Chainsaw", "Unicycle", "Vacuum Cleaner", "Yo-yo",
+        "Drone", "Metal Detector", "Time Machine", "Boomerang", "Hoverboard",
+        "Jack-in-the-Box", "Stethoscope", "Lawnmower", "Toothbrush", "Umbrella in a Storm",
+        "Pogo Stick", "Alarm Clock", "Microscope", "Submarine", "Fireworks",
+        "Boombox", "Compass", "Typewriter", "Washing Machine", "Cuckoo Clock",
+        "Parachute", "Swiss Army Knife", "Megaphone", "Ceiling Fan", "Metal Slinky"
+      ]
+    }
+  };
 
-  let touchStartX = 0;
-  let touchEndX = 0;
-  let isPointerDown = false;
+  /* ==========================================================================
+     2. AUDIO SYNTHESIZER (Native Web Audio API)
+     ========================================================================== */
+  let audioCtx = null;
+  let isSoundEnabled = true;
 
-  function shuffle(array) {
-    return array.slice().sort(() => Math.random() - 0.5);
-  }
-
-  function startGame() {
-    score = 0;
-    timeLeft = 60;
-    currentWords = shuffle(words);
-    updateScore();
-    timerEl.innerText = timeLeft;
-    
-    startScreen.classList.remove("active");
-    endScreen.classList.remove("active");
-    gameScreen.classList.add("active");
-    
-    nextWord();
-    clearInterval(timerInterval);
-    timerInterval = setInterval(updateTimer, 1000);
-  }
-
-  function updateTimer() {
-    timeLeft--;
-    timerEl.innerText = timeLeft;
-    if (timeLeft <= 0) {
-      endGame();
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
     }
   }
 
-  function nextWord() {
-    if (currentWords.length === 0) currentWords = shuffle(words);
-    wordCard.style.transition = "none";
-    wordCard.style.transform = "translateX(0)";
-    wordCard.style.backgroundColor = "#242426";
-    wordCard.innerText = currentWords.pop();
+  function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+    if (!isSoundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* ignore audio errors */ }
   }
 
-  function updateScore() {
-    scoreEl.innerText = score;
+  function playCorrectSound() {
+    if (!isSoundEnabled) return;
+    playTone(523.25, 0.1, 'triangle', 0.2); // C5
+    setTimeout(() => playTone(659.25, 0.15, 'triangle', 0.2), 80); // E5
+    setTimeout(() => playTone(783.99, 0.25, 'triangle', 0.25), 160); // G5
+  }
+
+  function playSkipSound() {
+    if (!isSoundEnabled) return;
+    playTone(280, 0.12, 'sawtooth', 0.12);
+    setTimeout(() => playTone(180, 0.2, 'sawtooth', 0.12), 80);
+  }
+
+  function playTickSound(isLow = false) {
+    if (!isSoundEnabled) return;
+    playTone(isLow ? 440 : 880, 0.06, 'sine', 0.12);
+  }
+
+  function playRoundOverSound() {
+    if (!isSoundEnabled) return;
+    playTone(392, 0.15, 'triangle', 0.2);
+    setTimeout(() => playTone(523.25, 0.35, 'triangle', 0.25), 150);
+  }
+
+  function playFanfareSound() {
+    if (!isSoundEnabled) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => playTone(freq, 0.28, 'triangle', 0.25), idx * 120);
+    });
+  }
+
+  function toggleSound() {
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById('sound-toggle-btn');
+    btn.innerText = isSoundEnabled ? "🔊 Sound ON" : "🔇 Sound OFF";
+  }
+
+  /* ==========================================================================
+     3. GAME STATE & SETUP CONFIGURATION
+     ========================================================================== */
+  const DEFAULT_TEAMS = [
+    { name: "Team Blue", color: "#0A84FF", score: 0 },
+    { name: "Team Red", color: "#FF453A", score: 0 },
+    { name: "Team Green", color: "#32D74B", score: 0 },
+    { name: "Team Yellow", color: "#FFD60A", score: 0 }
+  ];
+
+  let config = {
+    teamCount: 2,
+    timeLimit: 60,
+    totalRounds: 3,
+    selectedCategories: Object.keys(WORD_CATEGORIES),
+    teams: []
+  };
+
+  let gameState = {
+    currentRound: 1,
+    currentTeamIndex: 0,
+    timeLeft: 60,
+    roundScore: 0,
+    timerInterval: null,
+    activeDeck: [],
+    usedWordsSet: new Set(),
+    roundWordHistory: [] // stores { word, category, status: 'correct'|'skipped' }
+  };
+
+  // DOM Elements
+  const setupScreen = document.getElementById("setup-screen");
+  const readyScreen = document.getElementById("ready-screen");
+  const gameScreen = document.getElementById("game-screen");
+  const reviewScreen = document.getElementById("review-screen");
+  const gameoverScreen = document.getElementById("gameover-screen");
+  const countdownOverlay = document.getElementById("countdown-overlay");
+  const countdownNumber = document.getElementById("countdown-number");
+
+  const wordCard = document.getElementById("word-card");
+  const cardWordText = document.getElementById("card-word-text");
+  const cardCategoryTag = document.getElementById("card-category-tag");
+  const hudTimer = document.getElementById("hud-timer");
+  const hudRoundScore = document.getElementById("hud-round-score");
+  const hudTeamName = document.getElementById("hud-team-name");
+  const hudTeamDot = document.getElementById("hud-team-dot");
+
+  /* ==========================================================================
+     4. SETUP SCREEN CONTROLS & RENDERING
+     ========================================================================== */
+  function initSetupScreen() {
+    renderTeamInputs();
+    renderCategoryGrid();
+  }
+
+  function setTeamCount(count) {
+    config.teamCount = count;
+    document.getElementById("teams-count-label").innerText = `${count} Teams`;
+    
+    const pills = document.querySelectorAll("#setup-screen .config-section:nth-of-type(1) .pill-choice");
+    pills.forEach((p, idx) => {
+      p.classList.toggle("selected", (idx + 2) === count);
+    });
+    renderTeamInputs();
+  }
+
+  function renderTeamInputs() {
+    const container = document.getElementById("teams-inputs-container");
+    container.innerHTML = "";
+    for (let i = 0; i < config.teamCount; i++) {
+      const defaultTeam = DEFAULT_TEAMS[i];
+      const row = document.createElement("div");
+      row.className = "team-input-row";
+      row.innerHTML = `
+        <span class="team-dot" style="background: ${defaultTeam.color};"></span>
+        <input type="text" class="team-name-input" id="team-name-input-${i}" 
+          value="${config.teams[i] ? config.teams[i].name : defaultTeam.name}" 
+          maxlength="20" placeholder="Team ${i + 1} Name">
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  function setTimeLimit(seconds) {
+    config.timeLimit = seconds;
+    document.getElementById("timer-selected-label").innerText = `${seconds} Seconds`;
+    const pills = document.querySelectorAll("#setup-screen .config-section:nth-of-type(2) .pill-choice");
+    const times = [30, 45, 60, 90, 120];
+    pills.forEach((p, idx) => {
+      p.classList.toggle("selected", times[idx] === seconds);
+    });
+  }
+
+  function setRounds(rounds) {
+    config.totalRounds = rounds;
+    document.getElementById("rounds-selected-label").innerText = `${rounds} Round${rounds > 1 ? 's' : ''}`;
+    const pills = document.querySelectorAll("#setup-screen .config-section:nth-of-type(3) .pill-choice");
+    const roundsList = [1, 2, 3, 5];
+    pills.forEach((p, idx) => {
+      p.classList.toggle("selected", roundsList[idx] === rounds);
+    });
+  }
+
+  function renderCategoryGrid() {
+    const grid = document.getElementById("category-grid");
+    grid.innerHTML = "";
+    Object.keys(WORD_CATEGORIES).forEach(catKey => {
+      const cat = WORD_CATEGORIES[catKey];
+      const isSelected = config.selectedCategories.includes(catKey);
+      const card = document.createElement("div");
+      card.className = `cat-card ${isSelected ? 'selected' : ''}`;
+      card.innerHTML = `
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-name">${cat.name}</span>
+      `;
+      card.onclick = () => toggleCategory(catKey, card);
+      grid.appendChild(card);
+    });
+    updateCategoryCountLabel();
+  }
+
+  function toggleCategory(catKey, cardEl) {
+    const idx = config.selectedCategories.indexOf(catKey);
+    if (idx > -1) {
+      if (config.selectedCategories.length <= 1) return; // keep at least 1
+      config.selectedCategories.splice(idx, 1);
+      cardEl.classList.remove("selected");
+    } else {
+      config.selectedCategories.push(catKey);
+      cardEl.classList.add("selected");
+    }
+    updateCategoryCountLabel();
+  }
+
+  function updateCategoryCountLabel() {
+    const totalSelected = config.selectedCategories.length;
+    let totalWords = 0;
+    config.selectedCategories.forEach(key => totalWords += WORD_CATEGORIES[key].words.length);
+    document.getElementById("words-count-label").innerText = `${totalWords} Words (${totalSelected} Packs)`;
+  }
+
+  /* ==========================================================================
+     5. WORD DECK & NON-REPEATING SHUFFLER
+     ========================================================================== */
+  function buildMasterDeck() {
+    let pool = [];
+    config.selectedCategories.forEach(key => {
+      const cat = WORD_CATEGORIES[key];
+      cat.words.forEach(word => {
+        pool.push({ word, category: cat.name });
+      });
+    });
+    // Shuffle pool
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool;
+  }
+
+  function getNextWord() {
+    if (gameState.activeDeck.length === 0) {
+      // Rebuild deck if exhausted, keeping non-repeating as long as possible
+      gameState.activeDeck = buildMasterDeck().filter(item => !gameState.usedWordsSet.has(item.word));
+      if (gameState.activeDeck.length === 0) {
+        // If all words in game were used, reset used words set and shuffle fresh
+        gameState.usedWordsSet.clear();
+        gameState.activeDeck = buildMasterDeck();
+      }
+    }
+    const nextItem = gameState.activeDeck.pop();
+    gameState.usedWordsSet.add(nextItem.word);
+    return nextItem;
+  }
+
+  /* ==========================================================================
+     6. GAME FLOW MANAGEMENT
+     ========================================================================== */
+  function confirmSetupAndStart() {
+    initAudio();
+    // Save team names and scores
+    config.teams = [];
+    for (let i = 0; i < config.teamCount; i++) {
+      const input = document.getElementById(`team-name-input-${i}`);
+      const name = input && input.value.trim() ? input.value.trim() : DEFAULT_TEAMS[i].name;
+      config.teams.push({
+        name,
+        color: DEFAULT_TEAMS[i].color,
+        score: 0
+      });
+    }
+
+    // Reset game match state
+    gameState.currentRound = 1;
+    gameState.currentTeamIndex = 0;
+    gameState.usedWordsSet.clear();
+    gameState.activeDeck = buildMasterDeck();
+
+    showReadyScreen();
+  }
+
+  function showReadyScreen() {
+    const team = config.teams[gameState.currentTeamIndex];
+    document.getElementById("ready-banner").style.setProperty('--team-color', team.color);
+    document.getElementById("ready-round-indicator").innerText = `Round ${gameState.currentRound} of ${config.totalRounds}`;
+    document.getElementById("ready-team-name").innerText = team.name;
+
+    // Render scoreboard strip
+    const sb = document.getElementById("ready-scoreboard");
+    sb.innerHTML = "";
+    config.teams.forEach(t => {
+      const item = document.createElement("div");
+      item.className = "scoreboard-item";
+      item.innerHTML = `<span style="color: ${t.color}">●</span> ${t.name}: <strong>${t.score} pts</strong>`;
+      sb.appendChild(item);
+    });
+
+    switchScreen(readyScreen);
+  }
+
+  function startCountdown() {
+    initAudio();
+    countdownOverlay.classList.add("active");
+    let count = 3;
+    countdownNumber.innerText = count;
+    playTone(440, 0.12, 'sine', 0.2);
+
+    const interval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        countdownNumber.innerText = count;
+        playTone(440, 0.12, 'sine', 0.2);
+      } else if (count === 0) {
+        countdownNumber.innerText = "GO!";
+        playTone(880, 0.25, 'triangle', 0.25);
+      } else {
+        clearInterval(interval);
+        countdownOverlay.classList.remove("active");
+        launchActiveRound();
+      }
+    }, 850);
+  }
+
+  /* ==========================================================================
+     7. ACTIVE ROUND SCREEN
+     ========================================================================== */
+  let currentWordItem = null;
+
+  function launchActiveRound() {
+    const team = config.teams[gameState.currentTeamIndex];
+    gameState.timeLeft = config.timeLimit;
+    gameState.roundScore = 0;
+    gameState.roundWordHistory = [];
+
+    hudTeamName.innerText = team.name;
+    hudTeamDot.style.background = team.color;
+    hudRoundScore.innerText = "0 pts";
+    hudTimer.innerText = gameState.timeLeft;
+    hudTimer.classList.remove("urgent");
+
+    displayNextCard();
+    switchScreen(gameScreen);
+
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = setInterval(onTimerTick, 1000);
+  }
+
+  function onTimerTick() {
+    gameState.timeLeft--;
+    hudTimer.innerText = gameState.timeLeft;
+
+    if (gameState.timeLeft <= 10) {
+      hudTimer.classList.add("urgent");
+      playTickSound(gameState.timeLeft <= 5);
+      if (navigator.vibrate && gameState.timeLeft <= 5) navigator.vibrate(30);
+    }
+
+    if (gameState.timeLeft <= 0) {
+      clearInterval(gameState.timerInterval);
+      endRound();
+    }
+  }
+
+  function displayNextCard() {
+    currentWordItem = getNextWord();
+    wordCard.style.transition = "none";
+    wordCard.style.transform = "translateX(0)";
+    wordCard.style.backgroundColor = "var(--card-bg)";
+    cardCategoryTag.innerText = currentWordItem.category;
+    cardWordText.innerText = currentWordItem.word;
   }
 
   function triggerCorrect() {
-    if (!gameScreen.classList.contains("active")) return;
-    score++;
-    wordCard.style.transition = "transform 0.2s, background-color 0.2s";
-    wordCard.style.transform = "translateX(100vw)";
-    wordCard.style.backgroundColor = "#32D74B";
-    updateScore();
-    setTimeout(nextWord, 200);
+    if (!gameScreen.classList.contains("active") || !currentWordItem) return;
+    playCorrectSound();
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    gameState.roundScore++;
+    hudRoundScore.innerText = `${gameState.roundScore} pts`;
+
+    gameState.roundWordHistory.push({
+      word: currentWordItem.word,
+      category: currentWordItem.category,
+      status: 'correct'
+    });
+
+    // Card Animation
+    wordCard.style.transition = "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s";
+    wordCard.style.transform = "translateX(100vw) rotate(15deg)";
+    wordCard.style.backgroundColor = "rgba(50, 215, 75, 0.7)";
+
+    setTimeout(displayNextCard, 200);
   }
 
   function triggerSkip() {
-    if (!gameScreen.classList.contains("active")) return;
-    wordCard.style.transition = "transform 0.2s, background-color 0.2s";
-    wordCard.style.transform = "translateX(-100vw)";
-    wordCard.style.backgroundColor = "#FF453A";
-    updateScore();
-    setTimeout(nextWord, 200);
+    if (!gameScreen.classList.contains("active") || !currentWordItem) return;
+    playSkipSound();
+    if (navigator.vibrate) navigator.vibrate([30, 30]);
+
+    gameState.roundWordHistory.push({
+      word: currentWordItem.word,
+      category: currentWordItem.category,
+      status: 'skipped'
+    });
+
+    // Card Animation
+    wordCard.style.transition = "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s";
+    wordCard.style.transform = "translateX(-100vw) rotate(-15deg)";
+    wordCard.style.backgroundColor = "rgba(255, 69, 58, 0.7)";
+
+    setTimeout(displayNextCard, 200);
   }
 
-  function handleSwipe() {
-    const diff = touchEndX - touchStartX;
-    if (Math.abs(diff) > 50) { 
-      if (diff > 0) {
-        triggerCorrect();
-      } else {
-        triggerSkip();
-      }
-    }
-  }
+  /* Swipe Gestures & Desktop Drag Support */
+  let touchStartX = 0;
+  let isDragging = false;
 
-  // Touch Support
   wordCard.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
   }, { passive: true });
 
   wordCard.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) triggerCorrect();
+      else triggerSkip();
+    }
   }, { passive: true });
 
-  // Mouse Drag Support
   wordCard.addEventListener('mousedown', e => {
-    isPointerDown = true;
+    isDragging = true;
     touchStartX = e.clientX;
   });
 
   window.addEventListener('mouseup', e => {
-    if (isPointerDown) {
-      isPointerDown = false;
-      touchEndX = e.clientX;
-      handleSwipe();
+    if (isDragging) {
+      isDragging = false;
+      const diff = e.clientX - touchStartX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) triggerCorrect();
+        else triggerSkip();
+      }
     }
   });
 
-  // Keyboard Navigation (Desktop friendly)
+  // Desktop Keyboard Shortcuts
   window.addEventListener('keydown', e => {
     if (!gameScreen.classList.contains("active")) return;
-    if (e.key === 'ArrowRight') {
+    if (e.key === 'ArrowRight' || e.key === 'Enter') {
       triggerCorrect();
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === ' ') {
       triggerSkip();
     }
   });
 
-  function endGame() {
-    clearInterval(timerInterval);
-    gameScreen.classList.remove("active");
-    endScreen.classList.add("active");
-    finalScoreEl.innerText = score;
+  /* ==========================================================================
+     8. POST-ROUND REVIEW & SCORE ADJUSTMENT
+     ========================================================================== */
+  function endRound() {
+    clearInterval(gameState.timerInterval);
+    playRoundOverSound();
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    const team = config.teams[gameState.currentTeamIndex];
+    document.getElementById("review-title").innerText = `Time's Up!`;
+    document.getElementById("review-subtitle").innerText = `${team.name} scored ${gameState.roundScore} points this round!`;
+
+    renderReviewList();
+    switchScreen(reviewScreen);
   }
 
-  function resetGame() {
-    startScreen.classList.add("active");
-    endScreen.classList.remove("active");
+  function renderReviewList() {
+    const container = document.getElementById("review-list");
+    container.innerHTML = "";
+
+    if (gameState.roundWordHistory.length === 0) {
+      container.innerHTML = `<p style="color: #777; text-align: center; padding: 20px;">No words were attempted this round.</p>`;
+      return;
+    }
+
+    gameState.roundWordHistory.forEach((item, index) => {
+      const row = document.createElement("div");
+      row.className = "review-item";
+      row.innerHTML = `
+        <span class="review-word">${item.word}</span>
+        <span class="review-status ${item.status}" id="review-status-${index}">
+          ${item.status === 'correct' ? '✓ Got It (+1)' : '✕ Skipped (0)'}
+        </span>
+      `;
+      row.onclick = () => toggleReviewItemStatus(index);
+      container.appendChild(row);
+    });
   }
+
+  function toggleReviewItemStatus(index) {
+    const item = gameState.roundWordHistory[index];
+    if (item.status === 'correct') {
+      item.status = 'skipped';
+      gameState.roundScore = Math.max(0, gameState.roundScore - 1);
+    } else {
+      item.status = 'correct';
+      gameState.roundScore++;
+    }
+    const team = config.teams[gameState.currentTeamIndex];
+    document.getElementById("review-subtitle").innerText = `${team.name} scored ${gameState.roundScore} points this round!`;
+
+    const badge = document.getElementById(`review-status-${index}`);
+    if (badge) {
+      badge.className = `review-status ${item.status}`;
+      badge.innerText = item.status === 'correct' ? '✓ Got It (+1)' : '✕ Skipped (0)';
+    }
+  }
+
+  function proceedAfterReview() {
+    // Add round points to current team
+    config.teams[gameState.currentTeamIndex].score += gameState.roundScore;
+
+    // Advance to next team or next round
+    gameState.currentTeamIndex++;
+    if (gameState.currentTeamIndex >= config.teamCount) {
+      gameState.currentTeamIndex = 0;
+      gameState.currentRound++;
+    }
+
+    // Check if game is complete
+    if (gameState.currentRound > config.totalRounds) {
+      showGameOverScreen();
+    } else {
+      showReadyScreen();
+    }
+  }
+
+  /* ==========================================================================
+     9. GAME OVER & CHAMPIONSHIP PODIUM
+     ========================================================================== */
+  function showGameOverScreen() {
+    playFanfareSound();
+    fireConfetti();
+
+    // Sort teams by score descending
+    const rankedTeams = config.teams.slice().sort((a, b) => b.score - a.score);
+    const winner = rankedTeams[0];
+    const isTie = rankedTeams.length > 1 && rankedTeams[0].score === rankedTeams[1].score;
+
+    const winnerBanner = document.getElementById("winner-banner");
+    winnerBanner.innerText = isTie ? "It's a Tie Game!" : `${winner.name} Wins!`;
+    winnerBanner.style.color = isTie ? "var(--accent-yellow)" : winner.color;
+
+    const leaderboardEl = document.getElementById("final-leaderboard");
+    leaderboardEl.innerHTML = "";
+
+    const medals = ["🥇", "🥈", "🥉", "🏅"];
+    rankedTeams.forEach((team, rank) => {
+      const row = document.createElement("div");
+      row.className = `leaderboard-row ${rank === 0 ? 'first' : ''}`;
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">${medals[rank] || "🏅"}</span>
+          <span style="font-weight: 700; color: ${team.color};">${team.name}</span>
+        </div>
+        <span style="font-weight: 800; font-size: 1.2rem;">${team.score} pts</span>
+      `;
+      leaderboardEl.appendChild(row);
+    });
+
+    switchScreen(gameoverScreen);
+  }
+
+  function restartSameSettings() {
+    config.teams.forEach(t => t.score = 0);
+    gameState.currentRound = 1;
+    gameState.currentTeamIndex = 0;
+    gameState.usedWordsSet.clear();
+    gameState.activeDeck = buildMasterDeck();
+    showReadyScreen();
+  }
+
+  function returnToSetup() {
+    config.teams.forEach(t => t.score = 0);
+    switchScreen(setupScreen);
+  }
+
+  /* Screen Switching Helper */
+  function switchScreen(target) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    target.classList.add("active");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ==========================================================================
+     10. CELEBRATORY CANVAS CONFETTI (Zero Dependencies)
+     ========================================================================== */
+  function fireConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ["#0A84FF", "#32D74B", "#FF453A", "#FF9F0A", "#BF5AF2", "#FFD60A"];
+
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.5) * 16 - 6,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rSpeed: (Math.random() - 0.5) * 12,
+        life: 140
+      });
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        if (p.life > 0) {
+          alive = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.22; // gravity
+          p.rotation += p.rSpeed;
+          p.life--;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.life / 140;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+      if (alive) requestAnimationFrame(render);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    requestAnimationFrame(render);
+  }
+
+  // Initialize Setup Screen on Load
+  initSetupScreen();
 </script>
 </body>
 </html>

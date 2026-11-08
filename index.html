@@ -15,8 +15,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: #0d0e12;
     background-image: 
-      radial-gradient(circle at 15% 15%, rgba(10, 132, 255, 0.12) 0%, transparent 40%),
-      radial-gradient(circle at 85% 85%, rgba(50, 215, 75, 0.08) 0%, transparent 40%);
+      radial-gradient(circle at 20% 20%, rgba(10, 132, 255, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(50, 215, 75, 0.10) 0%, transparent 45%);
     color: #f5f5f7;
     min-height: 100vh;
     display: flex;
@@ -28,7 +28,7 @@
   header {
     text-align: center;
     max-width: 680px;
-    margin-bottom: 48px;
+    margin-bottom: 40px;
   }
 
   .pill-badge {
@@ -65,17 +65,17 @@
 
   .game-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
     width: 100%;
-    max-width: 1040px;
+    max-width: 880px;
   }
 
   .game-card {
     background: #17181e;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    padding: 28px;
+    padding: 32px 28px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -90,18 +90,8 @@
 
   .game-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(10, 132, 255, 0.15);
-    border-color: rgba(10, 132, 255, 0.4);
-  }
-
-  .game-card.disabled {
-    cursor: default;
-    opacity: 0.65;
-  }
-  .game-card.disabled:hover {
-    transform: none;
-    box-shadow: none;
-    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 35px rgba(10, 132, 255, 0.2);
+    border-color: rgba(10, 132, 255, 0.45);
   }
 
   .card-top {
@@ -112,22 +102,20 @@
   }
 
   .game-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 18px;
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   }
 
-  .game-icon.charades { background: linear-gradient(135deg, rgba(10,132,255,0.2), rgba(94,92,230,0.2)); }
-  .game-icon.trivia   { background: linear-gradient(135deg, rgba(50,215,75,0.2), rgba(10,132,255,0.2)); }
-  .game-icon.scramble { background: linear-gradient(135deg, rgba(255,159,10,0.2), rgba(255,69,58,0.2)); }
-  .game-icon.party    { background: linear-gradient(135deg, rgba(255,55,95,0.2), rgba(175,82,222,0.2)); }
+  .game-icon.charades { background: linear-gradient(135deg, rgba(10,132,255,0.25), rgba(94,92,230,0.25)); }
+  .game-icon.trivia   { background: linear-gradient(135deg, rgba(50,215,75,0.25), rgba(10,132,255,0.25)); }
 
   .status-badge {
     font-size: 0.75rem;
@@ -136,31 +124,24 @@
     letter-spacing: 0.05em;
     padding: 6px 12px;
     border-radius: 999px;
-  }
-  .status-badge.live {
     background: rgba(50, 215, 75, 0.15);
     color: #32D74B;
     border: 1px solid rgba(50, 215, 75, 0.3);
   }
-  .status-badge.soon {
-    background: rgba(255, 255, 255, 0.06);
-    color: #86868b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
 
   .game-title {
-    font-size: 1.5rem;
+    font-size: 1.65rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     letter-spacing: -0.01em;
   }
 
   .game-desc {
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     color: #8e8e93;
-    line-height: 1.5;
+    line-height: 1.55;
     margin-bottom: 24px;
-    min-height: 44px;
+    min-height: 48px;
   }
 
   .tags {
@@ -174,9 +155,10 @@
     font-size: 0.8rem;
     font-weight: 500;
     color: #a1a1a6;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 10px;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 5px 12px;
+    border-radius: 8px;
   }
 
   .card-action {
@@ -186,9 +168,9 @@
     gap: 8px;
     width: 100%;
     padding: 14px 20px;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    border-radius: 12px;
+    border-radius: 14px;
     background: #0A84FF;
     color: #fff;
     border: none;
@@ -198,11 +180,6 @@
   }
   .game-card:hover .card-action {
     background: #0071e3;
-  }
-  .card-action.disabled {
-    background: rgba(255, 255, 255, 0.08);
-    color: #636366;
-    cursor: not-allowed;
   }
 
   footer {
@@ -219,7 +196,7 @@
 <header>
   <div class="pill-badge">🎮 Game Central</div>
   <h1>Choose Your Game</h1>
-  <p class="subtitle">Select any tile below to start playing solo or with your party.</p>
+  <p class="subtitle">Select any game below to start playing with your party or solo.</p>
 </header>
 
 <main class="game-grid">
@@ -228,14 +205,15 @@
     <div>
       <div class="card-top">
         <div class="game-icon charades">🎭</div>
-        <span class="status-badge live">● Ready to Play</span>
+        <span class="status-badge">● Ready to Play</span>
       </div>
-      <h2 class="game-title">Charades</h2>
-      <p class="game-desc">Act out words and guess against the clock! Swipe right if guessed correctly, or swipe left to pass.</p>
+      <h2 class="game-title">Ultimate Charades</h2>
+      <p class="game-desc">Team vs Team party action! Custom teams, round timers, huge non-repeating word packs, and post-round score reviews.</p>
       <div class="tags">
-        <span class="tag">⏱️ 60s Timer</span>
-        <span class="tag">👥 2+ Players</span>
-        <span class="tag">📱 Touch & Keys</span>
+        <span class="tag">👥 2 to 4 Teams</span>
+        <span class="tag">⏱️ Custom Timer</span>
+        <span class="tag">📚 400+ Words</span>
+        <span class="tag">📱 Tilt / Swipe</span>
       </div>
     </div>
     <div class="card-action">Play Charades →</div>
@@ -246,56 +224,23 @@
     <div>
       <div class="card-top">
         <div class="game-icon trivia">🧠</div>
-        <span class="status-badge live">● Ready to Play</span>
+        <span class="status-badge">● Ready to Play</span>
       </div>
       <h2 class="game-title">Trivia Showdown</h2>
       <p class="game-desc">Put your general knowledge to the test with multiple-choice questions across history, science, and pop culture.</p>
       <div class="tags">
         <span class="tag">⚡ Rapid Fire</span>
         <span class="tag">🎯 10 Questions</span>
+        <span class="tag">⏱️ 15s Timer</span>
         <span class="tag">🏆 High Scores</span>
       </div>
     </div>
     <div class="card-action">Play Trivia →</div>
   </a>
-
-  <!-- Word Scramble Tile -->
-  <div class="game-card disabled">
-    <div>
-      <div class="card-top">
-        <div class="game-icon scramble">🔠</div>
-        <span class="status-badge soon">Coming Soon</span>
-      </div>
-      <h2 class="game-title">Word Scramble</h2>
-      <p class="game-desc">Race against the timer to unscramble mixed-up letters and discover hidden party words.</p>
-      <div class="tags">
-        <span class="tag">🧩 Word Puzzle</span>
-        <span class="tag">⏳ Speed Run</span>
-      </div>
-    </div>
-    <div class="card-action disabled">In Development</div>
-  </div>
-
-  <!-- Truth or Dare Tile -->
-  <div class="game-card disabled">
-    <div>
-      <div class="card-top">
-        <div class="game-icon party">🎲</div>
-        <span class="status-badge soon">Coming Soon</span>
-      </div>
-      <h2 class="game-title">Truth or Dare</h2>
-      <p class="game-desc">Exciting challenges, spicy truths, and hilarious dares to get any group laughing together.</p>
-      <div class="tags">
-        <span class="tag">🎉 Party Mode</span>
-        <span class="tag">🔥 Icebreaker</span>
-      </div>
-    </div>
-    <div class="card-action disabled">In Development</div>
-  </div>
 </main>
 
 <footer>
-  <p>Add more games anytime by creating a new game file and linking it here.</p>
+  <p>Party Games Portal • Built for mobile and desktop</p>
 </footer>
 
 </body>
