@@ -632,6 +632,16 @@
     background: rgba(255, 59, 48, 0.15);
     box-shadow: 0 0 16px var(--imposter-glow);
   }
+  .vote-status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    transition: all 0.2s;
+  }
 
   /* Elimination & Win Celebration Overlays */
   .reveal-hero-box {
@@ -785,8 +795,7 @@
 
         <label class="input-label">Imposter Clue Difficulty</label>
         <div class="pill-group" id="difficulty-pill-group">
-          <div class="pill-option selected" onclick="setClueDifficulty('normal')">Normal (Good Clue)</div>
-          <div class="pill-option" onclick="setClueDifficulty('vague')">Vague (Harder)</div>
+          <div class="pill-option selected" onclick="setClueDifficulty('vague')">Vague Hint</div>
           <div class="pill-option" onclick="setClueDifficulty('category')">Category Only</div>
         </div>
 
@@ -809,6 +818,9 @@
       </div>
 
       <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">Start Game 🚀</button>
+      <div id="guest-waiting-msg" style="display: none; text-align: center; color: var(--accent-gold); font-size: 0.95rem; font-weight: 700; margin-top: 10px; padding: 12px; background: rgba(255, 214, 10, 0.08); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+        ⏳ Waiting for Host to start the game...
+      </div>
       <p id="min-players-hint" style="font-size: 0.8rem; color: #8e8e93; margin-top: 8px; text-align: center;">Recommended 3+ players (You can test with fewer)</p>
     </div>
   </div>
@@ -942,6 +954,9 @@
     </div>
 
     <button class="btn-primary" id="submit-vote-btn" onclick="submitMyVote()" disabled>Cast My Vote</button>
+    <button class="btn-secondary" id="force-reveal-verdict-btn" onclick="forceRevealVerdict()" style="display:none; margin-top: 12px; border-color: rgba(255, 214, 10, 0.4); color: var(--accent-gold); width: 100%;">
+      Reveal Verdict Now 🥁
+    </button>
   </div>
 
   <!-- =========================================================================
@@ -1014,97 +1029,97 @@
      ========================================================================== */
   const IMPOSTER_PEOPLE_DATABASE = [
     // --- SUPERHEROES & COMICS ---
-    { name: "Spider-Man", category: "Superheroes", clueNormal: "Known for climbing, clinging to surfaces, and agile acrobatics", clueVague: "Associated with the colors red and blue", distractors: ["Batman", "Iron Man", "Deadpool"] },
-    { name: "Batman", category: "Superheroes", clueNormal: "Operates primarily in darkness and shadows without superpowers", clueVague: "Relies on wealth, gadgets, and an intimidating silhouette", distractors: ["Superman", "Spider-Man", "Iron Man"] },
-    { name: "Iron Man", category: "Superheroes", clueNormal: "A genius inventor who takes flight in high-tech powered armor", clueVague: "Billionaire tech visionary with a glowing power source", distractors: ["Thor", "Captain America", "Cyborg"] },
-    { name: "Superman", category: "Superheroes", clueNormal: "Extraterrestrial being possessing immense strength and flight", clueVague: "Vulnerable to a rare crystalline extraterrestrial mineral", distractors: ["Homelander", "Thor", "Captain Marvel"] },
-    { name: "Deadpool", category: "Superheroes", clueNormal: "Mercenary known for rapid healing and cracking jokes to the audience", clueVague: "Red-suited antihero who wields twin swords", distractors: ["Wolverine", "Spider-Man", "The Joker"] },
-    { name: "Wolverine", category: "Superheroes", clueNormal: "Fierce mutant fighter with metallic skeleton and rapid recovery", clueVague: "Features retractable blades extending from fists", distractors: ["Deadpool", "Cyclops", "Magneto"] },
-    { name: "Wonder Woman", category: "Superheroes", clueNormal: "Mythical warrior princess armed with ancient divine weaponry", clueVague: "Wields a magical lasso that compels truthfulness", distractors: ["Captain Marvel", "Black Widow", "Supergirl"] },
-    { name: "Hulk", category: "Superheroes", clueNormal: "Intellectual scientist with an enormous, rage-fueled alter ego", clueVague: "Transforms into a massive green powerhouse when provoked", distractors: ["Thing", "Thanos", "Shrek"] },
-    { name: "The Joker", category: "Superheroes", clueNormal: "Chaotic villainous mastermind obsessed with theatrics and laughter", clueVague: "Distinguished by face paint, green accents, and a wide grin", distractors: ["Pennywise", "Riddler", "Penguin"] },
-    { name: "Thanos", category: "Superheroes", clueNormal: "Intergalactic conqueror obsessed with universal balance and destiny", clueVague: "Collected ancient cosmic stones onto a golden fist", distractors: ["Darkseid", "Kang the Conqueror", "Galactus"] },
-    { name: "Thor", category: "Superheroes", clueNormal: "Deity associated with thunder, lightning storms, and celestial realm", clueVague: "Carries a legendary weapon that only the worthy can lift", distractors: ["Loki", "Aquaman", "Hercules"] },
-    { name: "Black Panther", category: "Superheroes", clueNormal: "Monarch guarding an isolated nation known for advanced metal technology", clueVague: "Wears an armor suit inspired by a nocturnal feline hunter", distractors: ["Miles Morales", "Falcon", "Batman"] },
+    { name: "Spider-Man", category: "Superheroes", clueNormal: "Associated with urban heights, agility, and heavy responsibility", clueVague: "Associated with urban heights, agility, and heavy responsibility", distractors: ["Batman", "Iron Man", "Deadpool"] },
+    { name: "Batman", category: "Superheroes", clueNormal: "A nocturnal figure surrounded by shadows, dark motifs, and high stakes", clueVague: "A nocturnal figure surrounded by shadows, dark motifs, and high stakes", distractors: ["Superman", "Spider-Man", "Iron Man"] },
+    { name: "Iron Man", category: "Superheroes", clueNormal: "Connected to advanced personal engineering and luminous energy", clueVague: "Connected to advanced personal engineering and luminous energy", distractors: ["Thor", "Captain America", "Cyborg"] },
+    { name: "Superman", category: "Superheroes", clueNormal: "A revered symbol of hope hailing from far beyond our world", clueVague: "A revered symbol of hope hailing from far beyond our world", distractors: ["Homelander", "Thor", "Captain Marvel"] },
+    { name: "Deadpool", category: "Superheroes", clueNormal: "Known for irreverent remarks, breaking boundaries, and healing resilience", clueVague: "Known for irreverent remarks, breaking boundaries, and healing resilience", distractors: ["Wolverine", "Spider-Man", "The Joker"] },
+    { name: "Wolverine", category: "Superheroes", clueNormal: "A fierce survivor with a primal edge and an elusive past", clueVague: "A fierce survivor with a primal edge and an elusive past", distractors: ["Deadpool", "Cyclops", "Magneto"] },
+    { name: "Wonder Woman", category: "Superheroes", clueNormal: "An ancient warrior ambassador guided by truth and honour", clueVague: "An ancient warrior ambassador guided by truth and honour", distractors: ["Captain Marvel", "Black Widow", "Supergirl"] },
+    { name: "Hulk", category: "Superheroes", clueNormal: "Undergoes a dramatic temperamental shift with overwhelming physical force", clueVague: "Undergoes a dramatic temperamental shift with overwhelming physical force", distractors: ["Thing", "Thanos", "Shrek"] },
+    { name: "The Joker", category: "Superheroes", clueNormal: "An unpredictable provocateur devoted to theatrical chaos", clueVague: "An unpredictable provocateur devoted to theatrical chaos", distractors: ["Pennywise", "Riddler", "Penguin"] },
+    { name: "Thanos", category: "Superheroes", clueNormal: "Fixated on an unyielding, cosmic concept of absolute equilibrium", clueVague: "Fixated on an unyielding, cosmic concept of absolute equilibrium", distractors: ["Darkseid", "Kang the Conqueror", "Galactus"] },
+    { name: "Thor", category: "Superheroes", clueNormal: "Tied to ancient mythologies, stormy skies, and worthy strength", clueVague: "Tied to ancient mythologies, stormy skies, and worthy strength", distractors: ["Loki", "Aquaman", "Hercules"] },
+    { name: "Black Panther", category: "Superheroes", clueNormal: "A sovereign protector safeguarding ancestral lineage and rare metals", clueVague: "A sovereign protector safeguarding ancestral lineage and rare metals", distractors: ["Miles Morales", "Falcon", "Batman"] },
 
     // --- CARTOONS & ANIMATED ICONS ---
-    { name: "SpongeBob SquarePants", category: "Cartoons & Animation", clueNormal: "Enthusiastic aquatic worker known for boundless optimism and cheer", clueVague: "Yellow undersea character who works in culinary food service", distractors: ["Patrick Star", "Squidward", "Mickey Mouse"] },
-    { name: "Mickey Mouse", category: "Cartoons & Animation", clueNormal: "Beloved animated mascot with white gloves and distinctive round silhouette", clueVague: "The central corporate icon of an entire fairy tale empire", distractors: ["Bugs Bunny", "Donald Duck", "Goofy"] },
-    { name: "Homer Simpson", category: "Cartoons & Animation", clueNormal: "Suburban animated father prone to workplace blunders and sweet cravings", clueVague: "Yellow animated protagonist famous for a frustrated one-word exclamation", distractors: ["Peter Griffin", "Fred Flintstone", "Bart Simpson"] },
-    { name: "Shrek", category: "Cartoons & Animation", clueNormal: "Solitary fantasy recluse who prefers peace in his secluded wetland sanctuary", clueVague: "Large green creature unexpectedly accompanied by an equine companion", distractors: ["Hulk", "Grinch", "Mike Wazowski"] },
-    { name: "Buzz Lightyear", category: "Cartoons & Animation", clueNormal: "Galactic defender figurine convinced of his authentic cosmic mission", clueVague: "Space toy equipped with pop-out wings and glowing laser arm", distractors: ["Sheriff Woody", "Iron Man", "Wall-E"] },
-    { name: "Pikachu", category: "Cartoons & Animation", clueNormal: "Small electric creature that releases electrical surges during battle", clueVague: "Yellow companion with a lightning-shaped tail", distractors: ["Raichu", "Sonic", "Super Mario"] },
-    { name: "Scooby-Doo", category: "Cartoons & Animation", clueNormal: "Canine companion who joins teenage sleuths exploring abandoned locales", clueVague: "Easily frightened dog driven by special edible rewards", distractors: ["Pluto", "Goofy", "Garfield"] },
-    { name: "Elsa", category: "Cartoons & Animation", clueNormal: "Royal ruler who must learn to master cryokinetic winter powers", clueVague: "Constructs an architectural wonder out of pure ice and frost", distractors: ["Anna", "Rapunzel", "Cinderella"] },
-    { name: "Bugs Bunny", category: "Cartoons & Animation", clueNormal: "Confident trickster who outsmarts pursuers while casually chewing a root vegetable", clueVague: "Long-eared animated character known for witty nonchalant banter", distractors: ["Daffy Duck", "Mickey Mouse", "Porky Pig"] },
-    { name: "Super Mario", category: "Cartoons & Animation", clueNormal: "Moustachioed adventurer traversing pipe networks to rescue a monarch", clueVague: "Gains power and physical scale from fungi and stars", distractors: ["Luigi", "Sonic the Hedgehog", "Wario"] },
-    { name: "Garfield", category: "Cartoons & Animation", clueNormal: "Comfort-seeking feline notorious for criticizing weekdays and eating Italian cuisine", clueVague: "Orange striped house cat known for heavy naps and sarcasm", distractors: ["Tom the Cat", "Sylvester", "Puss in Boots"] },
-    { name: "The Grinch", category: "Cartoons & Animation", clueNormal: "Recluse who schemes to disrupt and silence an elaborate seasonal festival", clueVague: "Green mountain dweller whose emotional capacity expands by several sizes", distractors: ["Shrek", "Jack Skellington", "Scrooge"] },
+    { name: "SpongeBob SquarePants", category: "Cartoons & Animation", clueNormal: "Relentlessly upbeat and cheerful in a deep, unusual locale", clueVague: "Relentlessly upbeat and cheerful in a deep, unusual locale", distractors: ["Patrick Star", "Squidward", "Mickey Mouse"] },
+    { name: "Mickey Mouse", category: "Cartoons & Animation", clueNormal: "A cheerful pioneer whose iconic silhouette is recognized worldwide", clueVague: "A cheerful pioneer whose iconic silhouette is recognized worldwide", distractors: ["Bugs Bunny", "Donald Duck", "Goofy"] },
+    { name: "Homer Simpson", category: "Cartoons & Animation", clueNormal: "A comfort-loving figure in an eccentric animated family household", clueVague: "A comfort-loving figure in an eccentric animated family household", distractors: ["Peter Griffin", "Fred Flintstone", "Bart Simpson"] },
+    { name: "Shrek", category: "Cartoons & Animation", clueNormal: "Prefers quiet seclusion over traditional fairy-tale glamour", clueVague: "Prefers quiet seclusion over traditional fairy-tale glamour", distractors: ["Hulk", "Grinch", "Mike Wazowski"] },
+    { name: "Buzz Lightyear", category: "Cartoons & Animation", clueNormal: "Boldly aimed at horizons beyond conventional limits", clueVague: "Boldly aimed at horizons beyond conventional limits", distractors: ["Sheriff Woody", "Iron Man", "Wall-E"] },
+    { name: "Pikachu", category: "Cartoons & Animation", clueNormal: "A lively companion known for striking, energetic sparks", clueVague: "A lively companion known for striking, energetic sparks", distractors: ["Raichu", "Sonic", "Super Mario"] },
+    { name: "Scooby-Doo", category: "Cartoons & Animation", clueNormal: "Investigates uncanny mysteries alongside friends, guided by snacks", clueVague: "Investigates uncanny mysteries alongside friends, guided by snacks", distractors: ["Pluto", "Goofy", "Garfield"] },
+    { name: "Elsa", category: "Cartoons & Animation", clueNormal: "Learned to stop concealing an innate, chilling natural force", clueVague: "Learned to stop concealing an innate, chilling natural force", distractors: ["Anna", "Rapunzel", "Cinderella"] },
+    { name: "Bugs Bunny", category: "Cartoons & Animation", clueNormal: "Remains notoriously unbothered while outwitting persistent pursuers", clueVague: "Remains notoriously unbothered while outwitting persistent pursuers", distractors: ["Daffy Duck", "Mickey Mouse", "Porky Pig"] },
+    { name: "Super Mario", category: "Cartoons & Animation", clueNormal: "Embarks on colorful journeys to protect an endangered peaceful realm", clueVague: "Embarks on colorful journeys to protect an endangered peaceful realm", distractors: ["Luigi", "Sonic the Hedgehog", "Wario"] },
+    { name: "Garfield", category: "Cartoons & Animation", clueNormal: "Unapologetically devoted to leisure, naps, and good comfort food", clueVague: "Unapologetically devoted to leisure, naps, and good comfort food", distractors: ["Tom the Cat", "Sylvester", "Puss in Boots"] },
+    { name: "The Grinch", category: "Cartoons & Animation", clueNormal: "Overcomes deep cynicism toward noisy communal seasonal gatherings", clueVague: "Overcomes deep cynicism toward noisy communal seasonal gatherings", distractors: ["Shrek", "Jack Skellington", "Scrooge"] },
 
     // --- POP STARS & MUSICIANS ---
-    { name: "Taylor Swift", category: "Pop Stars & Music", clueNormal: "Acclaimed singer-songwriter renowned for biographical lyrics and record-setting tours", clueVague: "Pop cultural icon with enthusiastic fans trading beaded bracelets", distractors: ["Beyoncé", "Ariana Grande", "Billie Eilish"] },
-    { name: "Michael Jackson", category: "Pop Stars & Music", clueNormal: "Trailblazing performer renowned for illusionary footwork and innovative music videos", clueVague: "20th-century pop titan often sporting military attire and fedora hats", distractors: ["Elvis Presley", "Prince", "Stevie Wonder"] },
-    { name: "Beyoncé", category: "Pop Stars & Music", clueNormal: "Celebrated vocal powerhouse and creative visionary born in Texas", clueVague: "Chart-topping music royalty who headlined massive synchronized stadium spectacles", distractors: ["Rihanna", "Taylor Swift", "Whitney Houston"] },
-    { name: "Eminem", category: "Pop Stars & Music", clueNormal: "Midwestern lyricist renowned for blistering speed, internal rhymes, and candid autobiographical themes", clueVague: "Hip hop pioneer who performed under an unruly blonde alter ego", distractors: ["Snoop Dogg", "Dr. Dre", "50 Cent"] },
-    { name: "Elvis Presley", category: "Pop Stars & Music", clueNormal: "Early rock pioneer who revolutionized musical performance with electric movements and lavish jumpsuits", clueVague: "Mid-century southern musician historically referred to as 'The King'", distractors: ["Freddie Mercury", "Johnny Cash", "John Lennon"] },
-    { name: "Freddie Mercury", category: "Pop Stars & Music", clueNormal: "Frontman renowned for a dynamic four-octave range and electrifying arena command", clueVague: "British rock icon who delivered an unforgettable Live Aid performance", distractors: ["David Bowie", "Mick Jagger", "Elton John"] },
-    { name: "Billie Eilish", category: "Pop Stars & Music", clueNormal: "Grammy-winning alternative artist known for delicate vocal delivery and distinctive fashion", clueVague: "Young artist creating dark electronic pop in collaboration with her sibling", distractors: ["Olivia Rodrigo", "Ariana Grande", "Lorde"] },
-    { name: "Drake", category: "Pop Stars & Music", clueNormal: "Canadian superstar who seamlessly blends melodic singing with verses about relationships and fame", clueVague: "Chart-dominating musician heavily affiliated with the city of Toronto", distractors: ["Kendrick Lamar", "Kanye West", "Travis Scott"] },
-    { name: "Justin Bieber", category: "Pop Stars & Music", clueNormal: "Vocalist discovered through early video sharing platforms before rising to worldwide superstardom", clueVague: "Canadian artist who experienced massive celebrity fandom at a very early age", distractors: ["Shawn Mendes", "Harry Styles", "Zayn Malik"] },
-    { name: "Rihanna", category: "Pop Stars & Music", clueNormal: "Caribbean-born superstar who evolved from chart hits into a global cosmetics and fashion mogul", clueVague: "Billionaire artist who performed at a major football championship while expecting", distractors: ["Beyoncé", "Nicki Minaj", "Cardi B"] },
-    { name: "Snoop Dogg", category: "Pop Stars & Music", clueNormal: "West Coast icon known for effortless vocal delivery, cultural longevity, and mellow demeanor", clueVague: "Hip hop icon with an unexpected culinary friendship with a domestic guru", distractors: ["Dr. Dre", "Ice Cube", "Tupac Shakur"] },
-    { name: "Ariana Grande", category: "Pop Stars & Music", clueNormal: "High-register vocal virtuoso with theatrical background and viral pop anthems", clueVague: "Vocalist recognized for impressive high whistle notes and a signature ponytail", distractors: ["Taylor Swift", "Camila Cabello", "Selena Gomez"] },
+    { name: "Taylor Swift", category: "Pop Stars & Music", clueNormal: "Renowned for turning personal chapters and eras into stadium-filling spectacles", clueVague: "Renowned for turning personal chapters and eras into stadium-filling spectacles", distractors: ["Beyoncé", "Ariana Grande", "Billie Eilish"] },
+    { name: "Michael Jackson", category: "Pop Stars & Music", clueNormal: "A transformative stage pioneer known for mesmerizing choreography", clueVague: "A transformative stage pioneer known for mesmerizing choreography", distractors: ["Elvis Presley", "Prince", "Stevie Wonder"] },
+    { name: "Beyoncé", category: "Pop Stars & Music", clueNormal: "Celebrated for perfectionist artistry and commanding cultural resonance", clueVague: "Celebrated for perfectionist artistry and commanding cultural resonance", distractors: ["Rihanna", "Taylor Swift", "Whitney Houston"] },
+    { name: "Eminem", category: "Pop Stars & Music", clueNormal: "Overcame immense odds through lightning cadence, razor wit, and raw expression", clueVague: "Overcame immense odds through lightning cadence, razor wit, and raw expression", distractors: ["Snoop Dogg", "Dr. Dre", "50 Cent"] },
+    { name: "Elvis Presley", category: "Pop Stars & Music", clueNormal: "Shook popular music and conventions in a mid-century golden era", clueVague: "Shook popular music and conventions in a mid-century golden era", distractors: ["Freddie Mercury", "Johnny Cash", "John Lennon"] },
+    { name: "Freddie Mercury", category: "Pop Stars & Music", clueNormal: "Commanded arena stages with unmatched vocal power and theatrical presence", clueVague: "Commanded arena stages with unmatched vocal power and theatrical presence", distractors: ["David Bowie", "Mick Jagger", "Elton John"] },
+    { name: "Billie Eilish", category: "Pop Stars & Music", clueNormal: "Crafts whispery, nocturnal soundscapes that define a modern sound", clueVague: "Crafts whispery, nocturnal soundscapes that define a modern sound", distractors: ["Olivia Rodrigo", "Ariana Grande", "Lorde"] },
+    { name: "Drake", category: "Pop Stars & Music", clueNormal: "Blends introspective relationship themes with dominant urban hooks", clueVague: "Blends introspective relationship themes with dominant urban hooks", distractors: ["Kendrick Lamar", "Kanye West", "Travis Scott"] },
+    { name: "Justin Bieber", category: "Pop Stars & Music", clueNormal: "Rose from youthful online clips to ubiquitous international pop stardom", clueVague: "Rose from youthful online clips to ubiquitous international pop stardom", distractors: ["Shawn Mendes", "Harry Styles", "Zayn Malik"] },
+    { name: "Rihanna", category: "Pop Stars & Music", clueNormal: "Evolved effortlessly from island rhythms to multi-industry empire building", clueVague: "Evolved effortlessly from island rhythms to multi-industry empire building", distractors: ["Beyoncé", "Nicki Minaj", "Cardi B"] },
+    { name: "Snoop Dogg", category: "Pop Stars & Music", clueNormal: "Radiates an instantly recognizable, mellow presence across decades", clueVague: "Radiates an instantly recognizable, mellow presence across decades", distractors: ["Dr. Dre", "Ice Cube", "Tupac Shakur"] },
+    { name: "Ariana Grande", category: "Pop Stars & Music", clueNormal: "Renowned for extraordinary vocal range and polished pop anthems", clueVague: "Renowned for extraordinary vocal range and polished pop anthems", distractors: ["Taylor Swift", "Camila Cabello", "Selena Gomez"] },
 
     // --- CELEBRITIES & ACTORS ---
-    { name: "Leonardo DiCaprio", category: "Hollywood Celebrities", clueNormal: "Award-winning actor who portrayed historical pioneers, maritime voyagers, and Wall Street financiers", clueVague: "Hollywood star who endured frigid wilderness scenes before securing his Academy Award", distractors: ["Brad Pitt", "Johnny Depp", "Tom Cruise"] },
-    { name: "Dwayne 'The Rock' Johnson", category: "Hollywood Celebrities", clueNormal: "Athletic entertainer who transitioned from stadium sports entertainment to major film franchises", clueVague: "Prominent action star known for a signature eyebrow raise and early morning training", distractors: ["John Cena", "Dave Bautista", "Vin Diesel"] },
-    { name: "Tom Cruise", category: "Hollywood Celebrities", clueNormal: "Hollywood leading man renowned for performing dangerous practical stunts in high-speed action films", clueVague: "Veteran actor who piloted military aircraft and scaled skyscraper exteriors", distractors: ["Keanu Reeves", "Harrison Ford", "Brad Pitt"] },
-    { name: "Keanu Reeves", category: "Hollywood Celebrities", clueNormal: "Beloved actor celebrated for disciplined stunt coordination, stoic charisma, and humility", clueVague: "Action cinema icon associated with cyber worlds and sharp-suited revenge stories", distractors: ["Tom Cruise", "Nicolas Cage", "Christian Bale"] },
-    { name: "Zendaya", category: "Hollywood Celebrities", clueNormal: "Acclaimed fashion trendsetter and actress starring in dystopian epics and coming-of-age drama", clueVague: "Emmy-winning performer who starred in a desert sci-fi adaptation", distractors: ["Sydney Sweeney", "Florence Pugh", "Jenna Ortega"] },
-    { name: "Will Smith", category: "Hollywood Celebrities", clueNormal: "Entertainer who rose from 1990s television sitcom stardom to record-breaking sci-fi blockbusters", clueVague: "Charismatic actor who protected Earth from aliens wearing dark formal suits", distractors: ["Jamie Foxx", "Eddie Murphy", "Denzel Washington"] },
-    { name: "Margot Robbie", category: "Hollywood Celebrities", clueNormal: "Australian actress and producer who brought both animated dolls and chaotic comic antiheroes to screen", clueVague: "Star and producer behind one of cinema's biggest pastel-colored hits", distractors: ["Emma Stone", "Scarlett Johansson", "Gal Gadot"] },
-    { name: "Johnny Depp", category: "Hollywood Celebrities", clueNormal: "Versatile actor known for transformative makeup, quirky voices, and fantasy adaptations", clueVague: "Brought an offbeat, rum-loving pirate captain to modern cinema", distractors: ["Robert Downey Jr.", "Jim Carrey", "Orlando Bloom"] },
-    { name: "Arnold Schwarzenegger", category: "Hollywood Celebrities", clueNormal: "European bodybuilding champion who transformed into an action film superstar and political leader", clueVague: "Action hero with an Austrian accent famous for saying he will return", distractors: ["Sylvester Stallone", "Jean-Claude Van Damme", "Dwayne Johnson"] },
-    { name: "Jim Carrey", category: "Hollywood Celebrities", clueNormal: "Dynamic physical comedy legend renowned for extreme contortions and expressive characters", clueVague: "Comedic performer who donned a mythical green mask and played an unusual pet detective", distractors: ["Adam Sandler", "Steve Carell", "Robin Williams"] },
-    { name: "Morgan Freeman", category: "Hollywood Celebrities", clueNormal: "Distinguished actor celebrated for an authoritative, soothing narration voice", clueVague: "Academy Award winner who portrayed the almighty in high-concept comedies", distractors: ["Samuel L. Jackson", "Denzel Washington", "James Earl Jones"] },
-    { name: "Gordon Ramsay", category: "Celebrity & TV", clueNormal: "Internationally acclaimed culinary master famous for fiery critiques and unrelenting standards", clueVague: "British television restaurateur known for shouting at underperforming cooks", distractors: ["Jamie Oliver", "Guy Fieri", "Bobby Flay"] },
-    { name: "MrBeast", category: "Celebrity & Internet", clueNormal: "Online innovator known for unprecedented philanthropic giveaways and large-scale reality competitions", clueVague: "Digital video creator with the world's most subscribed independent channel", distractors: ["PewDiePie", "Markiplier", "Logan Paul"] },
+    { name: "Leonardo DiCaprio", category: "Hollywood Celebrities", clueNormal: "Known for intense, immersive dramatic roles across vast historical sagas", clueVague: "Known for intense, immersive dramatic roles across vast historical sagas", distractors: ["Brad Pitt", "Johnny Depp", "Tom Cruise"] },
+    { name: "Dwayne 'The Rock' Johnson", category: "Hollywood Celebrities", clueNormal: "A towering figure whose charismatic screen presence commands major blockbusters", clueVague: "A towering figure whose charismatic screen presence commands major blockbusters", distractors: ["John Cena", "Dave Bautista", "Vin Diesel"] },
+    { name: "Tom Cruise", category: "Hollywood Celebrities", clueNormal: "Renowned for relentless dedication to high-stakes, adrenaline-fueled cinema", clueVague: "Renowned for relentless dedication to high-stakes, adrenaline-fueled cinema", distractors: ["Keanu Reeves", "Harrison Ford", "Brad Pitt"] },
+    { name: "Keanu Reeves", category: "Hollywood Celebrities", clueNormal: "Known for a tranquil demeanour, sharp action choreography, and public goodwill", clueVague: "Known for a tranquil demeanour, sharp action choreography, and public goodwill", distractors: ["Tom Cruise", "Nicolas Cage", "Christian Bale"] },
+    { name: "Zendaya", category: "Hollywood Celebrities", clueNormal: "Seamlessly bridged youthful television screens to striking, high-fashion cinema", clueVague: "Seamlessly bridged youthful television screens to striking, high-fashion cinema", distractors: ["Sydney Sweeney", "Florence Pugh", "Jenna Ortega"] },
+    { name: "Will Smith", category: "Hollywood Celebrities", clueNormal: "A magnetic performer whose energy defined massive blockbuster seasons", clueVague: "A magnetic performer whose energy defined massive blockbuster seasons", distractors: ["Jamie Foxx", "Eddie Murphy", "Denzel Washington"] },
+    { name: "Margot Robbie", category: "Hollywood Celebrities", clueNormal: "A dynamic creative force bridging bold eccentric characters and production leadership", clueVague: "A dynamic creative force bridging bold eccentric characters and production leadership", distractors: ["Emma Stone", "Scarlett Johansson", "Gal Gadot"] },
+    { name: "Johnny Depp", category: "Hollywood Celebrities", clueNormal: "Celebrated for leaning deeply into eccentric, stylized, and imaginative roles", clueVague: "Celebrated for leaning deeply into eccentric, stylized, and imaginative roles", distractors: ["Robert Downey Jr.", "Jim Carrey", "Orlando Bloom"] },
+    { name: "Arnold Schwarzenegger", category: "Hollywood Celebrities", clueNormal: "Achieved the pinnacle across multiple fields through sheer physical discipline", clueVague: "Achieved the pinnacle across multiple fields through sheer physical discipline", distractors: ["Sylvester Stallone", "Jean-Claude Van Damme", "Dwayne Johnson"] },
+    { name: "Jim Carrey", category: "Hollywood Celebrities", clueNormal: "A master of rubber-faced expressiveness and high-energy improvisation", clueVague: "A master of rubber-faced expressiveness and high-energy improvisation", distractors: ["Adam Sandler", "Steve Carell", "Robin Williams"] },
+    { name: "Morgan Freeman", category: "Hollywood Celebrities", clueNormal: "Possesses one of cinema's most resonant, authoritative spoken tones", clueVague: "Possesses one of cinema's most resonant, authoritative spoken tones", distractors: ["Samuel L. Jackson", "Denzel Washington", "James Earl Jones"] },
+    { name: "Gordon Ramsay", category: "Celebrity & TV", clueNormal: "Demands uncompromising culinary precision and holds nothing back", clueVague: "Demands uncompromising culinary precision and holds nothing back", distractors: ["Jamie Oliver", "Guy Fieri", "Bobby Flay"] },
+    { name: "MrBeast", category: "Celebrity & Internet", clueNormal: "Pioneered viral, high-scale philanthropic spectacles and community challenges", clueVague: "Pioneered viral, high-scale philanthropic spectacles and community challenges", distractors: ["PewDiePie", "Markiplier", "Logan Paul"] },
 
     // --- ATHLETES & SPORTS ICONS ---
-    { name: "Lionel Messi", category: "Athletes & Sports", clueNormal: "Agile South American playmaker revered for close control, balance, and historic trophy victories", clueVague: "Legendary #10 soccer maestro who carried his nation to a World Cup triumph", distractors: ["Cristiano Ronaldo", "Neymar", "Diego Maradona"] },
-    { name: "Cristiano Ronaldo", category: "Athletes & Sports", clueNormal: "Dedicated athletic forward celebrated for header power, scoring records, and longevity", clueVague: "European soccer superstar known for a signature jumping celebration", distractors: ["Lionel Messi", "Kylian Mbappé", "David Beckham"] },
-    { name: "LeBron James", category: "Athletes & Sports", clueNormal: "All-time basketball scoring leader who has captured championships across multiple franchises", clueVague: "High-flying forward often referred to with royal terminology", distractors: ["Michael Jordan", "Kobe Bryant", "Stephen Curry"] },
-    { name: "Michael Jordan", category: "Athletes & Sports", clueNormal: "Dominant 1990s basketball phenomenon who defined athletic sneakers and global culture", clueVague: "Won six championship rings in Chicago and inspired an iconic airborne logo", distractors: ["LeBron James", "Kobe Bryant", "Magic Johnson"] },
-    { name: "Usain Bolt", category: "Athletes & Sports", clueNormal: "Sprint phenomenon whose unmatched acceleration earned him multiple Olympic gold records", clueVague: "Celebrates victories with a diagonal lightning arm pose", distractors: ["Carl Lewis", "Tyson Gay", "Michael Phelps"] },
-    { name: "Muhammad Ali", category: "Athletes & Sports", clueNormal: "Heavyweight champion recognized for poetic wordplay, speed, and social convictions", clueVague: "Described his fighting style as hovering like an insect and striking", distractors: ["Mike Tyson", "Floyd Mayweather", "George Foreman"] },
-    { name: "Serena Williams", category: "Athletes & Sports", clueNormal: "Dominant tennis champion who collected 23 major singles titles alongside her sibling", clueVague: "Revolutionized power serving and athletic fashion in modern court tennis", distractors: ["Venus Williams", "Naomi Osaka", "Maria Sharapova"] },
-    { name: "Tiger Woods", category: "Athletes & Sports", clueNormal: "Golf prodigy whose tournament dominance popularized red attire on championship Sundays", clueVague: "Shattered scoring records in major championships across three decades", distractors: ["Phil Mickelson", "Rory McIlroy", "Jack Nicklaus"] },
-    { name: "Stephen Curry", category: "Athletes & Sports", clueNormal: "Prolific shooter who altered modern basketball tactics through long-distance accuracy", clueVague: "Frequently releases successful shots from well beyond the three-point line", distractors: ["Klay Thompson", "Kevin Durant", "James Harden"] },
-    { name: "Mike Tyson", category: "Athletes & Sports", clueNormal: "Explosive knockout puncher who became the youngest heavyweight champion in history", clueVague: "Boxing icon recognized by an ornate facial tattoo and rapid head movement", distractors: ["Muhammad Ali", "Evander Holyfield", "Tyson Fury"] },
+    { name: "Lionel Messi", category: "Athletes & Sports", clueNormal: "Possesses uncanny balance, low gravity, and timeless mastery on the pitch", clueVague: "Possesses uncanny balance, low gravity, and timeless mastery on the pitch", distractors: ["Cristiano Ronaldo", "Neymar", "Diego Maradona"] },
+    { name: "Cristiano Ronaldo", category: "Athletes & Sports", clueNormal: "Defined by relentless athletic conditioning, clutch finishes, and elite standards", clueVague: "Defined by relentless athletic conditioning, clutch finishes, and elite standards", distractors: ["Lionel Messi", "Kylian Mbappé", "David Beckham"] },
+    { name: "LeBron James", category: "Athletes & Sports", clueNormal: "A generational athletic force maintaining dominance across decades", clueVague: "A generational athletic force maintaining dominance across decades", distractors: ["Michael Jordan", "Kobe Bryant", "Stephen Curry"] },
+    { name: "Michael Jordan", category: "Athletes & Sports", clueNormal: "Set the benchmark for fierce competitive drive and soaring aerial grace", clueVague: "Set the benchmark for fierce competitive drive and soaring aerial grace", distractors: ["LeBron James", "Kobe Bryant", "Magic Johnson"] },
+    { name: "Usain Bolt", category: "Athletes & Sports", clueNormal: "Associated with unmatched pure velocity on the track and joyful charisma", clueVague: "Associated with unmatched pure velocity on the track and joyful charisma", distractors: ["Carl Lewis", "Tyson Gay", "Michael Phelps"] },
+    { name: "Muhammad Ali", category: "Athletes & Sports", clueNormal: "Combined poetic bravado with legendary speed and deep conviction", clueVague: "Combined poetic bravado with legendary speed and deep conviction", distractors: ["Mike Tyson", "Floyd Mayweather", "George Foreman"] },
+    { name: "Serena Williams", category: "Athletes & Sports", clueNormal: "A commanding presence whose power and determination redefined court excellence", clueVague: "A commanding presence whose power and determination redefined court excellence", distractors: ["Venus Williams", "Naomi Osaka", "Maria Sharapova"] },
+    { name: "Tiger Woods", category: "Athletes & Sports", clueNormal: "Electrified and transformed a quiet discipline through laser focus", clueVague: "Electrified and transformed a quiet discipline through laser focus", distractors: ["Phil Mickelson", "Rory McIlroy", "Jack Nicklaus"] },
+    { name: "Stephen Curry", category: "Athletes & Sports", clueNormal: "Shifted the entire geometry of play through effortless long-range touch", clueVague: "Shifted the entire geometry of play through effortless long-range touch", distractors: ["Klay Thompson", "Kevin Durant", "James Harden"] },
+    { name: "Mike Tyson", category: "Athletes & Sports", clueNormal: "Possessed terrifying early-round ferocity and unforgettable aura", clueVague: "Possessed terrifying early-round ferocity and unforgettable aura", distractors: ["Muhammad Ali", "Evander Holyfield", "Tyson Fury"] },
 
     // --- MOVIE & TV CHARACTERS ---
-    { name: "Harry Potter", category: "Movie Characters", clueNormal: "Young protagonist chosen by destiny who studied spellcraft at a British castle", clueVague: "Identified by a distinct mark left on his brow from childhood", distractors: ["Ron Weasley", "Lord Voldemort", "Percy Jackson"] },
-    { name: "Darth Vader", category: "Movie Characters", clueNormal: "Galactic commander encased in armored life-support who enforces an authoritarian reign", clueVague: "Commands a crimson energy blade and speaks with a rhythmic breathing filter", distractors: ["Kylo Ren", "Emperor Palpatine", "Boba Fett"] },
-    { name: "Master Yoda", category: "Movie Characters", clueNormal: "Centuries-old miniature mystic who guides warriors using ancient spiritual energy", clueVague: "Speaks in inverted sentence structure and resides in a secluded swamp", distractors: ["Baby Yoda", "Obi-Wan Kenobi", "Mace Windu"] },
-    { name: "James Bond (007)", category: "Movie Characters", clueNormal: "Government operative equipped with customized luxury vehicles, gadgets, and formal tuxedos", clueVague: "Famous secret service operative designated by a three-digit sequence", distractors: ["Ethan Hunt", "Jason Bourne", "Austin Powers"] },
-    { name: "Captain Jack Sparrow", category: "Movie Characters", clueNormal: "Wandering nautical captain who relies on wit, unorthodox tactics, and a broken compass", clueVague: "Commanded an infamous black vessel in the Caribbean seas", distractors: ["Captain Hook", "Barbossa", "Blackbeard"] },
-    { name: "Wednesday Addams", category: "Movie Characters", clueNormal: "Morbid student with a deadpan expression who uncovers mysteries with an animated hand", clueVague: "Wears dark braids, rarely blinks, and performed a viral gothic dance", distractors: ["Morticia Addams", "Coraline", "Sabrina"] },
-    { name: "Gandalf", category: "Movie Characters", clueNormal: "Wandering bearded mystic who assists kings and leads an adventurous fellowship", clueVague: "Wields a wooden staff and confronted a fiery beast on a subterranean bridge", distractors: ["Dumbledore", "Saruman", "Merlin"] },
-    { name: "Walter White", category: "Movie Characters", clueNormal: "High school educator who applies advanced chemical knowledge to build a dangerous desert enterprise", clueVague: "Assumed a famed scientific moniker and proclaimed himself the one who knocks", distractors: ["Jesse Pinkman", "Saul Goodman", "Tony Soprano"] },
-    { name: "Michael Scott", category: "Movie Characters", clueNormal: "Overly enthusiastic regional supervisor who seeks constant approval from his corporate staff", clueVague: "Presents employees with humorous Dundie trophies and boasts a world's best mug", distractors: ["Dwight Schrute", "Jim Halpert", "Ron Swanson"] },
-    { name: "Indiana Jones", category: "Movie Characters", clueNormal: "University scholar who ventures into perilous ruins to recover ancient relics", clueVague: "Explores forgotten chambers equipped with a leather whip and fedora", distractors: ["Han Solo", "Lara Croft", "Nathan Drake"] },
+    { name: "Harry Potter", category: "Movie Characters", clueNormal: "A chosen youth navigating hidden enchantments and shadowed destinies", clueVague: "A chosen youth navigating hidden enchantments and shadowed destinies", distractors: ["Ron Weasley", "Lord Voldemort", "Percy Jackson"] },
+    { name: "Darth Vader", category: "Movie Characters", clueNormal: "An imposing, tragic figure enforcing the will of an expansive empire", clueVague: "An imposing, tragic figure enforcing the will of an expansive empire", distractors: ["Kylo Ren", "Emperor Palpatine", "Boba Fett"] },
+    { name: "Master Yoda", category: "Movie Characters", clueNormal: "A diminutive, ancient keeper of wisdom who teaches through patience", clueVague: "A diminutive, ancient keeper of wisdom who teaches through patience", distractors: ["Baby Yoda", "Obi-Wan Kenobi", "Mace Windu"] },
+    { name: "James Bond (007)", category: "Movie Characters", clueNormal: "Moves through international espionage with sophisticated taste and resolve", clueVague: "Moves through international espionage with sophisticated taste and resolve", distractors: ["Ethan Hunt", "Jason Bourne", "Austin Powers"] },
+    { name: "Captain Jack Sparrow", category: "Movie Characters", clueNormal: "Relies on baffling charm, lucky escapes, and an idiosyncratic swagger", clueVague: "Relies on baffling charm, lucky escapes, and an idiosyncratic swagger", distractors: ["Captain Hook", "Barbossa", "Blackbeard"] },
+    { name: "Wednesday Addams", category: "Movie Characters", clueNormal: "Embraces the macabre with stoic poise amidst bright ordinary norms", clueVague: "Embraces the macabre with stoic poise amidst bright ordinary norms", distractors: ["Morticia Addams", "Coraline", "Sabrina"] },
+    { name: "Gandalf", category: "Movie Characters", clueNormal: "An enduring traveler and guide who arrives precisely when needed", clueVague: "An enduring traveler and guide who arrives precisely when needed", distractors: ["Dumbledore", "Saruman", "Merlin"] },
+    { name: "Walter White", category: "Movie Characters", clueNormal: "A quiet, overlooked individual who descends into an empire of pride and danger", clueVague: "A quiet, overlooked individual who descends into an empire of pride and danger", distractors: ["Jesse Pinkman", "Saul Goodman", "Tony Soprano"] },
+    { name: "Michael Scott", category: "Movie Characters", clueNormal: "Desperately seeks warmth, laughter, and family within an ordinary office", clueVague: "Desperately seeks warmth, laughter, and family within an ordinary office", distractors: ["Dwight Schrute", "Jim Halpert", "Ron Swanson"] },
+    { name: "Indiana Jones", category: "Movie Characters", clueNormal: "Balances academic curiosity with dangerous adventures in crumbling ruins", clueVague: "Balances academic curiosity with dangerous adventures in crumbling ruins", distractors: ["Han Solo", "Lara Croft", "Nathan Drake"] },
 
     // --- HISTORICAL & ICONIC FIGURES ---
-    { name: "Albert Einstein", category: "Historical Figures", clueNormal: "Theoretical scientist whose conceptual breakthroughs redefined modern understanding of the universe", clueVague: "Associated with unruly white hair and a renowned mass-energy equivalence equation", distractors: ["Isaac Newton", "Nikola Tesla", "Stephen Hawking"] },
-    { name: "Cleopatra", category: "Historical Figures", clueNormal: "Hellenistic sovereign who steered diplomacy between Nile dynasties and Roman leadership", clueVague: "Last active ruler of the Ptolemaic kingdom of Egypt", distractors: ["Nefertiti", "Queen Elizabeth", "Joan of Arc"] },
-    { name: "William Shakespeare", category: "Historical Figures", clueNormal: "Elizabethan poet and playwright whose dramas and sonnets became the bedrock of English literature", clueVague: "Penned famous tragedies exploring jealousy, ambition, and star-crossed romance", distractors: ["Charles Dickens", "Mark Twain", "Edgar Allan Poe"] },
-    { name: "Abraham Lincoln", category: "Historical Figures", clueNormal: "Historical statesman who guided a divided country through conflict and abolished involuntary servitude", clueVague: "Tall 19th-century leader known for a brief, historic speech at Gettysburg", distractors: ["George Washington", "Thomas Jefferson", "Theodore Roosevelt"] },
-    { name: "Leonardo da Vinci", category: "Historical Figures", clueNormal: "Polymath of the Italian Renaissance celebrated for engineering sketches, anatomy, and masterpiece paintings", clueVague: "Painted an enigmatic woman whose smile has puzzled art observers for centuries", distractors: ["Michelangelo", "Raphael", "Picasso"] },
-    { name: "Queen Elizabeth II", category: "Historical Figures", clueNormal: "Monarch whose sovereign term spanned seven decades through massive geopolitical transformations", clueVague: "Known for monochromatic wardrobe ensembles, pearls, and royal palaces in London", distractors: ["Queen Victoria", "Princess Diana", "Margaret Thatcher"] },
-    { name: "Julius Caesar", category: "Historical Figures", clueNormal: "Roman general whose political ascendancy was terminated by conspirators within the Senate", clueVague: "Crossed the Rubicon and faced betrayal on the Ides of March", distractors: ["Alexander the Great", "Nero", "Augustus"] },
-    { name: "Mahatma Gandhi", category: "Historical Figures", clueNormal: "Advocate who guided a national independence movement using peaceful noncooperation and fasting", clueVague: "Led a historic coastal march in protest of mineral taxation", distractors: ["Nelson Mandela", "Martin Luther King Jr.", "Dalai Lama"] },
-    { name: "Neil Armstrong", category: "Historical Figures", clueNormal: "Aviator and astronaut whose initial footprint on a lunar surface captivated global audiences", clueVague: "Delivered a historic transmission about a giant leap for humanity", distractors: ["Buzz Aldrin", "Yuri Gagarin", "John Glenn"] },
-    { name: "Santa Claus", category: "Iconic Figures", clueNormal: "Mythological seasonal benefactor believed to distribute tokens of joy around wintertime", clueVague: "Fabled nocturnal traveler traversing skies with antlered guides", distractors: ["Easter Bunny", "Tooth Fairy", "Jack Frost"] }
+    { name: "Albert Einstein", category: "Historical Figures", clueNormal: "Reimagined the foundational fabric of time, light, and thought experiments", clueVague: "Reimagined the foundational fabric of time, light, and thought experiments", distractors: ["Isaac Newton", "Nikola Tesla", "Stephen Hawking"] },
+    { name: "Cleopatra", category: "Historical Figures", clueNormal: "A shrewd sovereign who steered strategy amidst clashing classical empires", clueVague: "A shrewd sovereign who steered strategy amidst clashing classical empires", distractors: ["Nefertiti", "Queen Elizabeth", "Joan of Arc"] },
+    { name: "William Shakespeare", category: "Historical Figures", clueNormal: "Mastered dramatic human emotions, poetry, and linguistic invention on stage", clueVague: "Mastered dramatic human emotions, poetry, and linguistic invention on stage", distractors: ["Charles Dickens", "Mark Twain", "Edgar Allan Poe"] },
+    { name: "Abraham Lincoln", category: "Historical Figures", clueNormal: "A resolute statesman who stood tall to preserve unity in a nation's darkest hour", clueVague: "A resolute statesman who stood tall to preserve unity in a nation's darkest hour", distractors: ["George Washington", "Thomas Jefferson", "Theodore Roosevelt"] },
+    { name: "Leonardo da Vinci", category: "Historical Figures", clueNormal: "Looked at nature, art, and mechanics with insatiable Renaissance curiosity", clueVague: "Looked at nature, art, and mechanics with insatiable Renaissance curiosity", distractors: ["Michelangelo", "Raphael", "Picasso"] },
+    { name: "Queen Elizabeth II", category: "Historical Figures", clueNormal: "A steadfast figure of continuity and public duty through generations of change", clueVague: "A steadfast figure of continuity and public duty through generations of change", distractors: ["Queen Victoria", "Princess Diana", "Margaret Thatcher"] },
+    { name: "Julius Caesar", category: "Historical Figures", clueNormal: "A triumphant general whose swift ambition reshaped an ancient republic", clueVague: "A triumphant general whose swift ambition reshaped an ancient republic", distractors: ["Alexander the Great", "Nero", "Augustus"] },
+    { name: "Mahatma Gandhi", category: "Historical Figures", clueNormal: "Demonstrated the profound strength of moral principle and peaceful resistance", clueVague: "Demonstrated the profound strength of moral principle and peaceful resistance", distractors: ["Nelson Mandela", "Martin Luther King Jr.", "Dalai Lama"] },
+    { name: "Neil Armstrong", category: "Historical Figures", clueNormal: "Stepped quietly into uncharted celestial frontiers for all humankind", clueVague: "Stepped quietly into uncharted celestial frontiers for all humankind", distractors: ["Buzz Aldrin", "Yuri Gagarin", "John Glenn"] },
+    { name: "Santa Claus", category: "Iconic Figures", clueNormal: "A beloved seasonal tradition of generosity and warmth during cold winters", clueVague: "A beloved seasonal tradition of generosity and warmth during cold winters", distractors: ["Easter Bunny", "Tooth Fairy", "Jack Frost"] }
   ];
 
   /* ==========================================================================
@@ -1187,7 +1202,8 @@
   let currentRoom = null;
   let isConnected = false;
   let clientId = "imp_" + Math.random().toString(36).substring(2, 9);
-  let playerName = "Agent " + Math.floor(Math.random() * 900 + 100);
+  let playerName = "";
+  try { playerName = localStorage.getItem("imposter_player_name") || ""; } catch (e) {}
 
   // Room Roster & Authoritative State
   let roomRoster = {}; // { [clientId]: { id, name, avatar, score, isHost, voteFor } }
@@ -1198,7 +1214,7 @@
     hostId: null,
     secretPerson: null,
     imposterId: null,
-    clueDifficulty: "normal", // 'normal', 'vague', 'category'
+    clueDifficulty: "vague", // 'vague', 'category'
     discussionTime: 120, // seconds
     speakerIndex: 0,
     speakerOrder: [],
@@ -1312,7 +1328,7 @@
 
     if (data.type === "REQUEST_SYNC") {
       // If I am host or established player, reply with roster and state
-      if (roomRoster[clientId] && roomRoster[clientId].isHost) {
+      if (isCurrentUserHost()) {
         publishMessage({
           type: "ROOM_SYNC",
           roster: roomRoster,
@@ -1324,18 +1340,31 @@
         Object.assign(roomRoster, data.roster);
         renderRosterUI();
       }
-      if (data.state && data.state.status !== "lobby" && gameState.status === "lobby") {
-        gameState = data.state;
-        syncToActiveGameState();
+      if (data.state) {
+        if (data.state.clueDifficulty) gameState.clueDifficulty = data.state.clueDifficulty;
+        if (data.state.discussionTime !== undefined) gameState.discussionTime = data.state.discussionTime;
+        if (data.state.hostId) gameState.hostId = data.state.hostId;
+        updateSettingsUI();
+        if (data.state.status !== "lobby" && gameState.status === "lobby") {
+          gameState = data.state;
+          syncToActiveGameState();
+        }
       }
+    } else if (data.type === "SETTINGS_UPDATE") {
+      if (data.clueDifficulty) {
+        gameState.clueDifficulty = data.clueDifficulty;
+      }
+      if (data.discussionTime !== undefined) {
+        gameState.discussionTime = data.discussionTime;
+      }
+      updateSettingsUI();
     } else if (data.type === "PLAYER_JOIN") {
       if (data.player && data.player.id) {
         roomRoster[data.player.id] = data.player;
-        // First player to join is host
         const playerIds = Object.keys(roomRoster);
-        if (playerIds.length === 1 || !gameState.hostId) {
+        if (!gameState.hostId || !roomRoster[gameState.hostId]) {
           gameState.hostId = playerIds[0];
-          roomRoster[playerIds[0]].isHost = true;
+          if (roomRoster[playerIds[0]]) roomRoster[playerIds[0]].isHost = true;
         }
         renderRosterUI();
       }
@@ -1362,6 +1391,7 @@
     } else if (data.type === "START_VOTING") {
       startVotingPhaseLocally();
     } else if (data.type === "VOTE_CAST") {
+      if (!gameState.votes) gameState.votes = {};
       gameState.votes[data.voterId] = data.targetId;
       updateVotingTallyUI();
     } else if (data.type === "REVEAL_VERDICT") {
@@ -1370,7 +1400,7 @@
       showVerdictLocally();
     } else if (data.type === "NEXT_ROUND" || data.type === "REQUEST_NEXT_ROUND") {
       if (data.type === "REQUEST_NEXT_ROUND") {
-        if (gameState.hostId === clientId || !roomRoster[gameState.hostId]) {
+        if (isCurrentUserHost()) {
           requestNextRound();
         }
       } else {
@@ -1391,6 +1421,7 @@
   }
 
   function getPlayerAvatar(name) {
+    name = (name || "Agent").trim();
     const emojis = ["🦁", "🦊", "🐼", "🐯", "🐨", "🐸", "🐙", "🦄", "🦅", "🐺", "🐻", "🐵"];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
@@ -1401,8 +1432,17 @@
      4. LOBBY & ROOM MANAGEMENT
      ========================================================================== */
   function createRoom() {
+    const nameInput = document.getElementById("player-name-input");
+    const nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      alert("Please enter your Agent Name first!");
+      if (nameInput) nameInput.focus();
+      return;
+    }
+    playerName = nameVal;
+    try { localStorage.setItem("imposter_player_name", playerName); } catch (e) {}
+
     const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-    savePlayerName();
     connectToRoom(code);
 
     // I am the host
@@ -1421,12 +1461,21 @@
   }
 
   function joinRoomByInput() {
+    const nameInput = document.getElementById("player-name-input");
+    const nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      alert("Please enter your Agent Name first!");
+      if (nameInput) nameInput.focus();
+      return;
+    }
+    playerName = nameVal;
+    try { localStorage.setItem("imposter_player_name", playerName); } catch (e) {}
+
     const code = document.getElementById("room-code-input").value.trim().toUpperCase();
     if (!code || code.length < 3) {
       alert("Please enter a valid room code!");
       return;
     }
-    savePlayerName();
     connectToRoom(code);
 
     roomRoster[clientId] = {
@@ -1446,22 +1495,39 @@
     const input = document.getElementById("player-name-input");
     if (input && input.value.trim()) {
       playerName = input.value.trim();
+      try { localStorage.setItem("imposter_player_name", playerName); } catch (e) {}
     }
+  }
+
+  function isCurrentUserHost() {
+    if (gameState.hostId && gameState.hostId === clientId) return true;
+    if (roomRoster[clientId] && roomRoster[clientId].isHost) return true;
+    const playerIds = Object.keys(roomRoster);
+    if (playerIds.length > 0 && playerIds[0] === clientId) return true;
+    return false;
   }
 
   function renderRosterUI() {
     const players = Object.values(roomRoster);
     const grid = document.getElementById("roster-grid");
+    if (!grid) return;
     grid.innerHTML = "";
 
     document.getElementById("roster-count-badge").innerText = `${players.length} Players`;
 
-    const isMeHost = gameState.hostId === clientId || (players[0] && players[0].id === clientId);
-    document.getElementById("host-settings-panel").style.display = isMeHost ? "block" : "none";
-    document.getElementById("start-game-btn").style.display = isMeHost ? "flex" : "none";
+    const isMeHost = isCurrentUserHost();
+    const settingsPanel = document.getElementById("host-settings-panel");
+    if (settingsPanel) settingsPanel.style.display = "block";
+
+    const startBtn = document.getElementById("start-game-btn");
+    const guestWaitMsg = document.getElementById("guest-waiting-msg");
+    if (startBtn) startBtn.style.display = isMeHost ? "flex" : "none";
+    if (guestWaitMsg) guestWaitMsg.style.display = isMeHost ? "none" : "block";
+
+    updateSettingsUI();
 
     players.forEach(p => {
-      const isHost = p.id === gameState.hostId;
+      const isHost = p.id === gameState.hostId || (players[0] && players[0].id === p.id);
       const isMe = p.id === clientId;
       const div = document.createElement("div");
       div.className = `player-tile ${isHost ? 'is-host' : ''} ${isMe ? 'is-me' : ''}`;
@@ -1487,18 +1553,57 @@
     }
   }
 
+  function updateSettingsUI() {
+    const diffPills = document.querySelectorAll("#difficulty-pill-group .pill-option");
+    if (diffPills.length >= 2) {
+      diffPills[0].classList.toggle("selected", gameState.clueDifficulty === 'vague');
+      diffPills[1].classList.toggle("selected", gameState.clueDifficulty === 'category');
+    }
+
+    const timePills = document.querySelectorAll("#time-pill-group .pill-option");
+    const times = [60, 120, 180, 0];
+    timePills.forEach((p, idx) => {
+      p.classList.toggle("selected", times[idx] === gameState.discussionTime);
+    });
+
+    const isHost = isCurrentUserHost();
+    const hostIndicator = document.getElementById("host-indicator");
+    if (hostIndicator) {
+      hostIndicator.innerText = isHost ? "👑 You are the Host" : "📡 Synced with Host";
+    }
+
+    const allPills = document.querySelectorAll("#host-settings-panel .pill-option");
+    allPills.forEach(p => {
+      if (isHost) {
+        p.style.cursor = "pointer";
+        p.style.opacity = "1";
+      } else {
+        p.style.cursor = "default";
+        p.style.opacity = p.classList.contains("selected") ? "1" : "0.5";
+      }
+    });
+  }
+
   function setClueDifficulty(diff) {
+    if (!isCurrentUserHost()) return;
     gameState.clueDifficulty = diff;
-    const pills = document.querySelectorAll("#difficulty-pill-group .pill-option");
-    const diffs = ['normal', 'vague', 'category'];
-    pills.forEach((p, idx) => p.classList.toggle("selected", diffs[idx] === diff));
+    updateSettingsUI();
+    publishMessage({
+      type: "SETTINGS_UPDATE",
+      clueDifficulty: gameState.clueDifficulty,
+      discussionTime: gameState.discussionTime
+    });
   }
 
   function setDiscussionTime(seconds) {
+    if (!isCurrentUserHost()) return;
     gameState.discussionTime = seconds;
-    const pills = document.querySelectorAll("#time-pill-group .pill-option");
-    const times = [60, 120, 180, 0];
-    pills.forEach((p, idx) => p.classList.toggle("selected", times[idx] === seconds));
+    updateSettingsUI();
+    publishMessage({
+      type: "SETTINGS_UPDATE",
+      clueDifficulty: gameState.clueDifficulty,
+      discussionTime: gameState.discussionTime
+    });
   }
 
   /* ==========================================================================
@@ -1578,13 +1683,11 @@
       clueBox.className = "clue-callout-box imposter-clue";
       clueLabel.innerText = "YOUR SECRET CLUE:";
 
-      // Render clue based on difficulty
+      // Render clue based on difficulty (2 options: vague or category)
       if (gameState.clueDifficulty === 'category') {
         clueContent.innerText = `Only the category was provided: "${gameState.secretPerson.category}"`;
-      } else if (gameState.clueDifficulty === 'vague') {
-        clueContent.innerText = gameState.secretPerson.clueVague;
       } else {
-        clueContent.innerText = gameState.secretPerson.clueNormal;
+        clueContent.innerText = gameState.secretPerson.clueVague;
       }
 
       instructions.innerText = "Blend in! Listen closely to the clues given by innocents, bluff when asked, and do not get voted out!";
@@ -1840,7 +1943,7 @@
           <div style="color:var(--imposter-red); font-weight:800; font-size:1.1rem; margin-bottom:8px;">😈 YOU ARE THE IMPOSTER</div>
           <div style="font-size:0.9rem; color:#a1a1a6;">Category: ${gameState.secretPerson.category}</div>
           <div style="margin-top:10px; background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.3); border-radius:10px; padding:10px; font-weight:700;">
-            ${gameState.clueDifficulty === 'category' ? 'Only Category Known' : (gameState.clueDifficulty === 'vague' ? gameState.secretPerson.clueVague : gameState.secretPerson.clueNormal)}
+            ${gameState.clueDifficulty === 'category' ? 'Only Category Known' : gameState.secretPerson.clueVague}
           </div>
         `;
       } else {
@@ -1858,6 +1961,20 @@
      7. VOTING & ACCUSATION PHASE
      ========================================================================== */
   let selectedVoteTargetId = null;
+  let verdictCalculationTimer = null;
+
+  function getActiveVoterIds() {
+    if (gameState.speakerOrder && gameState.speakerOrder.length > 0) {
+      const activeFromOrder = gameState.speakerOrder.filter(id => !!roomRoster[id]);
+      if (activeFromOrder.length > 0) return activeFromOrder;
+    }
+    return Object.keys(roomRoster);
+  }
+
+  function getVotedPlayerIds() {
+    const activeIds = getActiveVoterIds();
+    return Object.keys(gameState.votes || {}).filter(id => activeIds.includes(id));
+  }
 
   function requestStartVoting() {
     clearInterval(discussionTimerInterval);
@@ -1868,45 +1985,67 @@
   function startVotingPhaseLocally() {
     switchScreen("voting-screen");
     gameState.status = "voting";
-    gameState.votes = {};
+    if (!gameState.votes) gameState.votes = {};
     selectedVoteTargetId = null;
-    document.getElementById("submit-vote-btn").disabled = true;
-    document.getElementById("submit-vote-btn").innerText = "Cast My Vote";
 
-    const players = Object.values(roomRoster);
+    const submitBtn = document.getElementById("submit-vote-btn");
+    if (submitBtn) {
+      if (gameState.votes[clientId]) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Vote Registered ✓";
+        selectedVoteTargetId = gameState.votes[clientId];
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Cast My Vote";
+      }
+    }
+
+    const activeIds = getActiveVoterIds();
+    const players = activeIds.map(id => roomRoster[id] || { id, name: "Player", avatar: "👤" });
     const grid = document.getElementById("voting-grid");
-    grid.innerHTML = "";
-
-    players.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "vote-card";
-      div.id = `vote-card-${p.id}`;
-      div.innerHTML = `
-        <div class="player-avatar">${p.avatar}</div>
-        <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${escapeHTML(p.name)}</div>
-        <div style="font-size:0.75rem; color:#8e8e93;">${p.id === clientId ? '(You)' : 'Tap to accuse'}</div>
-      `;
-      div.onclick = () => selectVoteTarget(p.id);
-      grid.appendChild(div);
-    });
+    if (grid) {
+      grid.innerHTML = "";
+      players.forEach(p => {
+        const div = document.createElement("div");
+        div.className = `vote-card ${selectedVoteTargetId === p.id ? 'voted-for' : ''}`;
+        div.id = `vote-card-${p.id}`;
+        div.innerHTML = `
+          <div class="player-avatar">${p.avatar}</div>
+          <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${escapeHTML(p.name)}</div>
+          <div style="font-size:0.75rem; color:#8e8e93;">${p.id === clientId ? '(You)' : 'Tap to accuse'}</div>
+          <div class="vote-status-badge" style="color:#8e8e93;">Thinking...</div>
+        `;
+        div.onclick = () => selectVoteTarget(p.id);
+        grid.appendChild(div);
+      });
+    }
 
     updateVotingTallyUI();
   }
 
   function selectVoteTarget(targetId) {
+    if (gameState.votes && gameState.votes[clientId]) {
+      return; // Already submitted vote
+    }
     selectedVoteTargetId = targetId;
     document.querySelectorAll(".vote-card").forEach(c => c.classList.remove("voted-for"));
     const selected = document.getElementById(`vote-card-${targetId}`);
     if (selected) selected.classList.add("voted-for");
-    document.getElementById("submit-vote-btn").disabled = false;
+    const submitBtn = document.getElementById("submit-vote-btn");
+    if (submitBtn) submitBtn.disabled = false;
     playTone(523.25, 0.08, 'sine', 0.15);
   }
 
   function submitMyVote() {
     if (!selectedVoteTargetId) return;
+    if (!gameState.votes) gameState.votes = {};
     gameState.votes[clientId] = selectedVoteTargetId;
-    document.getElementById("submit-vote-btn").disabled = true;
-    document.getElementById("submit-vote-btn").innerText = "Vote Registered ✓";
+
+    const submitBtn = document.getElementById("submit-vote-btn");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Vote Registered ✓";
+    }
 
     publishMessage({
       type: "VOTE_CAST",
@@ -1919,26 +2058,96 @@
   }
 
   function updateVotingTallyUI() {
-    const totalPlayers = Object.keys(roomRoster).length;
-    const votesCount = Object.keys(gameState.votes).length;
-    document.getElementById("voting-tally-status").innerText = `${votesCount} / ${totalPlayers} Votes Cast`;
+    const activeIds = getActiveVoterIds();
+    const votedIds = getVotedPlayerIds();
+    const totalCount = activeIds.length;
+    const votesCount = votedIds.length;
+
+    const tallyEl = document.getElementById("voting-tally-status");
+    if (tallyEl) {
+      if (votesCount >= totalCount && totalCount > 0) {
+        tallyEl.innerHTML = `<span style="color:var(--innocent-green);">All ${votesCount} / ${totalCount} Votes In! Revealing... 🥁</span>`;
+      } else {
+        tallyEl.innerText = `${votesCount} / ${totalCount} Votes Cast`;
+      }
+    }
+
+    // Update real-time status on player cards
+    activeIds.forEach(id => {
+      const card = document.getElementById(`vote-card-${id}`);
+      if (card) {
+        let badge = card.querySelector(".vote-status-badge");
+        if (!badge) {
+          badge = document.createElement("div");
+          badge.className = "vote-status-badge";
+          card.appendChild(badge);
+        }
+        if (gameState.votes && gameState.votes[id]) {
+          badge.innerText = "✓ Voted";
+          badge.style.color = "var(--innocent-green)";
+        } else {
+          badge.innerText = "Thinking...";
+          badge.style.color = "#8e8e93";
+        }
+      }
+    });
+
+    // Fallback force reveal button for host
+    const forceBtn = document.getElementById("force-reveal-verdict-btn");
+    if (forceBtn) {
+      const isHost = isCurrentUserHost();
+      forceBtn.style.display = (isHost && votesCount >= 1 && votesCount < totalCount) ? "block" : "none";
+    }
+
     checkIfAllVotesIn();
   }
 
   function checkIfAllVotesIn() {
-    const totalPlayers = Object.keys(roomRoster).length;
-    const votesCount = Object.keys(gameState.votes).length;
+    if (gameState.status === "elimination") return;
 
-    // Only host triggers verdict calculation
-    if (gameState.hostId === clientId && votesCount >= totalPlayers && totalPlayers > 0) {
-      calculateAndBroadcastVerdict();
+    const activeIds = getActiveVoterIds();
+    const votedIds = getVotedPlayerIds();
+    const totalCount = activeIds.length;
+    const votesCount = votedIds.length;
+
+    if (totalCount > 0 && votesCount >= totalCount) {
+      if (isCurrentUserHost()) {
+        calculateAndBroadcastVerdict();
+      } else {
+        // Non-host fallback: if host does not broadcast verdict within 1 second, trigger calculation
+        if (!verdictCalculationTimer) {
+          verdictCalculationTimer = setTimeout(() => {
+            verdictCalculationTimer = null;
+            if (gameState.status !== "elimination") {
+              calculateAndBroadcastVerdict();
+            }
+          }, 1000);
+        }
+      }
     }
   }
 
+  function forceRevealVerdict() {
+    if (!gameState.votes || Object.keys(gameState.votes).length === 0) {
+      alert("At least 1 vote must be cast before revealing the verdict.");
+      return;
+    }
+    calculateAndBroadcastVerdict();
+  }
+
   function calculateAndBroadcastVerdict() {
+    if (gameState.status === "elimination") return;
+    gameState.status = "elimination";
+    if (verdictCalculationTimer) {
+      clearTimeout(verdictCalculationTimer);
+      verdictCalculationTimer = null;
+    }
+
     const tally = {};
-    Object.values(gameState.votes).forEach(targetId => {
-      tally[targetId] = (tally[targetId] || 0) + 1;
+    Object.values(gameState.votes || {}).forEach(targetId => {
+      if (targetId) {
+        tally[targetId] = (tally[targetId] || 0) + 1;
+      }
     });
 
     let maxVotes = -1;
@@ -1958,7 +2167,6 @@
     const imposterId = gameState.imposterId;
     const isImposterCaught = !isTie && eliminatedId === imposterId;
 
-    gameState.status = "elimination";
     gameState.eliminatedId = isTie ? "TIE" : eliminatedId;
     gameState.roundWinner = isImposterCaught ? "innocents" : "imposter";
 
@@ -2050,7 +2258,7 @@
 
       const imposterClue = gameState.clueDifficulty === 'category'
         ? `Category only: "${gameState.secretPerson.category}"`
-        : (gameState.clueDifficulty === 'vague' ? gameState.secretPerson.clueVague : gameState.secretPerson.clueNormal);
+        : gameState.secretPerson.clueVague;
       document.getElementById("true-clue-revealed").innerText = `"${imposterClue}"`;
 
       // Render scoreboard
@@ -2095,7 +2303,7 @@
       if (timeLeft <= 0) {
         clearInterval(nextRoundAutoInterval);
         nextRoundAutoInterval = null;
-        if (gameState.hostId === clientId || !roomRoster[gameState.hostId]) {
+        if (isCurrentUserHost()) {
           requestNextRound();
         }
       }
@@ -2107,7 +2315,7 @@
       clearInterval(nextRoundAutoInterval);
       nextRoundAutoInterval = null;
     }
-    if (gameState.hostId === clientId || !roomRoster[gameState.hostId]) {
+    if (isCurrentUserHost()) {
       gameState.roundNumber++;
       requestStartGame();
     } else {
@@ -2210,14 +2418,55 @@
     render();
   }
 
-  /* Auto-Join URL Parameter Handler (?room=CODE) */
+  /* URL Parameter Handler (?room=CODE) */
   window.addEventListener("DOMContentLoaded", () => {
+    // Restore saved player name if available
+    try {
+      const saved = localStorage.getItem("imposter_player_name");
+      const nameInput = document.getElementById("player-name-input");
+      if (saved && nameInput) {
+        nameInput.value = saved;
+        playerName = saved;
+      }
+    } catch (e) {}
+
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get("room");
     if (roomParam) {
-      document.getElementById("room-code-input").value = roomParam.toUpperCase();
-      joinRoomByInput();
+      const formattedCode = roomParam.trim().toUpperCase();
+      const codeInput = document.getElementById("room-code-input");
+      if (codeInput) codeInput.value = formattedCode;
+
+      // Update subtitle to inform the user they were invited to this room
+      const subtitle = document.querySelector("#lobby-screen .subtitle");
+      if (subtitle) {
+        subtitle.innerHTML = `You've been invited to join room <strong style="color:var(--accent-gold); font-size:1.15rem; letter-spacing:0.05em;">${escapeHTML(formattedCode)}</strong>!<br>Enter your Agent Name below to enter the lobby.`;
+      }
+
+      // Pre-focus the name input so they can type immediately
+      const nameInput = document.getElementById("player-name-input");
+      if (nameInput) {
+        setTimeout(() => nameInput.focus(), 250);
+      }
     }
+
+    // Allow pressing Enter in inputs to submit
+    const nameInput = document.getElementById("player-name-input");
+    const codeInput = document.getElementById("room-code-input");
+    [nameInput, codeInput].forEach(inp => {
+      if (inp) {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            const hasRoomCode = codeInput && codeInput.value.trim();
+            if (hasRoomCode) {
+              joinRoomByInput();
+            } else {
+              createRoom();
+            }
+          }
+        });
+      }
+    });
   });
 </script>
 </body>
