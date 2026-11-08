@@ -667,6 +667,16 @@
     border: 2px solid var(--card-green);
     color: #052e16;
   }
+  .bang-card.black {
+    background: linear-gradient(180deg, #27272a 0%, #09090b 100%);
+    border: 2px solid #52525b;
+    color: #f4f4f5;
+  }
+  .bang-card.gold-brown {
+    background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #d97706;
+    color: #451a03;
+  }
 
   .card-top-icon { font-size: 1.8rem; margin-bottom: 2px; }
   .card-name-title { font-size: 0.95rem; font-weight: 900; line-height: 1.1; margin-bottom: 4px; }
@@ -681,6 +691,157 @@
   }
   .card-suit-value.red { color: #dc2626; }
   .card-suit-value.black { color: #18181b; }
+
+  /* Gold Counters & Badges */
+  .gold-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.4) 100%);
+    border: 1px solid var(--gold);
+    color: #fef08a;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  /* Saloon Shop Box */
+  .saloon-shop-box {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .shop-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .shop-cards-row {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .shop-item-card {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 10px;
+    min-width: 140px;
+    max-width: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+  }
+  .shop-item-card.gold_black {
+    border-color: #71717a;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+  }
+  .shop-item-card.gold_brown {
+    border-color: #d97706;
+    background: linear-gradient(180deg, #451a03 0%, #1c1917 100%);
+  }
+  .shop-card-type-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; opacity: 0.85; color: #fde68a; }
+  .shop-card-icon { font-size: 1.6rem; margin: 2px 0; }
+  .shop-card-name { font-size: 0.82rem; font-weight: 900; color: #fff; margin-bottom: 2px; }
+  .shop-card-cost { font-size: 0.75rem; font-weight: 800; color: #ffd700; margin-bottom: 4px; }
+  .shop-card-desc { font-size: 0.68rem; color: #cbd5e1; line-height: 1.2; flex-grow: 1; margin-bottom: 6px; }
+  .in-play-mini-tag.black {
+    background: rgba(24, 24, 27, 0.85);
+    border: 1px solid #71717a;
+    color: #f4f4f5;
+  }
+  .in-play-slot.gold_black {
+    border-color: #71717a;
+    background: rgba(24, 24, 27, 0.85);
+    color: #f4f4f5;
+  }
+  .scrap-btn {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    cursor: pointer;
+    margin-left: 4px;
+  }
+  .scrap-btn:hover { background: #dc2626; }
+  .shop-buy-btn {
+    margin-top: 8px;
+    background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .shop-buy-btn:hover { filter: brightness(1.15); }
+  .shop-buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Character Choice Modal */
+  .char-choice-container {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .char-choice-card {
+    background: var(--wood-light);
+    border: 2px solid var(--wood-border);
+    border-radius: 18px;
+    padding: 20px 16px;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  .char-choice-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--gold);
+    box-shadow: 0 14px 30px var(--gold-glow);
+  }
+  .char-choice-avatar { font-size: 3.2rem; margin-bottom: 8px; }
+  .char-choice-name { font-size: 1.15rem; font-weight: 900; color: #fff; margin-bottom: 4px; }
+  .char-choice-pack {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .char-choice-bullets { margin-bottom: 10px; }
+  .char-choice-desc { font-size: 0.78rem; color: #e4e4e7; line-height: 1.35; flex-grow: 1; margin-bottom: 14px; }
 
   /* Equipment in front of player */
   .in-play-row {
@@ -703,6 +864,11 @@
   .in-play-slot.green-ready {
     border-color: #22c55e;
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  }
+  .in-play-slot.black-equip {
+    border-color: #71717a;
+    border-style: solid;
+    background: rgba(20, 20, 25, 0.6);
   }
 
   /* Cockpit Action Controls */
@@ -876,6 +1042,24 @@
         </div>
         <input type="checkbox" id="toggle-wws" class="toggle-checkbox" checked onclick="event.stopPropagation(); toggleExpansion('enableWildWestShow');">
       </div>
+
+      <!-- Gold Rush Toggle -->
+      <div class="toggle-card checked" id="toggle-gr-card" onclick="toggleExpansion('enableGoldRush')">
+        <div class="toggle-info">
+          <div class="toggle-title">💰 Gold Rush Expansion <span style="color: #ffd700; font-size: 0.8rem;">(+24 Equipment Deck & Gold Economy)</span></div>
+          <div class="toggle-desc">Earn gold nuggets on damage & healing. Purchase Brown instant & Black in-play equipment from the 3-card Saloon Shop. Adds 8 characters.</div>
+        </div>
+        <input type="checkbox" id="toggle-gr" class="toggle-checkbox" checked onclick="event.stopPropagation(); toggleExpansion('enableGoldRush');">
+      </div>
+
+      <!-- Shadow-Gunslingers Variant Toggle -->
+      <div class="toggle-card" id="toggle-shadow-card" onclick="toggleExpansion('enableShadowGunslingers')">
+        <div class="toggle-info">
+          <div class="toggle-title">👻 Shadow-Gunslingers Variant <span style="color: #a855f7; font-size: 0.8rem;">(Eliminated Players Take Turns)</span></div>
+          <div class="toggle-desc">Dead players retain gold nuggets and take turns with 0 LP (cannot heal), discarding at end of turn. Renegades dynamically join the losing team.</div>
+        </div>
+        <input type="checkbox" id="toggle-shadow" class="toggle-checkbox" onclick="event.stopPropagation(); toggleExpansion('enableShadowGunslingers');">
+      </div>
     </div>
   </div>
 
@@ -982,6 +1166,7 @@
         </div>
 
         <div class="cockpit-controls">
+          <div id="char-special-actions" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
           <button class="btn-gold" id="play-card-btn" onclick="playSelectedCard()" disabled>
             <span>Play Selected Card</span>
           </button>
@@ -991,12 +1176,21 @@
         </div>
       </div>
 
-      <!-- In Play Equipment (Blue & Green Cards) -->
+      <!-- In Play Equipment (Blue, Green & Black Cards) -->
       <div class="cards-section-title">
         <span>🛡️ My In-Play Equipment & Weapons</span>
       </div>
       <div class="in-play-row" id="my-in-play-row">
         <div style="color: #777; font-size: 0.85rem; padding: 6px;">No equipment equipped yet.</div>
+      </div>
+
+      <!-- Saloon Shop (Gold Rush Expansion) -->
+      <div class="saloon-shop-box" id="saloon-shop-box" style="display: none;">
+        <div class="shop-header">
+          <div class="shop-title">🏪 Gold Rush Saloon Shop</div>
+          <div style="font-size: 0.78rem; color: #fde68a;">Buy instant Brown or persistent Black cards with Gold!</div>
+        </div>
+        <div class="shop-cards-row" id="shop-cards-row"></div>
       </div>
 
       <!-- Cards in Hand -->
@@ -1043,6 +1237,26 @@
   </div>
 </div>
 
+<!-- Character Selection Modal (Choose 1 of 2 Characters) -->
+<div id="character-select-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 580px;">
+    <div class="modal-header-icon">🤠</div>
+    <div class="modal-title">Choose Your Gunslinger</div>
+    <div class="modal-message">Two random character cards have been dealt to you. Select which outlaw or lawman you want to play as:</div>
+    <div class="char-choice-container" id="char-choice-container"></div>
+  </div>
+</div>
+
+<!-- General Store Draft Modal -->
+<div id="general-store-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 640px;">
+    <div class="modal-header-icon">🏬</div>
+    <div class="modal-title">General Store Draft</div>
+    <div class="modal-message" id="gs-modal-message">Cards are turned over on the counter. Click on 1 card to take into your hand:</div>
+    <div class="cards-horizontal-scroll" id="gs-draft-cards-row" style="justify-content: center; padding: 10px 0;"></div>
+  </div>
+</div>
+
 <script>
   /* ==========================================================================
      1. GLOBAL CONFIGURATION & EXPANSION TOGGLES
@@ -1050,15 +1264,32 @@
   const config = {
     enableDodgeCity: true,
     enableHighNoon: true,
-    enableWildWestShow: true
+    enableWildWestShow: true,
+    enableGoldRush: true,
+    enableShadowGunslingers: false
   };
 
   function toggleExpansion(key) {
     if (gameState.status !== "lobby") return;
     config[key] = !config[key];
 
-    const card = document.getElementById(key === 'enableDodgeCity' ? 'toggle-dc-card' : (key === 'enableHighNoon' ? 'toggle-hn-card' : 'toggle-wws-card'));
-    const chk = document.getElementById(key === 'enableDodgeCity' ? 'toggle-dc' : (key === 'enableHighNoon' ? 'toggle-hn' : 'toggle-wws'));
+    const cardMap = {
+      enableDodgeCity: 'toggle-dc-card',
+      enableHighNoon: 'toggle-hn-card',
+      enableWildWestShow: 'toggle-wws-card',
+      enableGoldRush: 'toggle-gr-card',
+      enableShadowGunslingers: 'toggle-shadow-card'
+    };
+    const chkMap = {
+      enableDodgeCity: 'toggle-dc',
+      enableHighNoon: 'toggle-hn',
+      enableWildWestShow: 'toggle-wws',
+      enableGoldRush: 'toggle-gr',
+      enableShadowGunslingers: 'toggle-shadow'
+    };
+
+    const card = document.getElementById(cardMap[key]);
+    const chk = document.getElementById(chkMap[key]);
     if (card) card.className = `toggle-card ${config[key] ? 'checked' : ''}`;
     if (chk) chk.checked = config[key];
 
@@ -1175,6 +1406,37 @@
     { id: "wws_wild_west_show", name: "Wild West Show", desc: "The Sheriff dying no longer ends the game! Winner is the Last Gunslinger Standing!", effect: "battle_royale" }
   ];
 
+  // Gold Rush Expansion Equipment Deck (24 Cards)
+  const GOLD_RUSH_CARDS = [
+    // Brown-Bordered Instant Equipment (11 Total)
+    { id: "gr_bottle_0", name: "Bottle", type: "gold_brown", cost: 2, icon: "🍾", desc: "Instantly acts as a Beer, Panic!, or BANG!." },
+    { id: "gr_bottle_1", name: "Bottle", type: "gold_brown", cost: 2, icon: "🍾", desc: "Instantly acts as a Beer, Panic!, or BANG!." },
+    { id: "gr_accomplice_0", name: "Accomplice", type: "gold_brown", cost: 2, icon: "🤝", desc: "Steal 1 card from any player's hand." },
+    { id: "gr_calumet_0", name: "Calumet", type: "gold_brown", cost: 3, icon: "🪶", desc: "You are completely immune to Diamond cards until your next turn." },
+    { id: "gr_gold_rush_0", name: "Gold Rush", type: "gold_brown", cost: 4, icon: "💰", desc: "Instantly regain all Life Points! Ends your turn immediately." },
+    { id: "gr_horseshoe_0", name: "Horseshoe", type: "gold_brown", cost: 2, icon: "🧲", desc: "Whenever you draw for a check ('draw!'), flip 1 extra card." },
+    { id: "gr_pardner_0", name: "Pardner", type: "gold_brown", cost: 2, icon: "🤠", desc: "Instantly draw 2 cards from the deck." },
+    { id: "gr_union_pacific_0", name: "Union Pacific", type: "gold_brown", cost: 4, icon: "🚂", desc: "Instantly draw 4 cards from the deck." },
+    { id: "gr_gun_belt_0", name: "Gun Belt", type: "gold_brown", cost: 2, icon: "🥋", desc: "Your max hand size limit is increased by 1 for this turn." },
+    { id: "gr_shot_0", name: "Shot", type: "gold_brown", cost: 1, icon: "💥", desc: "Fire a free BANG! at any target in range (doesn't count toward limit)." },
+    { id: "gr_bandidos_0", name: "Bandidos", type: "gold_brown", cost: 2, icon: "🎭", desc: "All other players must discard 1 card or lose 1 Life Point." },
+
+    // Black-Bordered Persistent Equipment (13 Total)
+    { id: "gr_boots_0", name: "Boots", type: "gold_black", cost: 3, icon: "👢", desc: "Whenever you lose 1 LP, immediately draw 1 card from the deck." },
+    { id: "gr_pickaxe_0", name: "Pickaxe", type: "gold_black", cost: 4, icon: "⛏️", desc: "Draw 1 extra card at the start of your turn." },
+    { id: "gr_rhum_0", name: "Rhum", type: "gold_black", cost: 3, icon: "🥃", desc: "Flip top card: if Hearts or Diamonds, gain 2 LP; otherwise gain 1 LP." },
+    { id: "gr_gold_pan_0", name: "Gold Pan", type: "gold_black", cost: 2, icon: "🥘", desc: "Once per turn on your turn, pay 1 gold to draw 1 card." },
+    { id: "gr_shotgun_0", name: "Shotgun", type: "gold_black", cost: 3, icon: "⚡", desc: "Whenever you hit a player with a BANG!, they also discard 1 card." },
+    { id: "gr_bad_rock_0", name: "Bad Rock", type: "gold_black", cost: 3, icon: "🪨", desc: "When targeted by BANG!, pay 1 gold to dodge instead of Missed!." },
+    { id: "gr_belt_0", name: "Belt", type: "gold_black", cost: 3, icon: "🪢", desc: "Your hand size limit at end of turn is increased by 2." },
+    { id: "gr_warrant_0", name: "Warrant", type: "gold_black", cost: 3, icon: "📜", desc: "Whenever another player is eliminated, you gain 2 Gold Nuggets." },
+    { id: "gr_lucky_charm_0", name: "Lucky Charm", type: "gold_black", cost: 2, icon: "🍀", desc: "Whenever you lose 1 Life Point, you gain 1 Gold Nugget." },
+    { id: "gr_talisman_0", name: "Talisman", type: "gold_black", cost: 3, icon: "🧿", desc: "Players at distance 1 see you at distance +1." },
+    { id: "gr_bounty_0", name: "Bounty", type: "gold_black", cost: 2, icon: "🏷️", desc: "Place on an opponent; whoever deals damage to them gains 1 Gold." },
+    { id: "gr_casino_0", name: "Casino", type: "gold_black", cost: 2, icon: "🎰", desc: "Pay 1 gold and flip: if Hearts, gain 2 Gold Nuggets." },
+    { id: "gr_gold_mine_0", name: "Gold Mine", type: "gold_black", cost: 3, icon: "🪙", desc: "Gain 1 Gold Nugget at the start of each of your turns." }
+  ];
+
   /* ==========================================================================
      3. COMPLETE CHARACTER REGISTRY (39 Characters)
      ========================================================================== */
@@ -1222,7 +1484,17 @@
     JOHN_PAIN: { name: "John Pain", lp: 4, icon: "🖐️", pack: "wws", desc: "If he has <6 cards, he takes any card drawn for checks by other players." },
     GREYGORY_DECK: { name: "Greygory Deck", lp: 4, icon: "🔀", pack: "wws", desc: "At turn start, gains the abilities of 2 random basic characters for the turn." },
     GARY_LOOTER: { name: "Gary Looter", lp: 5, icon: "🧤", pack: "wws", desc: "He draws all excess cards discarded by other players at end of turn." },
-    TEREN_KILL: { name: "Teren Kill", lp: 3, icon: "🩸", pack: "wws", desc: "When eliminated, draws!: if not Spades, survives with 1 LP and draws 1 card." }
+    TEREN_KILL: { name: "Teren Kill", lp: 3, icon: "🩸", pack: "wws", desc: "When eliminated, draws!: if not Spades, survives with 1 LP and draws 1 card." },
+
+    // Gold Rush (8 Characters)
+    DON_BELL: { name: "Don Bell", lp: 4, icon: "🔔", pack: "gr", desc: "At the end of his turn, he draws! If Hearts or Diamonds, he takes 1 extra turn (max 1 extra)." },
+    DUTCH_WILL: { name: "Dutch Will", lp: 4, icon: "🍺", pack: "gr", desc: "Draw phase: draws 2 cards, must discard 1, and gains 1 Gold Nugget." },
+    JACKY_MURIETA: { name: "Jacky Murieta", lp: 4, icon: "🗡️", pack: "gr", desc: "He may pay 2 Gold Nuggets to play an extra BANG! on his turn." },
+    JOSH_MCCLOUD: { name: "Josh McCloud", lp: 4, icon: "📦", pack: "gr", desc: "He may pay 2 Gold Nuggets to draw and play the top hidden Equipment card." },
+    MADAM_YTO: { name: "Madam Yto", lp: 4, icon: "💃", pack: "gr", desc: "Whenever any player plays a Beer card, she immediately draws 1 card from the deck." },
+    PRETTY_LUZENA: { name: "Pretty Luzena", lp: 4, icon: "👒", pack: "gr", desc: "Her first shop purchase each turn costs 1 less Gold Nugget." },
+    SIMEON_PICOS: { name: "Simeon Picos", lp: 4, icon: "🌵", pack: "gr", desc: "Each time he loses 1 Life Point, he gains 1 Gold Nugget from the bank." },
+    UNCLE_WILL: { name: "Uncle Will", lp: 4, icon: "🏬", pack: "gr", desc: "Once per turn, he may play any card from his hand as a General Store." }
   };
 
   /* ==========================================================================
@@ -1238,7 +1510,7 @@
   let gameState = {
     room: "",
     hostId: "",
-    status: "lobby", // lobby | playing | over
+    status: "lobby", // lobby | char_select | playing | over
     round: 1,
     turnIndex: 0,
     turnPhase: "draw", // event | draw | play | discard
@@ -1246,6 +1518,10 @@
     turnBangCount: 0,
     deck: [],
     discardPile: [],
+    goldRushDeck: [],
+    shopCards: [],
+    generalStoreCards: [],
+    generalStoreQueue: [],
     highNoonDeck: [],
     activeHighNoonCard: null,
     wildWestShowDeck: [],
@@ -1418,6 +1694,38 @@
         if (gameState.status === "playing") syncActiveShootoutUI();
       }
       renderLobbyRoster();
+    } else if (data.type === "START_CHAR_SELECT") {
+      gameState = data.state;
+      Object.assign(roomPlayers, data.players);
+      switchScreen("gameplay-screen");
+      const myPlayer = roomPlayers[clientId];
+      if (myPlayer && myPlayer.characterChoices && myPlayer.characterChoices.length > 0 && !myPlayer.charKey) {
+        showCharacterSelectModal(myPlayer.characterChoices);
+      }
+      playSaloonChime();
+    } else if (data.type === "CHOOSE_CHARACTER") {
+      if (isCurrentUserHost()) {
+        const p = roomPlayers[data.playerId];
+        if (p) p.charKey = data.charKey;
+        const remaining = Object.values(roomPlayers).filter(pl => !pl.charKey);
+        if (remaining.length === 0) {
+          startShootoutAfterSelection();
+        } else {
+          broadcastGameState();
+        }
+      }
+    } else if (data.type === "DRAFT_GS_CARD") {
+      if (isCurrentUserHost()) {
+        executeGeneralStorePick(data.playerId, data.cardIndex);
+      }
+    } else if (data.type === "BUY_SHOP_CARD") {
+      if (isCurrentUserHost()) {
+        buyShopCard(data.cardIndex, data.playerId);
+      }
+    } else if (data.type === "SCRAP_BLACK_CARD") {
+      if (isCurrentUserHost()) {
+        scrapOpponentBlackCard(data.opponentId, data.cardIndex, data.playerId);
+      }
     } else if (data.type === "START_GAME") {
       gameState = data.state;
       Object.assign(roomPlayers, data.players);
@@ -1691,11 +1999,12 @@
       if (c.pack === "base") return true;
       if (c.pack === "dc" && config.enableDodgeCity) return true;
       if (c.pack === "wws" && config.enableWildWestShow) return true;
+      if (c.pack === "gr" && config.enableGoldRush) return true;
       return false;
     });
     const shuffledChars = shuffleArray(charKeys);
 
-    // 3. Assemble Decks
+    // 3. Assemble Main Deck
     let mainDeck = [...BASE_CARDS];
     if (config.enableDodgeCity) {
       mainDeck = mainDeck.concat(DODGE_CITY_CARDS);
@@ -1718,28 +2027,170 @@
       wwsDeck = [...shuffleArray(wwsBase), wwsBottom];
     }
 
-    // 4. Assign to players
+    // Gold Rush equipment deck: 24 equipment cards + 3 active face-up shop cards
+    let grDeck = [];
+    let initialShopCards = [];
+    if (config.enableGoldRush) {
+      grDeck = shuffleArray([...GOLD_RUSH_CARDS]);
+      for (let s = 0; s < 3; s++) {
+        if (grDeck.length > 0) initialShopCards.push(grDeck.pop());
+      }
+    }
+
+    // 4. Assign roles and deal 2 random character choices to each player
     playerList.forEach((p, idx) => {
       p.role = roles[idx];
-      p.charKey = shuffledChars[idx % shuffledChars.length];
-      const charInfo = CHARACTERS[p.charKey];
-      // Sheriff gets +1 extra Life Point!
-      const bonusLp = (p.role === "sheriff" && playerList.length > 3) ? 1 : 0;
-      p.maxLp = charInfo.lp + bonusLp;
-      p.currentLp = p.maxLp;
+      p.gold = 0;
+      p.isShadow = false;
       p.isAlive = true;
       p.hand = [];
       p.inPlay = [];
       p.readyGreenCards = [];
+      p.usedShopDiscountThisTurn = false;
+      p.tookExtraTurn = false;
 
-      // Deal initial cards equal to Life Points (Big Spencer starts with 5)
-      const startingCardCount = (p.charKey === "BIG_SPENCER") ? 5 : p.maxLp;
-      for (let c = 0; c < startingCardCount; c++) {
-        if (mainDeck.length > 0) p.hand.push(mainDeck.pop());
+      // Deal 2 random character choices
+      const c1 = shuffledChars.pop() || "BART_CASSIDY";
+      const c2 = shuffledChars.pop() || "WILLY_THE_KID";
+      p.characterChoices = [c1, c2];
+
+      if (p.isBot) {
+        p.charKey = p.characterChoices[0];
+      } else {
+        p.charKey = null;
       }
     });
 
-    // Determine starting turn (Sheriff always plays first in standard games)
+    gameState.deck = mainDeck;
+    gameState.discardPile = [];
+    gameState.highNoonDeck = hnDeck;
+    gameState.activeHighNoonCard = null;
+    gameState.wildWestShowDeck = wwsDeck;
+    gameState.activeWildWestShowCard = null;
+    gameState.goldRushDeck = grDeck;
+    gameState.shopCards = initialShopCards;
+    gameState.generalStoreCards = [];
+    gameState.generalStoreQueue = [];
+    gameState.winner = null;
+    gameState.pendingInterrupt = null;
+
+    // Check if any human player needs to choose a character
+    const humansNeedingChoice = playerList.filter(p => !p.isBot && !p.charKey);
+    if (humansNeedingChoice.length > 0) {
+      gameState.status = "char_select";
+      publishMessage({
+        type: "START_CHAR_SELECT",
+        state: gameState,
+        players: roomPlayers
+      });
+      const myPlayer = roomPlayers[clientId];
+      if (myPlayer && myPlayer.characterChoices && myPlayer.characterChoices.length > 0) {
+        showCharacterSelectModal(myPlayer.characterChoices);
+      }
+      playSaloonChime();
+    } else {
+      startShootoutAfterSelection();
+    }
+  }
+
+  function showCharacterSelectModal(choices) {
+    const modal = document.getElementById("character-select-modal");
+    const container = document.getElementById("char-choice-container");
+    if (!modal || !container) return;
+
+    const me = roomPlayers[clientId];
+    const roleText = me ? (me.role === "sheriff" ? "⭐ You are the SHERIFF (+1 Max LP bonus)!" : `🤫 Your Secret Role: ${me.role.toUpperCase()}`) : "";
+
+    container.innerHTML = "";
+    if (roleText) {
+      const roleBanner = document.createElement("div");
+      roleBanner.style.width = "100%";
+      roleBanner.style.textAlign = "center";
+      roleBanner.style.padding = "8px 12px";
+      roleBanner.style.borderRadius = "8px";
+      roleBanner.style.fontWeight = "800";
+      roleBanner.style.fontSize = "0.95rem";
+      roleBanner.style.color = me && me.role === "sheriff" ? "#fde047" : "#cbd5e1";
+      roleBanner.style.background = "rgba(0,0,0,0.4)";
+      roleBanner.innerText = roleText;
+      container.appendChild(roleBanner);
+    }
+
+    choices.forEach(key => {
+      const c = CHARACTERS[key];
+      if (!c) return;
+      const card = document.createElement("div");
+      card.className = "char-choice-card";
+      
+      const packLabel = c.pack === "wws" ? "Wild West Show" : (c.pack === "dc" ? "Dodge City" : (c.pack === "gr" ? "Gold Rush" : "Base Game"));
+      const bonusLp = (me && me.role === "sheriff" && Object.keys(roomPlayers).length > 3) ? 1 : 0;
+      const totalLp = c.lp + bonusLp;
+
+      let bulletsHtml = "";
+      for (let i = 0; i < totalLp; i++) bulletsHtml += "<span>🩸</span>";
+
+      card.innerHTML = `
+        <div class="char-choice-avatar">${c.icon || '🤠'}</div>
+        <div class="char-choice-name">${escapeHTML(c.name)}</div>
+        <span class="char-choice-pack ${c.pack}">${packLabel}</span>
+        <div class="char-choice-bullets">
+          ${bulletsHtml}
+          <span style="font-size: 0.85rem; color: #fff; font-weight: 700; margin-left: 6px;">${totalLp} LP</span>
+        </div>
+        <div class="char-choice-desc">${escapeHTML(c.desc)}</div>
+        <button class="btn btn-primary" style="width: 100%; margin-top: auto;">Select Gunslinger</button>
+      `;
+      card.onclick = () => selectCharacterChoice(key);
+      container.appendChild(card);
+    });
+
+    modal.classList.add("active");
+  }
+
+  function selectCharacterChoice(chosenKey) {
+    const modal = document.getElementById("character-select-modal");
+    if (modal) modal.classList.remove("active");
+
+    const me = roomPlayers[clientId];
+    if (me) me.charKey = chosenKey;
+
+    if (isSoloMode || isCurrentUserHost()) {
+      const playerList = Object.values(roomPlayers);
+      const remaining = playerList.filter(p => !p.charKey);
+      if (remaining.length === 0) {
+        startShootoutAfterSelection();
+      } else {
+        broadcastGameState();
+      }
+    } else {
+      publishMessage({
+        type: "CHOOSE_CHARACTER",
+        playerId: clientId,
+        charKey: chosenKey
+      });
+    }
+  }
+
+  function startShootoutAfterSelection() {
+    const playerList = Object.values(roomPlayers);
+
+    // Initialize LP and starting hand for each player
+    playerList.forEach(p => {
+      const charInfo = CHARACTERS[p.charKey] || CHARACTERS.BART_CASSIDY;
+      const bonusLp = (p.role === "sheriff" && playerList.length > 3) ? 1 : 0;
+      p.maxLp = charInfo.lp + bonusLp;
+      p.currentLp = p.maxLp;
+      p.hand = [];
+      p.inPlay = [];
+      p.readyGreenCards = [];
+
+      const startingCardCount = (p.charKey === "BIG_SPENCER") ? 5 : p.maxLp;
+      for (let c = 0; c < startingCardCount; c++) {
+        const card = drawFromDeck();
+        if (card) p.hand.push(card);
+      }
+    });
+
     let startIndex = playerList.findIndex(p => p.role === "sheriff");
     if (startIndex === -1) startIndex = 0;
 
@@ -1749,14 +2200,6 @@
     gameState.activePlayerId = playerList[startIndex].id;
     gameState.turnPhase = "draw";
     gameState.turnBangCount = 0;
-    gameState.deck = mainDeck;
-    gameState.discardPile = [];
-    gameState.highNoonDeck = hnDeck;
-    gameState.activeHighNoonCard = null;
-    gameState.wildWestShowDeck = wwsDeck;
-    gameState.activeWildWestShowCard = null;
-    gameState.winner = null;
-    gameState.pendingInterrupt = null;
 
     publishMessage({
       type: "START_GAME",
@@ -1767,7 +2210,6 @@
     syncActiveShootoutUI();
     playSaloonChime();
 
-    // Check if the starting turn is an AI bot
     checkBotTurnTrigger();
   }
 
@@ -1864,12 +2306,24 @@
     executePhase1Draw();
   }
 
+  function getNextLivingPlayer(playerId) {
+    const living = getLivingPlayersCircle();
+    const idx = living.findIndex(p => p.id === playerId);
+    if (idx === -1 || living.length <= 1) return null;
+    return living[(idx + 1) % living.length];
+  }
+
   function executePhase1Draw() {
     if (!isCurrentUserHost()) return;
     const active = roomPlayers[gameState.activePlayerId];
-    if (!active || !active.isAlive) {
+    if (!active || (!active.isAlive && !(config.enableShadowGunslingers && active.isShadow))) {
       advanceToNextTurn();
       return;
+    }
+
+    if (active.isShadow) {
+      active.currentLp = 0;
+      addActivityLog(`👻 Shadow Gunslinger <strong>${escapeHTML(active.name)}</strong> rises from the grave for their turn!`);
     }
 
     gameState.turnPhase = "draw";
@@ -1882,6 +2336,27 @@
     // High Noon event drawing overrides
     if (gameState.activeHighNoonCard?.effect === "draw_extra") drawCount++;
     if (gameState.activeHighNoonCard?.effect === "draw_less") drawCount = Math.max(1, drawCount - 1);
+
+    // Gold Rush: Pickaxe draws 1 extra card at start of turn
+    if (active.inPlay.some(c => c.name === "Pickaxe")) drawCount++;
+
+    // Gold Rush: Gold Mine grants 1 Gold Nugget at start of turn
+    if (active.inPlay.some(c => c.name === "Gold Mine")) {
+      active.gold = (active.gold || 0) + 1;
+      addActivityLog(`🪙 ${active.name}'s Gold Mine yielded 1 Gold Nugget!`);
+    }
+
+    // Dutch Will ability: draws 2 cards, must discard 1, gains 1 Gold Nugget
+    if (active.charKey === "DUTCH_WILL") {
+      const dw1 = drawFromDeck();
+      const dw2 = drawFromDeck();
+      if (dw1) active.hand.push(dw1);
+      if (dw2) {
+        gameState.discardPile.push(dw2);
+        active.gold = (active.gold || 0) + 1;
+        addActivityLog(`🍺 Dutch Will discarded ${dw2.name} and gained 1 Gold Nugget!`);
+      }
+    }
 
     // Draw cards from deck
     for (let i = 0; i < drawCount; i++) {
@@ -1917,7 +2392,27 @@
   function advanceToNextTurn() {
     if (!isCurrentUserHost()) return;
     const playerList = Object.values(roomPlayers);
-    const living = playerList.filter(p => p.isAlive);
+
+    // Check Don Bell ability: at end of turn, draws check; if Hearts or Diamonds, immediate extra turn!
+    const currentActive = roomPlayers[gameState.activePlayerId];
+    if (currentActive && currentActive.charKey === "DON_BELL" && !currentActive.tookExtraTurn && (currentActive.isAlive || currentActive.isShadow)) {
+      const flip = drawCardForCheck(currentActive);
+      addActivityLog(`🔔 Don Bell check for extra turn: flipped ${getSuitSymbol(flip.suit)} ${flip.value}.`);
+      if (flip.suit === "H" || flip.suit === "D" || gameState.activeHighNoonCard?.effect === "hearts_suit") {
+        currentActive.tookExtraTurn = true;
+        addActivityLog(`🔔 Don Bell takes an IMMEDIATE EXTRA TURN!`);
+        executePhase1Draw();
+        return;
+      }
+    }
+
+    if (currentActive) {
+      currentActive.tookExtraTurn = false;
+      currentActive.usedShopDiscountThisTurn = false;
+      currentActive.extraDrawCheck = false;
+      currentActive.extraHandLimit = 0;
+      currentActive.immuneToDiamonds = false;
+    }
 
     // Check Win Condition
     const win = checkWinCondition();
@@ -1933,7 +2428,7 @@
       return;
     }
 
-    // Calculate next living player
+    // Calculate next player (living or Shadow gunslinger)
     const direction = (gameState.activeHighNoonCard?.effect === "reverse_order") ? -1 : 1;
     let nextIdx = (gameState.turnIndex + direction + playerList.length) % playerList.length;
 
@@ -1942,7 +2437,8 @@
       nextIdx = (nextIdx + direction + playerList.length) % playerList.length;
     }
 
-    while (!playerList[nextIdx].isAlive) {
+    const isValidCandidate = (p) => p.isAlive || (config.enableShadowGunslingers && p.isShadow);
+    while (!isValidCandidate(playerList[nextIdx])) {
       nextIdx = (nextIdx + direction + playerList.length) % playerList.length;
     }
 
@@ -2118,15 +2614,38 @@
         if (playerId === clientId) alert("Beer has no effect when only 2 players remain!");
         return;
       }
-      if (player.currentLp >= player.maxLp) {
+      if (!player.isShadow && player.currentLp >= player.maxLp) {
         if (playerId === clientId) alert("Your Life Points are already at maximum!");
         return;
       }
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
-      const healAmount = (player.charKey === "TEQUILA_JOE") ? 2 : 1;
-      player.currentLp = Math.min(player.maxLp, player.currentLp + healAmount);
-      addActivityLog(`🍺 ${player.name} drank a cold Beer (+${healAmount} LP).`);
+
+      if (!player.isShadow) {
+        const healAmount = (player.charKey === "TEQUILA_JOE") ? 2 : 1;
+        player.currentLp = Math.min(player.maxLp, player.currentLp + healAmount);
+        addActivityLog(`🍺 ${player.name} drank a cold Beer (+${healAmount} LP).`);
+      } else {
+        addActivityLog(`🍺 Shadow ${player.name} drank a cold Beer (Shadows cannot heal LP).`);
+      }
+
+      // Gold Rush: 1 Gold Nugget per Beer played
+      if (config.enableGoldRush) {
+        player.gold = (player.gold || 0) + 1;
+        addActivityLog(`🪙 ${player.name} earned 1 Gold Nugget for enjoying a Beer!`);
+      }
+
+      // Madam Yto: draws 1 card whenever a Beer is played
+      Object.values(roomPlayers).forEach(p => {
+        if (p.isAlive && p.charKey === "MADAM_YTO") {
+          const bonus = drawFromDeck();
+          if (bonus) {
+            p.hand.push(bonus);
+            addActivityLog(`💃 Madam Yto drew a card because Beer was played!`);
+          }
+        }
+      });
+
       broadcastGameState();
       return;
     }
@@ -2241,34 +2760,160 @@
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
       getLivingPlayersCircle().forEach(p => {
-        if (p.currentLp < p.maxLp) p.currentLp++;
+        if (!p.isShadow && p.currentLp < p.maxLp) p.currentLp++;
       });
+      if (config.enableGoldRush) {
+        player.gold = (player.gold || 0) + 1;
+        addActivityLog(`🪙 ${player.name} earned 1 Gold Nugget for opening the Saloon!`);
+      }
       addActivityLog(`🥂 ${player.name} opened the Saloon! All living players regained 1 LP.`);
       broadcastGameState();
       return;
     }
 
-    if (card.name === "General Store") {
+    if (card.name === "General Store" || (player.charKey === "UNCLE_WILL" && player.gold >= 2 && targetId === "as_general_store")) {
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
+      if (targetId === "as_general_store") {
+        player.gold -= 2;
+        addActivityLog(`🏬 Uncle Will paid 2 Gold Nuggets to convert ${card.name} into a General Store!`);
+      }
+
       const living = getLivingPlayersCircle();
       const draftCards = [];
       for (let i = 0; i < living.length; i++) {
         const c = drawFromDeck();
         if (c) draftCards.push(c);
       }
-      addActivityLog(`🏬 ${player.name} opened the General Store (${draftCards.length} cards revealed).`);
+      gameState.generalStoreCards = draftCards;
 
-      // Simple auto-distribution in turn order
-      living.forEach((p, idx) => {
-        if (draftCards[idx]) {
-          p.hand.push(draftCards[idx]);
-          addActivityLog(`${p.name} drafted ${draftCards[idx].name}.`);
-        }
-      });
+      // Clockwise drafting queue starting with the active player
+      const activeIdx = living.findIndex(p => p.id === player.id);
+      const queue = [];
+      for (let i = 0; i < living.length; i++) {
+        queue.push(living[(activeIdx + i) % living.length].id);
+      }
+      gameState.generalStoreQueue = queue;
+
+      addActivityLog(`🏬 <strong>${player.name}</strong> opened the General Store! ${draftCards.length} cards turned over on the counter.`);
       broadcastGameState();
+      processGeneralStoreDraftStep();
       return;
     }
+  }
+
+  function processGeneralStoreDraftStep() {
+    if (!gameState.generalStoreQueue || gameState.generalStoreQueue.length === 0 || !gameState.generalStoreCards || gameState.generalStoreCards.length === 0) {
+      gameState.generalStoreCards = [];
+      gameState.generalStoreQueue = [];
+      const gsModal = document.getElementById("general-store-modal");
+      if (gsModal) gsModal.classList.remove("active");
+      broadcastGameState();
+      checkBotTurnTrigger();
+      return;
+    }
+
+    const currentDrafterId = gameState.generalStoreQueue[0];
+    const currentDrafter = roomPlayers[currentDrafterId];
+    if (!currentDrafter || !currentDrafter.isAlive) {
+      gameState.generalStoreQueue.shift();
+      processGeneralStoreDraftStep();
+      return;
+    }
+
+    if (currentDrafter.isBot) {
+      setTimeout(() => {
+        if (!gameState.generalStoreCards || gameState.generalStoreCards.length === 0) return;
+        let bestIdx = 0;
+        if (currentDrafter.currentLp < currentDrafter.maxLp) {
+          const healIdx = gameState.generalStoreCards.findIndex(c => c.name === "Beer" || c.name === "Saloon");
+          if (healIdx !== -1) bestIdx = healIdx;
+        }
+        if (bestIdx === 0) {
+          const bangIdx = gameState.generalStoreCards.findIndex(c => c.name === "BANG!");
+          if (bangIdx !== -1 && !currentDrafter.hand.some(c => c.name === "BANG!")) bestIdx = bangIdx;
+        }
+        executeGeneralStorePick(currentDrafter.id, bestIdx);
+      }, 1000);
+      return;
+    }
+
+    renderGeneralStoreModal();
+  }
+
+  function renderGeneralStoreModal() {
+    const modal = document.getElementById("general-store-modal");
+    const container = document.getElementById("gs-draft-cards-row");
+    const msg = document.getElementById("gs-modal-message");
+    if (!modal || !container || !msg) return;
+
+    if (!gameState.generalStoreQueue || gameState.generalStoreQueue.length === 0 || !gameState.generalStoreCards || gameState.generalStoreCards.length === 0) {
+      modal.classList.remove("active");
+      return;
+    }
+
+    const currentDrafterId = gameState.generalStoreQueue[0];
+    const isMyTurn = (currentDrafterId === clientId);
+    modal.classList.add("active");
+
+    if (isMyTurn) {
+      msg.innerHTML = `<strong>It is your turn to pick!</strong> Select 1 card from the counter to add to your hand:`;
+    } else {
+      const drafter = roomPlayers[currentDrafterId];
+      msg.innerHTML = `Waiting for <strong>${escapeHTML(drafter ? drafter.name : "another player")}</strong> to pick a card...`;
+    }
+
+    container.innerHTML = "";
+    gameState.generalStoreCards.forEach((c, idx) => {
+      const cardEl = document.createElement("div");
+      const isRed = c.suit === "H" || c.suit === "D";
+      cardEl.className = `bang-card ${c.type}`;
+      cardEl.style.cursor = isMyTurn ? "pointer" : "not-allowed";
+      cardEl.style.opacity = isMyTurn ? "1" : "0.75";
+      cardEl.style.transform = isMyTurn ? "none" : "scale(0.95)";
+      cardEl.innerHTML = `
+        <div>
+          <div class="card-top-icon">${c.icon || '🏬'}</div>
+          <div class="card-name-title">${escapeHTML(c.name)}</div>
+          <div class="card-effect-text">${escapeHTML(c.desc || '')}</div>
+        </div>
+        <div class="card-suit-value ${isRed ? 'red' : 'black'}">
+          <span>${c.value || ''}</span>
+          <span>${getSuitSymbol(c.suit)}</span>
+        </div>
+      `;
+      if (isMyTurn) {
+        cardEl.onclick = () => selectGeneralStoreCard(idx);
+      }
+      container.appendChild(cardEl);
+    });
+  }
+
+  function selectGeneralStoreCard(idx) {
+    if (!gameState.generalStoreQueue || gameState.generalStoreQueue[0] !== clientId) return;
+    if (isSoloMode || isCurrentUserHost()) {
+      executeGeneralStorePick(clientId, idx);
+    } else {
+      publishMessage({
+        type: "DRAFT_GS_CARD",
+        playerId: clientId,
+        cardIndex: idx
+      });
+    }
+  }
+
+  function executeGeneralStorePick(playerId, cardIdx) {
+    if (!gameState.generalStoreCards || cardIdx >= gameState.generalStoreCards.length) return;
+    const player = roomPlayers[playerId];
+    const picked = gameState.generalStoreCards.splice(cardIdx, 1)[0];
+    if (player && picked) {
+      player.hand.push(picked);
+      addActivityLog(`🏬 <strong>${player.name}</strong> drafted <strong>${picked.name}</strong> from the General Store.`);
+      playCardDraw();
+    }
+    if (gameState.generalStoreQueue) gameState.generalStoreQueue.shift();
+    broadcastGameState();
+    processGeneralStoreDraftStep();
   }
 
   function triggerWildWestShowCard() {
@@ -2350,7 +2995,7 @@
 
     const missedIndices = [];
     me.hand.forEach((c, idx) => {
-      if (c.name === "Missed!" || (me.charKey === "CALAMITY_JANET && c.name === 'BANG!'") || (me.charKey === "ELENA_FUENTE")) {
+      if (c.name === "Missed!" || (me.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (me.charKey === "ELENA_FUENTE")) {
         missedIndices.push(idx);
       }
     });
@@ -2391,9 +3036,44 @@
     victim.currentLp -= amount;
     addActivityLog(`🩸 ${victim.name} lost ${amount} LP from ${reason}! (${victim.currentLp}/${victim.maxLp} LP remaining)`);
 
+    // Gold Rush Damage Economy & Equipment Triggers
+    if (config.enableGoldRush) {
+      if (attackerId && roomPlayers[attackerId] && attackerId !== victimId) {
+        roomPlayers[attackerId].gold = (roomPlayers[attackerId].gold || 0) + amount;
+        addActivityLog(`🪙 ${roomPlayers[attackerId].name} earned ${amount} Gold Nugget(s) for dealing damage!`);
+      }
+      // Simeon Picos: gains 1 Gold Nugget whenever damaged
+      if (victim.charKey === "SIMEON_PICOS") {
+        victim.gold = (victim.gold || 0) + amount;
+        addActivityLog(`🪙 Simeon Picos gained ${amount} Gold Nugget(s) from taking a hit!`);
+      }
+      // Lucky Charm (Black equipment in play of victim)
+      if (victim.inPlay.some(c => c.name === "Lucky Charm")) {
+        victim.gold = (victim.gold || 0) + amount;
+        addActivityLog(`🍀 Lucky Charm granted ${victim.name} ${amount} Gold Nugget(s)!`);
+      }
+      // Boots (Black equipment in play of victim)
+      if (victim.inPlay.some(c => c.name === "Boots") && victim.currentLp > 0) {
+        for (let i = 0; i < amount; i++) {
+          const bCard = drawFromDeck();
+          if (bCard) victim.hand.push(bCard);
+        }
+        addActivityLog(`👢 ${victim.name}'s Boots drew ${amount} card(s) from taking damage.`);
+      }
+      // Shotgun (Black equipment in play of attacker)
+      if (attackerId && roomPlayers[attackerId]?.inPlay.some(c => c.name === "Shotgun") && victim.hand.length > 0) {
+        const discarded = victim.hand.pop();
+        gameState.discardPile.push(discarded);
+        addActivityLog(`⚡ ${roomPlayers[attackerId].name}'s Shotgun forced ${victim.name} to discard ${discarded.name}!`);
+      }
+    }
+
     // Bart Cassidy ability: draws 1 card per damage
     if (victim.charKey === "BART_CASSIDY" && victim.currentLp > 0) {
-      for (let i = 0; i < amount; i++) victim.hand.push(drawFromDeck());
+      for (let i = 0; i < amount; i++) {
+        const c = drawFromDeck();
+        if (c) victim.hand.push(c);
+      }
       addActivityLog(`🤕 Bart Cassidy drew ${amount} card(s) from taking damage.`);
     }
 
@@ -2409,14 +3089,29 @@
 
     // Check Lethal
     if (victim.currentLp <= 0) {
-      // Emergency Beer check in hand
-      const beerIdx = victim.hand.findIndex(c => c.name === "Beer");
-      if (beerIdx !== -1 && getLivingPlayersCircle().length > 2) {
-        const beer = victim.hand.splice(beerIdx, 1)[0];
-        gameState.discardPile.push(beer);
-        victim.currentLp = 1;
-        addActivityLog(`🍺 ${victim.name} drank an emergency Beer and survived at 1 LP!`);
-        return;
+      // Emergency Beer check in hand (unless Shadow Gunslinger)
+      if (!victim.isShadow) {
+        const beerIdx = victim.hand.findIndex(c => c.name === "Beer");
+        if (beerIdx !== -1 && getLivingPlayersCircle().length > 2) {
+          const beer = victim.hand.splice(beerIdx, 1)[0];
+          gameState.discardPile.push(beer);
+          victim.currentLp = 1;
+          addActivityLog(`🍺 ${victim.name} drank an emergency Beer and survived at 1 LP!`);
+          return;
+        }
+      }
+
+      // Teren Kill check (WWS)
+      if (victim.charKey === "TEREN_KILL") {
+        const checkCard = drawCardForCheck(victim);
+        addActivityLog(`🩸 Teren Kill lethal check: ${getSuitSymbol(checkCard.suit)} ${checkCard.value}!`);
+        if (checkCard.suit !== "S") {
+          victim.currentLp = 1;
+          const bonus = drawFromDeck();
+          if (bonus) victim.hand.push(bonus);
+          addActivityLog(`🩸 Teren Kill cheats death! Survives at 1 LP and draws 1 card!`);
+          return;
+        }
       }
 
       // Player Eliminated
@@ -2424,22 +3119,33 @@
       victim.currentLp = 0;
       addActivityLog(`💀 <strong>${escapeHTML(victim.name)}</strong> was ELIMINATED! They were the <strong>${escapeHTML(victim.role.toUpperCase())}</strong>!`);
 
-      // Greg Digger ability: regains 2 LP when anyone dies
+      // Character-Specific & Equipment Abilities upon any elimination
       Object.values(roomPlayers).forEach(p => {
         if (p.isAlive && p.charKey === "GREG_DIGGER") {
           p.currentLp = Math.min(p.maxLp, p.currentLp + 2);
           addActivityLog(`⚰️ Greg Digger regains 2 LP from a death!`);
         }
         if (p.isAlive && p.charKey === "HERB_HUNTER") {
-          p.hand.push(drawFromDeck(), drawFromDeck());
+          const c1 = drawFromDeck();
+          const c2 = drawFromDeck();
+          if (c1) p.hand.push(c1);
+          if (c2) p.hand.push(c2);
           addActivityLog(`🎯 Herb Hunter draws 2 cards from a death!`);
+        }
+        // Black Equipment: Warrant pays 2 Gold Nuggets on any death
+        if (p.isAlive && p.inPlay.some(c => c.name === "Warrant")) {
+          p.gold = (p.gold || 0) + 2;
+          addActivityLog(`📜 ${p.name}'s Warrant pays 2 Gold Nuggets on a death!`);
         }
       });
 
-      // Outlaw bounty: whoever eliminates an Outlaw draws 3 reward cards
-      if (victim.role === "outlaw" && attackerId && roomPlayers[attackerId]) {
+      // Outlaw bounty: killer draws 3 reward cards
+      if (victim.role === "outlaw" && attackerId && roomPlayers[attackerId] && roomPlayers[attackerId].isAlive) {
         addActivityLog(`💰 Bounty collected! ${roomPlayers[attackerId].name} draws 3 cards for taking down an Outlaw!`);
-        for (let b = 0; b < 3; b++) roomPlayers[attackerId].hand.push(drawFromDeck());
+        for (let b = 0; b < 3; b++) {
+          const c = drawFromDeck();
+          if (c) roomPlayers[attackerId].hand.push(c);
+        }
       }
 
       // Sheriff penalty: if Sheriff eliminates a Deputy, Sheriff discards all cards in hand and in play!
@@ -2451,16 +3157,22 @@
         sh.inPlay = [];
       }
 
-      // Vulture Sam takes all cards of deceased player
+      // Vulture Sam takes all cards of deceased player (both in hand and in play)
       const vulture = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "VULTURE_SAM");
       if (vulture) {
         vulture.hand.push(...victim.hand, ...victim.inPlay);
-        addActivityLog(`🦅 Vulture Sam scavenged all cards from ${victim.name}.`);
+        addActivityLog(`🦅 Vulture Sam scavenged all ${victim.hand.length + victim.inPlay.length} cards from ${victim.name}.`);
       } else {
         gameState.discardPile.push(...victim.hand, ...victim.inPlay);
       }
       victim.hand = [];
       victim.inPlay = [];
+
+      // Shadow Gunslinger variant registration
+      if (config.enableShadowGunslingers) {
+        victim.isShadow = true;
+        addActivityLog(`👻 ${victim.name} rises as a Shadow Gunslinger! They keep their Gold and will take turns with 0 LP.`);
+      }
     }
   }
 
@@ -2478,11 +3190,11 @@
     let card = drawFromDeck();
     if (!card) card = { suit: "H", value: 7 };
 
-    // Lucky Duke flips 2 cards and picks preferred
-    if (player && player.charKey === "LUCKY_DUKE") {
+    // Lucky Duke or Horseshoe flips 2 cards and picks preferred
+    if (player && (player.charKey === "LUCKY_DUKE" || player.extraDrawCheck)) {
       const secondCard = drawFromDeck();
       if (secondCard) {
-        addActivityLog(`🎲 Lucky Duke flipped ${getSuitSymbol(card.suit)} ${card.value} and ${getSuitSymbol(secondCard.suit)} ${secondCard.value}.`);
+        addActivityLog(`🎲 Check: flipped ${getSuitSymbol(card.suit)} ${card.value} and ${getSuitSymbol(secondCard.suit)} ${secondCard.value}.`);
         if (secondCard.suit === "H") card = secondCard;
       }
     }
@@ -2511,8 +3223,31 @@
 
     // 3-Player Dodge City Win Conditions
     if (players.length === 3) {
-      // Deputy targets Renegade; Renegade targets Outlaw; Outlaw targets Deputy
       if (living.length === 1) return living[0].role;
+      return null;
+    }
+
+    // Shadow-Gunslinger Dynamic Renegade Variant
+    if (config.enableShadowGunslingers) {
+      const deadLawmen = players.filter(p => !p.isAlive && (p.role === "sheriff" || p.role === "deputy")).length;
+      const deadOutlaws = players.filter(p => !p.isAlive && p.role === "outlaw").length;
+
+      // 1. Sheriff eliminated:
+      if (sheriff && !sheriff.isAlive) {
+        if (living.length === 1 && living[0].role === "renegade" && deadLawmen <= deadOutlaws) {
+          return "renegade";
+        }
+        return "outlaws";
+      }
+
+      // 2. All Outlaws eliminated:
+      if (livingOutlaws.length === 0) {
+        if (deadOutlaws > deadLawmen && livingRenegades.length > 0) {
+          return null; // Renegade allied with Outlaws continues fight against Sheriff
+        }
+        return "sheriff";
+      }
+
       return null;
     }
 
@@ -2539,7 +3274,7 @@
   function checkBotTurnTrigger() {
     if (!isCurrentUserHost()) return;
     const active = roomPlayers[gameState.activePlayerId];
-    if (!active || !active.isBot || !active.isAlive) return;
+    if (!active || !active.isBot || (!active.isAlive && !(config.enableShadowGunslingers && active.isShadow))) return;
 
     setTimeout(() => {
       runBotTurn(active);
@@ -2580,7 +3315,15 @@
       }
     }
 
-    // 5. Phase 3: Discard excess cards down to LP
+    // 5. Saloon Shop purchase (Gold Rush)
+    if (config.enableGoldRush && gameState.shopCards && (bot.gold || 0) >= 2) {
+      const affordIdx = gameState.shopCards.findIndex(sc => sc && (bot.gold || 0) >= sc.cost && !(sc.type === 'gold_black' && bot.inPlay.some(ip => ip.name === sc.name)));
+      if (affordIdx !== -1) {
+        buyShopCard(affordIdx, bot.id);
+      }
+    }
+
+    // 6. Phase 3: Discard excess cards down to LP
     setTimeout(() => {
       botDiscardPhase(bot);
     }, 1000);
@@ -2616,12 +3359,23 @@
   }
 
   function botDiscardPhase(bot) {
-    // Sean Mallory has no hand limit
-    if (bot.charKey !== "SEAN_MALLORY") {
-      while (bot.hand.length > bot.currentLp) {
+    if (bot.isShadow) {
+      addActivityLog(`👻 Shadow Gunslinger ${bot.name} discards remaining hand at end of turn.`);
+      bot.hand = [];
+    } else if (bot.charKey !== "SEAN_MALLORY") {
+      let maxHand = bot.currentLp;
+      if (bot.inPlay.some(c => c.name === "Belt")) maxHand += 2;
+      const discardedList = [];
+      while (bot.hand.length > maxHand) {
         const discarded = bot.hand.pop();
         gameState.discardPile.push(discarded);
+        discardedList.push(discarded);
         addActivityLog(`${bot.name} discarded ${discarded.name} to match Life Points.`);
+      }
+      const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== bot.id);
+      if (gary && discardedList.length > 0) {
+        gary.hand.push(...discardedList);
+        addActivityLog(`🧤 Gary Looter drew ${discardedList.length} card(s) discarded by ${bot.name}!`);
       }
     }
     broadcastGameState();
@@ -2677,6 +3431,14 @@
 
     // 5. My Player Cockpit
     renderPlayerCockpit();
+
+    // 6. Saloon Shop (Gold Rush)
+    renderSaloonShop();
+
+    // 7. General Store Modal check
+    if (gameState.generalStoreCards && gameState.generalStoreCards.length > 0) {
+      renderGeneralStoreModal();
+    }
   }
 
   function renderOpponentsGrid() {
@@ -2684,7 +3446,8 @@
     if (!grid) return;
     grid.innerHTML = "";
 
-    const living = getLivingPlayersCircle();
+    const me = roomPlayers[clientId];
+    const isMyTurn = (gameState.activePlayerId === clientId && gameState.status === "playing" && gameState.turnPhase === "play");
     const otherPlayers = Object.values(roomPlayers).filter(p => p.id !== clientId);
 
     otherPlayers.forEach(p => {
@@ -2705,11 +3468,20 @@
       for (let b = 0; b < p.maxLp; b++) {
         bulletsHtml += `<span class="bullet-icon">${b < p.currentLp ? '🟡' : '⚫'}</span>`;
       }
+      const goldHtml = config.enableGoldRush ? `<span style="font-size: 0.75rem; color: #ffd700; font-weight: 800; margin-left: 6px;">🪙 ${p.gold || 0}</span>` : '';
 
-      // In-play Equipment
+      // In-play Equipment & Black Equipment Scrap buttons
       let inPlayHtml = "";
-      p.inPlay.forEach(c => {
-        inPlayHtml += `<span class="in-play-mini-tag ${c.type === 'green' ? 'green' : ''}">${c.name}</span>`;
+      p.inPlay.forEach((c, cIdx) => {
+        const isBlack = c.type === "gold_black";
+        const scrapCost = (c.cost || 2) + 1;
+        const canScrap = isMyTurn && isBlack && me && (me.gold || 0) >= scrapCost;
+        inPlayHtml += `
+          <span class="in-play-mini-tag ${c.type === 'green' ? 'green' : (isBlack ? 'black' : '')}">
+            ${escapeHTML(c.name)}
+            ${canScrap ? `<button class="scrap-btn" onclick="scrapOpponentBlackCard('${p.id}', ${cIdx})">Scrap (${scrapCost}🪙)</button>` : ''}
+          </span>
+        `;
       });
 
       card.innerHTML = `
@@ -2718,11 +3490,12 @@
             <span>${p.avatar}</span>
             <span>${escapeHTML(p.name)}</span>
             ${p.isBot ? '<span style="font-size: 0.7rem; color: #888;">(AI)</span>' : ''}
+            ${p.isShadow ? '<span style="font-size: 0.7rem; color: #a855f7;">(Shadow)</span>' : ''}
           </div>
-          ${p.isAlive ? `<div class="distance-badge ${inRange ? 'in-range' : ''}">Dist: ${dist}</div>` : '<div class="distance-badge">Dead</div>'}
+          ${p.isAlive ? `<div class="distance-badge ${inRange ? 'in-range' : ''}">Dist: ${dist}</div>` : (p.isShadow ? '<div class="distance-badge" style="border-color:#a855f7;color:#a855f7;">Shadow</div>' : '<div class="distance-badge">Dead</div>')}
         </div>
         <div class="opponent-char-info">${CHARACTERS[p.charKey]?.name || 'Gunslinger'} ${roleHtml}</div>
-        <div class="bullets-row">${bulletsHtml} (${p.currentLp}/${p.maxLp})</div>
+        <div class="bullets-row">${bulletsHtml} (${p.currentLp}/${p.maxLp}) ${goldHtml}</div>
         <div class="opponent-in-play">${inPlayHtml || '<span style="font-size: 0.7rem; color: #666;">No items</span>'}</div>
         <button class="opponent-action-btn" id="target-btn-${p.id}" onclick="selectTargetPlayer('${p.id}')">
           🎯 Target with BANG!
@@ -2761,7 +3534,8 @@
       for (let b = 0; b < me.maxLp; b++) {
         bHtml += `<span class="bullet-icon">${b < me.currentLp ? '🟡' : '⚫'}</span>`;
       }
-      bulletsRow.innerHTML = `${bHtml} <span style="font-size: 0.85rem; font-weight: 800; color: #fde68a; margin-left: 6px;">${me.currentLp}/${me.maxLp} LP</span>`;
+      const goldBadge = config.enableGoldRush ? `<span style="font-size: 0.85rem; font-weight: 800; color: #ffd700; margin-left: 12px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,215,0,0.3);">🪙 ${me.gold || 0} Gold</span>` : '';
+      bulletsRow.innerHTML = `${bHtml} <span style="font-size: 0.85rem; font-weight: 800; color: #fde68a; margin-left: 6px;">${me.currentLp}/${me.maxLp} LP</span> ${goldBadge}`;
     }
 
     // In Play Row (Equipment)
@@ -2774,11 +3548,13 @@
         me.inPlay.forEach((c, idx) => {
           const item = document.createElement("div");
           const isGreenReady = c.type === "green" && c.isReady;
-          item.className = `in-play-slot ${isGreenReady ? 'green-ready' : ''}`;
+          const isBlack = c.type === "gold_black";
+          item.className = `in-play-slot ${isGreenReady ? 'green-ready' : ''} ${isBlack ? 'gold_black' : ''}`;
           item.innerHTML = `
             <span>${c.icon || '🛡️'}</span>
             <span>${c.name} ${c.range ? `[Range ${c.range}]` : ''}</span>
             ${c.type === 'green' ? `<span style="font-size: 0.7rem; color: ${isGreenReady ? '#22c55e' : '#eab308'};">(${isGreenReady ? 'Ready' : 'Activating next turn'})</span>` : ''}
+            ${isBlack ? `<span style="font-size: 0.7rem; color: #a1a1aa;">[Black Equip]</span>` : ''}
           `;
           if (isGreenReady && isMyTurn) {
             item.style.cursor = "pointer";
@@ -2816,7 +3592,54 @@
       });
     }
 
-    // Controls
+    // Controls & Character Special Action Buttons
+    const specialActions = document.getElementById("char-special-actions");
+    if (specialActions) {
+      specialActions.innerHTML = "";
+      if (isMyTurn && gameState.turnPhase === "play") {
+        if (me.charKey === "JACKY_MURIETA") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = (me.gold || 0) < 2;
+          btn.innerText = "🗡️ Extra BANG! (2🪙)";
+          btn.onclick = () => useJackyMurietaAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "JOSH_MCCLOUD") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = (me.gold || 0) < 2 || !gameState.goldRushDeck || gameState.goldRushDeck.length === 0;
+          btn.innerText = "📦 Top Equipment (2🪙)";
+          btn.onclick = () => useJoshMcCloudAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "UNCLE_WILL") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = (me.gold || 0) < 2 || selectedCardIndex === null;
+          btn.innerText = "🏬 Convert to Store (2🪙)";
+          btn.onclick = () => useUncleWillAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "SID_KETCHUM") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = me.hand.length < 2 || me.currentLp >= me.maxLp;
+          btn.innerText = "🥩 Discard 2 for +1 LP";
+          btn.onclick = () => useSidKetchumAbility();
+          specialActions.appendChild(btn);
+        }
+      }
+    }
+
     const playBtn = document.getElementById("play-card-btn");
     const endBtn = document.getElementById("end-turn-btn");
     const bangNotice = document.getElementById("bang-limit-notice");
@@ -2828,6 +3651,276 @@
       const hasVolcanic = me.inPlay.some(c => c.unlimitedBang) || (me.charKey === "WILLY_THE_KID");
       bangNotice.innerText = hasVolcanic ? "BANG! Limit: Unlimited" : `BANG! Limit: ${gameState.turnBangCount}/1`;
     }
+  }
+
+  function renderSaloonShop() {
+    const shopBox = document.getElementById("saloon-shop-box");
+    const cardsRow = document.getElementById("shop-cards-row");
+    if (!shopBox || !cardsRow) return;
+
+    if (!config.enableGoldRush) {
+      shopBox.style.display = "none";
+      return;
+    }
+
+    shopBox.style.display = "block";
+    cardsRow.innerHTML = "";
+    const me = roomPlayers[clientId];
+    const isMyTurn = (gameState.activePlayerId === clientId && gameState.status === "playing" && gameState.turnPhase === "play");
+
+    if (!gameState.shopCards || gameState.shopCards.length === 0) {
+      cardsRow.innerHTML = `<div style="color: #888; font-size: 0.85rem; padding: 12px; text-align: center; width: 100%;">Shop is currently sold out!</div>`;
+      return;
+    }
+
+    gameState.shopCards.forEach((c, idx) => {
+      if (!c) return;
+      const cardEl = document.createElement("div");
+      cardEl.className = `shop-item-card ${c.type}`;
+
+      let effectiveCost = c.cost;
+      if (me && me.charKey === "PRETTY_LUZENA" && !me.usedShopDiscountThisTurn) {
+        effectiveCost = Math.max(0, c.cost - 1);
+      }
+
+      const hasGold = me && (me.gold || 0) >= effectiveCost;
+      const alreadyHasBlack = me && c.type === "gold_black" && me.inPlay.some(ip => ip.name === c.name);
+      const canBuy = isMyTurn && hasGold && !alreadyHasBlack;
+
+      let btnLabel = `Buy (${effectiveCost} 🪙)`;
+      if (alreadyHasBlack) btnLabel = "Equipped";
+      else if (!hasGold) btnLabel = `Need ${effectiveCost} 🪙`;
+
+      cardEl.innerHTML = `
+        <div class="shop-card-type-badge">${c.type === 'gold_brown' ? 'Brown Instant' : 'Black Equipment'}</div>
+        <div class="shop-card-icon">${c.icon || '🪙'}</div>
+        <div class="shop-card-name">${escapeHTML(c.name)}</div>
+        <div class="shop-card-cost">🪙 ${c.cost} Gold ${effectiveCost < c.cost ? `<span style="color:#22c55e;">(-1)</span>` : ''}</div>
+        <div class="shop-card-desc">${escapeHTML(c.desc)}</div>
+        <button class="shop-buy-btn" ${canBuy ? '' : 'disabled'} onclick="buyShopCard(${idx})">${btnLabel}</button>
+      `;
+      cardsRow.appendChild(cardEl);
+    });
+  }
+
+  function buyShopCard(cardIdx, buyerId = clientId) {
+    if (!isSoloMode && !isCurrentUserHost()) {
+      publishMessage({
+        type: "BUY_SHOP_CARD",
+        playerId: buyerId,
+        cardIndex: cardIdx
+      });
+      return;
+    }
+
+    const buyer = roomPlayers[buyerId];
+    if (!buyer) return;
+    if (gameState.status !== "playing" || gameState.turnPhase !== "play") {
+      if (buyerId === clientId) alert("You can only purchase equipment during Phase 2 (Play) of your turn!");
+      return;
+    }
+    if (!gameState.shopCards || !gameState.shopCards[cardIdx]) return;
+
+    const card = gameState.shopCards[cardIdx];
+
+    let cost = card.cost;
+    let appliedLuzenaDiscount = false;
+    if (buyer.charKey === "PRETTY_LUZENA" && !buyer.usedShopDiscountThisTurn) {
+      cost = Math.max(0, card.cost - 1);
+      appliedLuzenaDiscount = true;
+    }
+
+    if ((buyer.gold || 0) < cost) {
+      if (buyerId === clientId) alert(`You don't have enough Gold Nuggets! (Need ${cost}, have ${buyer.gold || 0})`);
+      return;
+    }
+
+    if (card.type === "gold_black" && buyer.inPlay.some(c => c.name === card.name)) {
+      if (buyerId === clientId) alert(`You already have ${card.name} equipped in play!`);
+      return;
+    }
+
+    buyer.gold = (buyer.gold || 0) - cost;
+    if (appliedLuzenaDiscount) buyer.usedShopDiscountThisTurn = true;
+
+    gameState.shopCards.splice(cardIdx, 1);
+
+    if (gameState.goldRushDeck && gameState.goldRushDeck.length > 0) {
+      const replacement = gameState.goldRushDeck.pop();
+      gameState.shopCards.splice(cardIdx, 0, replacement);
+    }
+
+    addActivityLog(`🏪 <strong>${escapeHTML(buyer.name)}</strong> bought <strong>${escapeHTML(card.name)}</strong> for ${cost} Gold Nugget(s)!`);
+
+    if (card.type === "gold_brown") {
+      executeBrownEquipmentEffect(buyer, card);
+      gameState.discardPile.push(card);
+    } else {
+      buyer.inPlay.push(card);
+      addActivityLog(`🛡️ ${buyer.name} equipped ${card.name}.`);
+    }
+
+    playSaloonChime();
+    broadcastGameState();
+  }
+
+  function executeBrownEquipmentEffect(player, card) {
+    if (card.name === "Bottle") {
+      if (player.currentLp < player.maxLp && !player.isShadow && getLivingPlayersCircle().length > 2) {
+        player.currentLp = Math.min(player.maxLp, player.currentLp + 1);
+        addActivityLog(`🍾 ${player.name} used Bottle as a refreshing Beer (+1 LP)!`);
+      } else {
+        const opponents = getLivingPlayersCircle().filter(p => p.id !== player.id && canPlayerShootTarget(player.id, p.id));
+        if (opponents.length > 0) {
+          const tgt = opponents[0];
+          addActivityLog(`🍾 ${player.name} smashed Bottle as a BANG! at ${tgt.name}!`);
+          initiateAttackInterrupt(player.id, tgt.id, "Bottle BANG!", 1);
+        } else {
+          const c = drawFromDeck();
+          if (c) player.hand.push(c);
+          addActivityLog(`🍾 ${player.name} used Bottle and drew 1 card.`);
+        }
+      }
+    } else if (card.name === "Accomplice") {
+      const candidates = getLivingPlayersCircle().filter(p => p.id !== player.id && p.hand.length > 0);
+      if (candidates.length > 0) {
+        const victim = candidates[Math.floor(Math.random() * candidates.length)];
+        const stolen = victim.hand.splice(Math.floor(Math.random() * victim.hand.length), 1)[0];
+        player.hand.push(stolen);
+        addActivityLog(`🤝 ${player.name}'s Accomplice stole 1 card from ${victim.name}'s hand!`);
+      } else {
+        const c = drawFromDeck();
+        if (c) player.hand.push(c);
+        addActivityLog(`🤝 Accomplice found nothing to steal, so drew 1 card from deck.`);
+      }
+    } else if (card.name === "Calumet") {
+      player.immuneToDiamonds = true;
+      addActivityLog(`🪶 ${player.name} is now completely immune to Diamond cards until their next turn.`);
+    } else if (card.name === "Gold Rush") {
+      player.currentLp = player.maxLp;
+      addActivityLog(`💰 GOLD RUSH! ${player.name} instantly recovered all Life Points to max (${player.maxLp})!`);
+      if (isCurrentUserHost()) advanceToNextTurn();
+    } else if (card.name === "Horseshoe") {
+      player.extraDrawCheck = true;
+      addActivityLog(`🧲 Horseshoe active! ${player.name} flips 1 extra card on 'draw!' checks this turn.`);
+    } else if (card.name === "Pardner") {
+      const c1 = drawFromDeck();
+      const c2 = drawFromDeck();
+      if (c1) player.hand.push(c1);
+      if (c2) player.hand.push(c2);
+      addActivityLog(`🤠 Pardner rode into town! ${player.name} drew 2 cards.`);
+    } else if (card.name === "Union Pacific") {
+      for (let i = 0; i < 4; i++) {
+        const c = drawFromDeck();
+        if (c) player.hand.push(c);
+      }
+      addActivityLog(`🚂 The Union Pacific train arrived! ${player.name} drew 4 cards.`);
+    } else if (card.name === "Gun Belt") {
+      player.extraHandLimit = (player.extraHandLimit || 0) + 1;
+      addActivityLog(`🥋 Gun Belt increased ${player.name}'s end-of-turn hand limit by 1.`);
+    } else if (card.name === "Shot") {
+      const opponents = getLivingPlayersCircle().filter(p => p.id !== player.id && canPlayerShootTarget(player.id, p.id));
+      if (opponents.length > 0) {
+        const tgt = opponents[0];
+        addActivityLog(`💥 ${player.name} fired a free Shot at ${tgt.name}!`);
+        initiateAttackInterrupt(player.id, tgt.id, "Shot", 1);
+      }
+    } else if (card.name === "Bandidos") {
+      addActivityLog(`🎭 Bandidos strike! All other living players must discard 1 card or lose 1 LP!`);
+      getLivingPlayersCircle().filter(p => p.id !== player.id).forEach(v => {
+        if (v.hand.length > 0) {
+          const discarded = v.hand.pop();
+          gameState.discardPile.push(discarded);
+          addActivityLog(`${v.name} discarded ${discarded.name} to satisfy Bandidos.`);
+        } else {
+          damagePlayer(v.id, 1, player.id, "Bandidos");
+        }
+      });
+    }
+  }
+
+  function scrapOpponentBlackCard(opponentId, cardIdx, buyerId = clientId) {
+    if (!isSoloMode && !isCurrentUserHost()) {
+      publishMessage({
+        type: "SCRAP_BLACK_CARD",
+        playerId: buyerId,
+        opponentId: opponentId,
+        cardIndex: cardIdx
+      });
+      return;
+    }
+
+    const me = roomPlayers[buyerId];
+    const opponent = roomPlayers[opponentId];
+    if (!me || !opponent) return;
+    if (gameState.activePlayerId !== buyerId || gameState.status !== "playing" || gameState.turnPhase !== "play") {
+      if (buyerId === clientId) alert("You can only scrap opponent equipment during your play phase!");
+      return;
+    }
+    const card = opponent.inPlay[cardIdx];
+    if (!card || card.type !== "gold_black") return;
+
+    const scrapCost = (card.cost || 2) + 1;
+    if ((me.gold || 0) < scrapCost) {
+      if (buyerId === clientId) alert(`Scrapping ${card.name} costs ${scrapCost} Gold Nuggets (Cost + 1). You have ${me.gold || 0}.`);
+      return;
+    }
+
+    me.gold -= scrapCost;
+    opponent.inPlay.splice(cardIdx, 1);
+    gameState.discardPile.push(card);
+    addActivityLog(`💥 <strong>${me.name}</strong> paid ${scrapCost} Gold Nuggets to scrap <strong>${opponent.name}</strong>'s <strong>${card.name}</strong>!`);
+    playGunshot();
+    broadcastGameState();
+  }
+
+  function useJackyMurietaAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || (me.gold || 0) < 2) return;
+    me.gold -= 2;
+    gameState.turnBangCount = Math.max(0, gameState.turnBangCount - 1);
+    addActivityLog(`🗡️ Jacky Murieta paid 2 Gold Nuggets to shoot an extra BANG! this turn.`);
+    broadcastGameState();
+  }
+
+  function useJoshMcCloudAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || (me.gold || 0) < 2 || !gameState.goldRushDeck || gameState.goldRushDeck.length === 0) return;
+    me.gold -= 2;
+    const drawn = gameState.goldRushDeck.pop();
+    addActivityLog(`📦 Josh McCloud paid 2 Gold Nuggets to draw equipment: <strong>${drawn.name}</strong>!`);
+    if (drawn.type === "gold_brown") {
+      executeBrownEquipmentEffect(me, drawn);
+      gameState.discardPile.push(drawn);
+    } else {
+      if (me.inPlay.some(c => c.name === drawn.name)) {
+        gameState.discardPile.push(drawn);
+        addActivityLog(`⚠️ Already has ${drawn.name} equipped, so it was discarded.`);
+      } else {
+        me.inPlay.push(drawn);
+        addActivityLog(`🛡️ ${me.name} equipped ${drawn.name}.`);
+      }
+    }
+    broadcastGameState();
+  }
+
+  function useUncleWillAbility() {
+    if (selectedCardIndex === null) {
+      alert("Select a card in your hand to convert into a General Store!");
+      return;
+    }
+    playCardFromHand(clientId, selectedCardIndex, "as_general_store");
+  }
+
+  function useSidKetchumAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || me.hand.length < 2 || me.currentLp >= me.maxLp) return;
+    const c1 = me.hand.pop();
+    const c2 = me.hand.pop();
+    gameState.discardPile.push(c1, c2);
+    me.currentLp = Math.min(me.maxLp, me.currentLp + 1);
+    addActivityLog(`🥩 Sid Ketchum discarded ${c1.name} and ${c2.name} to regain 1 LP!`);
+    broadcastGameState();
   }
 
   function getSuitSymbol(suit) {
@@ -2934,14 +4027,33 @@
     if (!me) return;
 
     // Discard Phase: excess cards
-    if (me.charKey !== "SEAN_MALLORY" && me.hand.length > me.currentLp) {
-      const excess = me.hand.length - me.currentLp;
-      alert(`You must discard ${excess} excess card(s) to match your current Life Points (${me.currentLp})!`);
-      // Discard last cards automatically if user proceeds
-      while (me.hand.length > me.currentLp) {
+    if (me.isShadow) {
+      addActivityLog(`👻 Shadow Gunslinger ${me.name} discards remaining hand at end of turn.`);
+      while (me.hand.length > 0) {
         const discarded = me.hand.pop();
         gameState.discardPile.push(discarded);
-        addActivityLog(`${me.name} discarded ${discarded.name}.`);
+      }
+    } else if (me.charKey !== "SEAN_MALLORY") {
+      let maxHandSize = me.currentLp;
+      if (me.inPlay.some(c => c.name === "Belt")) maxHandSize += 2;
+      if (me.extraHandLimit) maxHandSize += me.extraHandLimit;
+
+      if (me.hand.length > maxHandSize) {
+        const excess = me.hand.length - maxHandSize;
+        alert(`You must discard ${excess} excess card(s) to match your hand limit (${maxHandSize})!`);
+        const discardedList = [];
+        while (me.hand.length > maxHandSize) {
+          const discarded = me.hand.pop();
+          gameState.discardPile.push(discarded);
+          discardedList.push(discarded);
+          addActivityLog(`${me.name} discarded ${discarded.name}.`);
+        }
+        // Gary Looter (WWS): draws all excess cards discarded by other players
+        const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== me.id);
+        if (gary && discardedList.length > 0) {
+          gary.hand.push(...discardedList);
+          addActivityLog(`🧤 Gary Looter drew ${discardedList.length} discarded card(s)!`);
+        }
       }
     }
 
