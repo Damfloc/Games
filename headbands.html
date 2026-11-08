@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Headbands Online - The Party Guessing Game</title>
+<!-- Paho MQTT client over Secure WebSockets -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<style>
+  :root {
+    --bg-dark: #0b0c10;
+    --card-bg: rgba(23, 25, 35, 0.75);
+    --border-color: rgba(255, 255, 255, 0.12);
+    --accent-blue: #0A84FF;
+    --accent-purple: #BF5AF2;
+    --accent-gold: #FFD60A;
+    --yes-green: #30D158;
+    --no-red: #FF453A;
+    --maybe-yellow: #FF9F0A;
+    --text-primary: #f5f5f7;
+    --text-secondary: #8e8e93;
+    --headband-gradient: linear-gradient(135deg, #FF9F0A, #FF375F);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-dark);
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(255, 159, 10, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(191, 90, 242, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(10, 132, 255, 0.10) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 14px 60px;
+    overflow-x: hidden;
+  }
+
+  /* Canvas Confetti */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Navigation Header */
+  header {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .back-btn {
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .header-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .room-badge {
+    background: rgba(255, 159, 10, 0.15);
+    border: 1px solid rgba(255, 159, 10, 0.35);
+    color: var(--accent-gold);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .network-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #8e8e93;
+    display: inline-block;
+  }
+  .network-status-dot.connected { background: var(--yes-green); box-shadow: 0 0 8px var(--yes-green); }
+  .network-status-dot.connecting { background: var(--accent-gold); box-shadow: 0 0 8px var(--accent-gold); }
+  .network-status-dot.disconnected { background: var(--no-red); }
+
+  .audio-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .audio-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+  /* Screen Containers */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 640px;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.25s ease-out;
+  }
+  .screen.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 5vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #ffffff 40%, #ff9f0a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  p.subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.45;
+  }
+
+  /* Card Containers */
+  .card-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 22px 18px;
+    width: 100%;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+  }
+
+  /* Buttons & Inputs */
+  .input-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .text-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    color: #fff;
+    font-size: 1.05rem;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .text-input:focus {
+    border-color: var(--accent-gold);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 14px rgba(255, 214, 10, 0.25);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, #FF9F0A, #FF375F);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 15px 20px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255, 159, 10, 0.35);
+    transition: transform 0.15s, opacity 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: #fff;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.14); }
+  .btn-secondary:active { transform: scale(0.98); }
+
+  /* Pill Group Selectors */
+  .pill-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .pill-option {
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    padding: 10px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .pill-option:hover { background: rgba(255, 255, 255, 0.12); }
+  .pill-option.selected {
+    background: rgba(255, 159, 10, 0.22);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    box-shadow: 0 0 14px rgba(255, 214, 10, 0.25);
+  }
+
+  /* Player Grid & Roster Tiles */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .player-tile {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .player-tile.is-host { border-color: rgba(255, 214, 10, 0.4); }
+  .player-tile.is-me { background: rgba(10, 132, 255, 0.08); border-color: var(--accent-blue); }
+
+  .player-avatar {
+    font-size: 2rem;
+    margin-bottom: 4px;
+  }
+  .player-tile-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .player-tile-tag {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* =========================================================================
+     CATEGORY VOTING SYSTEM
+     ========================================================================= */
+  .category-vote-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 14px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .category-vote-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .category-vote-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .category-vote-item.selected {
+    background: rgba(255, 159, 10, 0.16);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 12px rgba(255, 214, 10, 0.2);
+  }
+  .category-vote-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .category-vote-badge {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+  }
+
+  /* =========================================================================
+     HEADBAND FOREHEAD DISPLAY CARDS (Party Gameplay)
+     ========================================================================= */
+  .headband-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .headband-card {
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: all 0.25s;
+  }
+  .headband-card.is-active-turn {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 24px rgba(255, 214, 10, 0.4);
+    transform: translateY(-3px);
+  }
+  .headband-card.is-solved {
+    border-color: var(--yes-green);
+    background: rgba(48, 209, 88, 0.08);
+  }
+
+  /* Physical Headband Graphic */
+  .headband-strap {
+    width: 90%;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--headband-gradient);
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(255, 55, 95, 0.3);
+  }
+
+  .headband-word-tag {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 8px 6px;
+    width: 100%;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 6px 0;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  }
+  .headband-word-tag.hidden-word {
+    background: rgba(255, 214, 10, 0.15);
+    border: 1px dashed var(--accent-gold);
+    color: var(--accent-gold);
+    font-size: 0.88rem;
+  }
+  .headband-word-tag.solved {
+    background: rgba(48, 209, 88, 0.2);
+    border-color: var(--yes-green);
+    color: #30D158;
+  }
+
+  .my-headband-hero {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(255, 159, 10, 0.12), rgba(191, 90, 242, 0.12));
+    border: 2px solid var(--accent-gold);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 18px;
+    box-shadow: 0 0 30px rgba(255, 214, 10, 0.15);
+  }
+
+  /* =========================================================================
+     Q&A INTERACTION & VOTING SYSTEM
+     ========================================================================= */
+  .question-hero-box {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .active-question-text {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 8px 0;
+    line-height: 1.35;
+  }
+
+  .vote-response-bar {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+  }
+  .btn-vote-resp {
+    flex: 1;
+    padding: 14px 6px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #fff;
+  }
+  .btn-vote-resp:active { transform: scale(0.96); }
+  .btn-vote-resp.yes {
+    background: rgba(48, 209, 88, 0.2);
+    border: 2px solid var(--yes-green);
+    color: var(--yes-green);
+  }
+  .btn-vote-resp.yes.selected {
+    background: var(--yes-green);
+    color: #000;
+    box-shadow: 0 0 16px rgba(48, 209, 88, 0.5);
+  }
+  .btn-vote-resp.no {
+    background: rgba(255, 69, 58, 0.2);
+    border: 2px solid var(--no-red);
+    color: var(--no-red);
+  }
+  .btn-vote-resp.no.selected {
+    background: var(--no-red);
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 69, 58, 0.5);
+  }
+  .btn-vote-resp.maybe {
+    background: rgba(255, 159, 10, 0.2);
+    border: 2px solid var(--maybe-yellow);
+    color: var(--maybe-yellow);
+  }
+  .btn-vote-resp.maybe.selected {
+    background: var(--maybe-yellow);
+    color: #000;
+    box-shadow: 0 0 16px rgba(255, 159, 10, 0.5);
+  }
+
+  .tally-summary-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  /* Word inspiration chips */
+  .chips-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 0 10px;
+    margin-bottom: 10px;
+  }
+  .chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: var(--accent-gold);
+  }
+
+  /* Scoreboard */
+  .score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+  }
+
+  /* Toast Notification */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(23, 25, 35, 0.95);
+    border: 1px solid var(--accent-gold);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 10000;
+  }
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div id="toast">Alert</div>
+
+<header>
+  <div class="nav-left">
+    <a href="index.html" class="back-btn">← All Games</a>
+    <span class="room-badge" id="room-code-tag">NO ROOM</span>
+  </div>
+  <div class="header-badges">
+    <span class="network-status-dot disconnected" id="network-dot" title="Network status"></span>
+    <button class="audio-btn" id="audio-toggle-btn" onclick="toggleAudio()" title="Sound On/Off">🔊</button>
+  </div>
+</header>
+
+<!-- =========================================================================
+     SCREEN 1: LOBBY & ROOM SETUP
+     ========================================================================= -->
+<div id="lobby-screen" class="screen active">
+  <div style="font-size: 3.2rem; margin-bottom: 6px;">🏷️👑</div>
+  <h1>Headbands Online</h1>
+  <p class="subtitle">Join the party game of secret identities! Write words for each other, see everyone's forehead except your own, ask questions, and guess who you are!</p>
+
+  <!-- Name & Room Entry Form -->
+  <div class="card-box" id="entry-box">
+    <div class="card-box-header">
+      <span>Player Setup</span>
+      <span style="font-size: 0.75rem; color: var(--accent-gold);">Required</span>
+    </div>
+
+    <div id="invited-banner" style="display: none; background: rgba(10, 132, 255, 0.15); border: 1px solid rgba(10, 132, 255, 0.35); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.88rem; color: #fff;">
+      🎉 <strong>You've been invited!</strong> Choose your player name below to join.
+    </div>
+
+    <label class="input-label" for="player-name-input">Your Player Name</label>
+    <input type="text" id="player-name-input" class="text-input" placeholder="e.g., Diego, Alex, Sarah..." maxlength="18" autocomplete="nickname">
+
+    <label class="input-label" for="room-code-input">Room Code</label>
+    <input type="text" id="room-code-input" class="text-input" placeholder="e.g., HEAD" maxlength="6" style="text-transform: uppercase;">
+
+    <div style="display: flex; gap: 10px; margin-top: 6px;">
+      <button class="btn-primary" onclick="createRoom()" style="flex: 1;">Create Room 👑</button>
+      <button class="btn-secondary" onclick="joinRoomByInput()" style="flex: 1;">Join Room 🚀</button>
+    </div>
+  </div>
+
+  <!-- Room Dashboard (When connected) -->
+  <div class="card-box" id="room-dashboard" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-gold); font-weight: 800;">Room Code</div>
+        <div style="font-size: 1.8rem; font-weight: 800; letter-spacing: 0.08em;" id="display-room-code">----</div>
+      </div>
+      <button class="btn-secondary" onclick="copyRoomLink()" style="background: rgba(255, 159, 10, 0.15); border-color: rgba(255, 159, 10, 0.3); color: #fff;">
+        <span>🔗 Share Link</span>
+      </button>
+    </div>
+
+    <!-- Category Voting & Proposal -->
+    <div class="card-box-header">
+      <span>Round Category</span>
+      <span style="font-size: 0.75rem; color: var(--accent-gold);" id="category-selection-status">Vote or Pick Below</span>
+    </div>
+
+    <p style="font-size: 0.85rem; color: #a1a1a6; margin-bottom: 10px;">Tap any category to cast your vote, or propose a custom one!</p>
+    <div class="category-vote-list" id="category-vote-list">
+      <!-- Dynamic Category Options -->
+    </div>
+
+    <!-- Propose Custom Category -->
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <input type="text" id="custom-category-input" class="text-input" placeholder="Propose custom category (e.g., 90s Cartoons)..." maxlength="30" style="margin-bottom: 0;">
+      <button class="btn-secondary" onclick="proposeCustomCategory()" style="width: auto; padding: 0 16px; white-space: nowrap;">+ Add</button>
+    </div>
+
+    <!-- Turn Timer Settings -->
+    <label class="input-label">Turn Question Timer</label>
+    <div class="pill-group" id="timer-pill-group">
+      <div class="pill-option" onclick="setRoundTime(60)">60s</div>
+      <div class="pill-option selected" onclick="setRoundTime(90)">90s</div>
+      <div class="pill-option" onclick="setRoundTime(120)">2 Min</div>
+      <div class="pill-option" onclick="setRoundTime(0)">Unlimited</div>
+    </div>
+
+    <!-- Roster Grid -->
+    <div class="card-box-header">
+      <span>Joined Players</span>
+      <span id="roster-count-badge">0 Players</span>
+    </div>
+    <div class="roster-grid" id="roster-grid"></div>
+
+    <button class="btn-primary" id="start-game-btn" onclick="requestStartAssignment()">Start Game 🚀</button>
+    <div id="guest-waiting-msg" style="display: none; text-align: center; color: var(--accent-gold); font-size: 0.95rem; font-weight: 700; margin-top: 10px; padding: 12px; background: rgba(255, 214, 10, 0.08); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+      ⏳ Waiting for Host to start the game...
+    </div>
+    <p style="font-size: 0.8rem; color: #8e8e93; margin-top: 8px; text-align: center;">Recommended 2+ players</p>
+  </div>
+</div>
+
+<!-- =========================================================================
+     SCREEN 2: SECRET WORD ASSIGNMENT ("Write a Word for...")
+     ========================================================================= -->
+<div id="assignment-screen" class="screen">
+  <div style="font-size: 3rem; margin-bottom: 6px;">✍️🏷️</div>
+  <h1>Write a Secret Word</h1>
+  <p class="subtitle" id="assignment-target-subtitle">You are secretly writing the headband word for another player!</p>
+
+  <div class="card-box">
+    <div class="card-box-header">
+      <span>Assignment Mission</span>
+      <span style="color: var(--accent-gold);" id="assignment-category-tag">Category: General</span>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 14px;">
+      <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">You are writing for:</div>
+      <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 4px;" id="assignment-target-name">🦁 Player</div>
+    </div>
+
+    <label class="input-label" for="secret-word-input">Enter Secret Word or Person</label>
+    <input type="text" id="secret-word-input" class="text-input" placeholder="e.g., Microwave, Spider-Man, Eiffel Tower..." maxlength="30">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+      <span class="input-label" style="margin-bottom: 0;">Need inspiration? Tap to use:</span>
+      <button class="btn-secondary" onclick="shuffleInspirationChips()" style="width: auto; padding: 2px 8px; font-size: 0.75rem;">🔀 Shuffle</button>
+    </div>
+    <div class="chips-scroll" id="inspiration-chips"></div>
+
+    <button class="btn-primary" id="submit-word-btn" onclick="submitSecretWord()">Submit Secret Word ✓</button>
+
+    <div style="font-size: 0.85rem; color: var(--accent-gold); font-weight: 700; text-align: center; margin-top: 14px;" id="assignment-status-tally">
+      0 / 0 Players Submitted
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     SCREEN 3: MAIN HEADBAND GAMEPLAY (The Forehead Arena)
+     ========================================================================= -->
+<div id="game-screen" class="screen">
+  <!-- Active Player Turn Banner -->
+  <div class="card-box" style="padding: 14px 18px; margin-bottom: 14px; text-align: center; background: rgba(255, 214, 10, 0.08); border-color: rgba(255, 214, 10, 0.3);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.06em;">Current Turn</div>
+    <div style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-top: 2px;" id="hud-turn-player">🦁 Diego's Turn</div>
+    <div style="font-size: 0.85rem; color: #a1a1a6; margin-top: 4px;" id="hud-category-name">Category: Stuff Found in the Home</div>
+  </div>
+
+  <!-- YOUR OWN HEADBAND (Secret from you!) -->
+  <div class="my-headband-hero">
+    <div class="headband-strap" style="margin: 0 auto 10px;"></div>
+    <div style="font-size: 0.8rem; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.06em;">Your Forehead Headband</div>
+    <div class="headband-word-tag hidden-word" id="my-headband-text">
+      ❓ ??? (HIDDEN FROM YOU)
+    </div>
+    <p style="font-size: 0.82rem; color: #8e8e93; margin-top: 6px;">
+      Everyone else can see your word! Ask Yes / No questions on your turn to figure out who or what you are!
+    </p>
+    <button class="btn-secondary" onclick="togglePeekModal()" style="width: auto; margin: 10px auto 0; font-size: 0.75rem; padding: 4px 12px; border-color: rgba(255, 255, 255, 0.15);">
+      👁️ Give Up & Peek Word
+    </button>
+  </div>
+
+  <!-- OTHER PLAYERS' HEADBANDS (You can see all of these!) -->
+  <div class="card-box-header" style="width: 100%;">
+    <span>Everyone Else's Foreheads</span>
+    <span style="color: var(--yes-green);">Visible to You</span>
+  </div>
+  <div class="headband-grid" id="other-headbands-grid">
+    <!-- Rendered dynamically -->
+  </div>
+
+  <!-- ACTIVE QUESTION & YES / NO / SOMETIMES VOTING -->
+  <div class="question-hero-box" id="question-display-box" style="display: none;">
+    <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--accent-gold);" id="question-author-tag">🦁 Diego Asks:</div>
+    <div class="active-question-text" id="active-question-content">"Am I made of metal?"</div>
+
+    <!-- Live Vote Aggregation -->
+    <div class="tally-summary-pill" id="vote-tally-pill">
+      <span>🟢 0 YES</span> • <span>🔴 0 NO</span> • <span>🟡 0 MAYBE</span>
+    </div>
+
+    <!-- Voting buttons for everyone else -->
+    <div id="voter-buttons-panel" style="margin-top: 12px;">
+      <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 6px;">Answer the question:</div>
+      <div class="vote-response-bar">
+        <button class="btn-vote-resp yes" id="btn-resp-yes" onclick="castQuestionResponse('yes')">
+          <span>🟢 YES</span>
+        </button>
+        <button class="btn-vote-resp no" id="btn-resp-no" onclick="castQuestionResponse('no')">
+          <span>🔴 NO</span>
+        </button>
+        <button class="btn-vote-resp maybe" id="btn-resp-maybe" onclick="castQuestionResponse('maybe')">
+          <span>🟡 SOMETIMES</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVE PLAYER CONTROLS (Only visible on your turn) -->
+  <div class="card-box" id="my-turn-controls" style="display: none;">
+    <div class="card-box-header">
+      <span>Your Turn Controls</span>
+      <span style="color: var(--accent-gold);">Ask or Guess!</span>
+    </div>
+
+    <!-- Question Input -->
+    <label class="input-label">Ask Everyone a Question</label>
+    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+      <input type="text" id="my-question-input" class="text-input" placeholder="e.g., Am I found in a kitchen?" maxlength="60" style="margin-bottom: 0;">
+      <button class="btn-primary" onclick="submitMyQuestion()" style="width: auto; padding: 0 16px; white-space: nowrap;">Ask 📢</button>
+    </div>
+
+    <!-- Quick Question Suggestions -->
+    <div class="chips-scroll">
+      <span class="chip" onclick="fillQuestion('Am I an animal or living thing?')">🐾 Living thing?</span>
+      <span class="chip" onclick="fillQuestion('Can you eat or drink me?')">🍕 Edible?</span>
+      <span class="chip" onclick="fillQuestion('Am I larger than a microwave?')">📦 Bigger than a box?</span>
+      <span class="chip" onclick="fillQuestion('Am I usually found indoors?')">🏠 Indoors?</span>
+      <span class="chip" onclick="fillQuestion('Do people use me every day?')">⚡ Used every day?</span>
+    </div>
+
+    <div style="margin: 14px 0; border-top: 1px dashed rgba(255, 255, 255, 0.1);"></div>
+
+    <!-- Guess My Identity -->
+    <label class="input-label" style="color: var(--accent-gold);">Ready to Guess What You Are?</label>
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <input type="text" id="my-guess-input" class="text-input" placeholder="Enter your guess (e.g. Microwave)..." maxlength="30" style="margin-bottom: 0;">
+      <button class="btn-primary" onclick="submitMyGuess()" style="width: auto; padding: 0 16px; white-space: nowrap; background: linear-gradient(135deg, #30D158, #0A84FF);">Guess 🎯</button>
+    </div>
+
+    <button class="btn-secondary" onclick="passTurnToNextPlayer()">Done / Pass Turn ➡️</button>
+  </div>
+
+  <!-- GUEST OBSERVATION PANEL (When it's someone else's turn) -->
+  <div id="other-turn-hint" style="text-align: center; color: #8e8e93; font-size: 0.85rem; margin-top: 10px;">
+    Listen closely and be ready to answer Yes, No, or Sometimes!
+  </div>
+
+  <div style="display: flex; gap: 10px; width: 100%; margin-top: 16px;">
+    <button class="btn-secondary" onclick="concludeRound()" id="host-conclude-btn" style="display: none; border-color: rgba(255, 214, 10, 0.4); color: var(--accent-gold);">
+      End Round & Reveal All 🏁
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================================
+     SCREEN 4: ROUND RECAP & SCOREBOARD
+     ========================================================================= -->
+<div id="recap-screen" class="screen">
+  <div style="font-size: 3.5rem; margin-bottom: 6px;">🎉🏆</div>
+  <h1>Round Recap</h1>
+  <p class="subtitle">All headbands revealed! Here is who was what and how everyone scored.</p>
+
+  <div class="card-box">
+    <div class="card-box-header"><span>All Secret Words</span></div>
+    <div id="round-recap-list" style="margin-bottom: 16px;">
+      <!-- Word cards -->
+    </div>
+
+    <div class="card-box-header"><span>Match Leaderboard</span></div>
+    <div id="recap-scoreboard">
+      <!-- Scores -->
+    </div>
+
+    <button class="btn-primary" id="next-round-btn" onclick="startNextRound()" style="margin-top: 16px;">Next Round 🚀</button>
+    <button class="btn-secondary" onclick="returnToLobby()" style="margin-top: 8px;">Return to Lobby</button>
+  </div>
+</div>
+
+<!-- Give up & Peek Modal -->
+<div id="peek-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9000; align-items:center; justify-content:center; padding:20px;">
+  <div class="card-box" style="max-width:380px; text-align:center; border-color:var(--accent-gold);">
+    <div style="font-size:2.8rem; margin-bottom:8px;">👀</div>
+    <h3 style="margin-bottom:8px;">Your Secret Word</h3>
+    <div style="font-size:1.6rem; font-weight:800; color:var(--accent-gold); margin:12px 0;" id="peek-word-content">---</div>
+    <p style="font-size:0.85rem; color:#a1a1a6; margin-bottom:14px;">Once you peek, you cannot earn points for guessing this round!</p>
+    <button class="btn-primary" onclick="togglePeekModal()">Close</button>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     1. PREMADE CATEGORIES & INSPIRATION DATABASE
+     ========================================================================== */
+  const PREMADE_CATEGORIES = [
+    {
+      id: "home",
+      name: "Stuff Found in the Home",
+      icon: "🏠",
+      words: ["Microwave", "Refrigerator", "Toaster", "Pillow", "Toothbrush", "Television", "Vacuum Cleaner", "Sofa", "Mirror", "Blanket", "Blender", "Coffee Mug", "Alarm Clock", "Lamp", "Shower Curtain", "Dishwasher", "Laundry Basket", "Hair Dryer"]
+    },
+    {
+      id: "food",
+      name: "Food & Drinks",
+      icon: "🍕",
+      words: ["Pizza", "Sushi", "Ice Cream", "Tacos", "Coffee", "Hamburger", "Watermelon", "Pancakes", "Spaghetti", "Chocolate", "Donut", "French Fries", "Popcorn", "Burrito", "Avocado", "Hot Dog", "Cupcake", "Apple Pie"]
+    },
+    {
+      id: "people",
+      name: "Celebrities & Famous People",
+      icon: "🌟",
+      words: ["Taylor Swift", "Spider-Man", "Albert Einstein", "Batman", "Dwayne Johnson", "Beyoncé", "Harry Potter", "Lionel Messi", "Gordon Ramsay", "Michael Jackson", "Cleopatra", "Superman", "Elvis Presley", "MrBeast", "Leonardo da Vinci", "Mickey Mouse"]
+    },
+    {
+      id: "places",
+      name: "Places & Landmarks",
+      icon: "🗺️",
+      words: ["Eiffel Tower", "Grand Canyon", "Great Wall of China", "Statue of Liberty", "The Moon", "North Pole", "Pyramids of Egypt", "Hawaii", "Sydney Opera House", "Disneyland", "Mount Everest", "Hollywood", "Venice", "The Colosseum", "Amazon Rainforest"]
+    },
+    {
+      id: "tools",
+      name: "Tools & Gadgets",
+      icon: "🔧",
+      words: ["Hammer", "Smartphone", "Screwdriver", "Laptop", "Flashlight", "Chainsaw", "Drone", "Headphones", "Wrench", "Tape Measure", "Drill", "Camera", "Scissors", "Calculator", "Thermometer", "Binoculars"]
+    },
+    {
+      id: "animals",
+      name: "Animals & Creatures",
+      icon: "🐾",
+      words: ["Elephant", "Penguin", "Lion", "Dolphin", "Kangaroo", "Owl", "Octopus", "Gorilla", "Tyrannosaurus Rex", "Sloth", "Flamingo", "Cheetah", "Panda", "Giraffe", "Koala", "Chameleon", "Hedgehog"]
+    },
+    {
+      id: "movies",
+      name: "Movies & Pop Culture",
+      icon: "🎬",
+      words: ["Star Wars", "Jurassic Park", "Shrek", "Barbie", "Titanic", "The Avengers", "Frozen", "Stranger Things", "Toy Story", "The Matrix", "Finding Nemo", "The Lion King", "Ghostbusters", "Back to the Future", "Minecraft"]
+    }
+  ];
+
+  /* ==========================================================================
+     2. AUDIO SYNTHESIZER (Native Web Audio API)
+     ========================================================================== */
+  let audioCtx = null;
+  let isSoundEnabled = true;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, duration, type = 'sine', gainVal = 0.2) {
+    if (!isSoundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function playChime() {
+    playTone(523.25, 0.1, 'sine', 0.2);
+    setTimeout(() => playTone(659.25, 0.15, 'sine', 0.2), 80);
+    setTimeout(() => playTone(783.99, 0.25, 'sine', 0.25), 160);
+  }
+
+  function playBuzzer() {
+    playTone(150, 0.25, 'sawtooth', 0.25);
+  }
+
+  function playVictorySound() {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      setTimeout(() => playTone(f, 0.25, 'triangle', 0.25), idx * 100);
+    });
+  }
+
+  function toggleAudio() {
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById("audio-toggle-btn");
+    btn.innerText = isSoundEnabled ? "🔊" : "🔇";
+    showToast(isSoundEnabled ? "Sound enabled" : "Sound muted");
+  }
+
+  /* ==========================================================================
+     3. NETWORKING ENGINE: PAHO MQTT OVER SECURE WEBSOCKETS
+     ========================================================================== */
+  let client = null;
+  let currentRoom = null;
+  let isConnected = false;
+  let clientId = "hdb_" + Math.random().toString(36).substring(2, 9);
+  let playerName = "";
+  try { playerName = localStorage.getItem("headbands_player_name") || ""; } catch (e) {}
+
+  let roomRoster = {}; // { [clientId]: { id, name, avatar, score, isHost } }
+  let gameState = {
+    room: "",
+    status: "lobby", // 'lobby', 'assignment', 'game', 'recap'
+    roundNumber: 1,
+    hostId: null,
+    selectedCategory: PREMADE_CATEGORIES[0],
+    customCategories: [],
+    categoryVotes: {}, // { [playerId]: categoryName }
+    roundTime: 90, // seconds
+    speakerIndex: 0,
+    speakerOrder: [],
+    wordAssignments: {}, // { [targetPlayerId]: { authorId, authorName, word } }
+    solvedPlayers: {}, // { [playerId]: true }
+    activeQuestion: null // { authorId, authorName, text, votes: { [playerId]: 'yes'|'no'|'maybe' } }
+  };
+
+  const seenMessageIds = new Set();
+
+  function connectToRoom(roomCode) {
+    initAudio();
+    currentRoom = roomCode.toUpperCase().trim();
+    gameState.room = currentRoom;
+
+    document.getElementById("room-code-tag").innerText = currentRoom;
+    document.getElementById("display-room-code").innerText = currentRoom;
+    updateNetworkStatus("connecting");
+
+    const host = "broker.emqx.io";
+    const port = 8084;
+    const path = "/mqtt";
+
+    client = new Paho.MQTT.Client(host, port, path, clientId);
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+
+    client.connect({
+      useSSL: true,
+      timeout: 5,
+      keepAliveInterval: 30,
+      cleanSession: true,
+      onSuccess: onConnectSuccess,
+      onFailure: onConnectFailure
+    });
+  }
+
+  function onConnectSuccess() {
+    isConnected = true;
+    updateNetworkStatus("connected");
+
+    const topic = `games/headbands/${currentRoom}`;
+    client.subscribe(topic, { qos: 1 });
+
+    publishMessage({
+      type: "PLAYER_JOIN",
+      player: {
+        id: clientId,
+        name: playerName,
+        avatar: getPlayerAvatar(playerName),
+        score: 0,
+        isHost: false
+      }
+    });
+
+    publishMessage({
+      type: "REQUEST_SYNC"
+    });
+  }
+
+  function onConnectFailure(err) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    showToast("Connection failed, retrying...");
+    setTimeout(() => connectToRoom(currentRoom), 2500);
+  }
+
+  function onConnectionLost(responseObject) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    if (responseObject.errorCode !== 0) {
+      setTimeout(() => connectToRoom(currentRoom), 2000);
+    }
+  }
+
+  function publishMessage(payload) {
+    if (!client || !isConnected) return;
+    const msgId = clientId + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6);
+    payload.senderId = clientId;
+    payload.msgId = msgId;
+
+    const message = new Paho.MQTT.Message(JSON.stringify(payload));
+    message.destinationName = `games/headbands/${currentRoom}`;
+    message.qos = 1;
+    client.send(message);
+  }
+
+  function onMessageArrived(message) {
+    try {
+      const data = JSON.parse(message.payloadString);
+      if (data.msgId) {
+        if (seenMessageIds.has(data.msgId)) return;
+        seenMessageIds.add(data.msgId);
+        if (seenMessageIds.size > 200) {
+          const first = seenMessageIds.values().next().value;
+          seenMessageIds.delete(first);
+        }
+      }
+      handleNetworkMessage(data);
+    } catch (e) {
+      console.warn("Message parse error:", e);
+    }
+  }
+
+  function handleNetworkMessage(data) {
+    if (data.senderId === clientId) return;
+
+    if (data.type === "REQUEST_SYNC") {
+      if (isCurrentUserHost()) {
+        publishMessage({
+          type: "ROOM_SYNC",
+          roster: roomRoster,
+          state: gameState
+        });
+      }
+    } else if (data.type === "ROOM_SYNC") {
+      if (data.roster) {
+        Object.assign(roomRoster, data.roster);
+        renderRosterUI();
+      }
+      if (data.state) {
+        Object.assign(gameState, data.state);
+        renderCategoryVotingUI();
+        updateSettingsUI();
+        if (data.state.status !== "lobby" && gameState.status === "lobby") {
+          syncToActiveGameState();
+        }
+      }
+    } else if (data.type === "PLAYER_JOIN") {
+      if (data.player && data.player.id) {
+        roomRoster[data.player.id] = data.player;
+        const playerIds = Object.keys(roomRoster);
+        if (!gameState.hostId || !roomRoster[gameState.hostId]) {
+          gameState.hostId = playerIds[0];
+          if (roomRoster[playerIds[0]]) roomRoster[playerIds[0]].isHost = true;
+        }
+        renderRosterUI();
+      }
+    } else if (data.type === "SETTINGS_UPDATE") {
+      if (data.selectedCategory) gameState.selectedCategory = data.selectedCategory;
+      if (data.roundTime !== undefined) gameState.roundTime = data.roundTime;
+      if (data.customCategories) gameState.customCategories = data.customCategories;
+      renderCategoryVotingUI();
+      updateSettingsUI();
+    } else if (data.type === "CATEGORY_VOTE") {
+      if (!gameState.categoryVotes) gameState.categoryVotes = {};
+      gameState.categoryVotes[data.playerId] = data.categoryName;
+      renderCategoryVotingUI();
+    } else if (data.type === "START_ASSIGNMENT") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startAssignmentLocally();
+    } else if (data.type === "WORD_SUBMITTED") {
+      if (!gameState.wordAssignments) gameState.wordAssignments = {};
+      gameState.wordAssignments[data.targetId] = {
+        authorId: data.authorId,
+        authorName: data.authorName,
+        word: data.word
+      };
+      updateAssignmentTallyUI();
+      checkIfAllWordsSubmitted();
+    } else if (data.type === "START_GAME") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startGameLocally();
+    } else if (data.type === "SUBMIT_QUESTION") {
+      gameState.activeQuestion = data.question;
+      showActiveQuestionLocally();
+    } else if (data.type === "QUESTION_VOTE") {
+      if (gameState.activeQuestion) {
+        if (!gameState.activeQuestion.votes) gameState.activeQuestion.votes = {};
+        gameState.activeQuestion.votes[data.playerId] = data.response;
+        updateQuestionVotesUI();
+      }
+    } else if (data.type === "GUESS_RESULT") {
+      handleGuessResult(data);
+    } else if (data.type === "NEXT_TURN") {
+      gameState.speakerIndex = data.speakerIndex;
+      gameState.activeQuestion = null;
+      updateTurnUI();
+    } else if (data.type === "REVEAL_ALL") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      showRecapLocally();
+    } else if (data.type === "RETURN_TO_LOBBY") {
+      gameState.status = "lobby";
+      switchScreen("lobby-screen");
+      renderRosterUI();
+    }
+  }
+
+  function updateNetworkStatus(status) {
+    const dot = document.getElementById("network-dot");
+    dot.className = `network-status-dot ${status}`;
+  }
+
+  function getPlayerAvatar(name) {
+    name = (name || "Player").trim();
+    const emojis = ["🦁", "🦊", "🐼", "🐯", "🐨", "🐸", "🐙", "🦄", "🦅", "🐺", "🐻", "🐵", "🐶", "🐱"];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+    return emojis[hash % emojis.length];
+  }
+
+  function isCurrentUserHost() {
+    if (gameState.hostId && gameState.hostId === clientId) return true;
+    if (roomRoster[clientId] && roomRoster[clientId].isHost) return true;
+    const playerIds = Object.keys(roomRoster);
+    if (playerIds.length > 0 && playerIds[0] === clientId) return true;
+    return false;
+  }
+
+  function switchScreen(screenId) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+
+  /* ==========================================================================
+     4. LOBBY & ROOM MANAGEMENT
+     ========================================================================== */
+  function createRoom() {
+    const nameInput = document.getElementById("player-name-input");
+    const nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      alert("Please enter your Player Name first!");
+      if (nameInput) nameInput.focus();
+      return;
+    }
+    playerName = nameVal;
+    try { localStorage.setItem("headbands_player_name", playerName); } catch (e) {}
+
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+    connectToRoom(code);
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      score: 0,
+      isHost: true
+    };
+    gameState.hostId = clientId;
+
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    renderRosterUI();
+    renderCategoryVotingUI();
+  }
+
+  function joinRoomByInput() {
+    const nameInput = document.getElementById("player-name-input");
+    const nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      alert("Please enter your Player Name first!");
+      if (nameInput) nameInput.focus();
+      return;
+    }
+    playerName = nameVal;
+    try { localStorage.setItem("headbands_player_name", playerName); } catch (e) {}
+
+    const code = document.getElementById("room-code-input").value.trim().toUpperCase();
+    if (!code || code.length < 3) {
+      alert("Please enter a valid room code!");
+      return;
+    }
+    connectToRoom(code);
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      score: 0,
+      isHost: false
+    };
+
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    renderRosterUI();
+    renderCategoryVotingUI();
+  }
+
+  function copyRoomLink() {
+    const url = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast("Room invite link copied! 🔗");
+      }).catch(() => prompt("Copy invite link:", url));
+    } else {
+      prompt("Copy invite link:", url);
+    }
+  }
+
+  function renderRosterUI() {
+    const players = Object.values(roomRoster);
+    const grid = document.getElementById("roster-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    document.getElementById("roster-count-badge").innerText = `${players.length} Players`;
+
+    const isMeHost = isCurrentUserHost();
+    const startBtn = document.getElementById("start-game-btn");
+    const guestWaitMsg = document.getElementById("guest-waiting-msg");
+    if (startBtn) startBtn.style.display = isMeHost ? "flex" : "none";
+    if (guestWaitMsg) guestWaitMsg.style.display = isMeHost ? "none" : "block";
+
+    players.forEach(p => {
+      const isHost = p.id === gameState.hostId || (players[0] && players[0].id === p.id);
+      const isMe = p.id === clientId;
+      const div = document.createElement("div");
+      div.className = `player-tile ${isHost ? 'is-host' : ''} ${isMe ? 'is-me' : ''}`;
+      div.innerHTML = `
+        <div class="player-avatar">${p.avatar}</div>
+        <div class="player-tile-name">${escapeHTML(p.name)}</div>
+        <div class="player-tile-tag">${isHost ? '👑 Host' : (isMe ? 'You' : 'Player')}</div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  /* =========================================================================
+     5. CATEGORY VOTING & CUSTOM CATEGORIES
+     ========================================================================= */
+  function getAllCategories() {
+    const custom = (gameState.customCategories || []).map(name => ({
+      id: "custom_" + name,
+      name: name,
+      icon: "✨",
+      words: []
+    }));
+    return [...PREMADE_CATEGORIES, ...custom];
+  }
+
+  function renderCategoryVotingUI() {
+    const list = document.getElementById("category-vote-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    const all = getAllCategories();
+    const votes = gameState.categoryVotes || {};
+    const voteCounts = {};
+    Object.values(votes).forEach(catName => {
+      voteCounts[catName] = (voteCounts[catName] || 0) + 1;
+    });
+
+    const myVote = votes[clientId] || (gameState.selectedCategory ? gameState.selectedCategory.name : PREMADE_CATEGORIES[0].name);
+
+    all.forEach(cat => {
+      const count = voteCounts[cat.name] || 0;
+      const isSelected = cat.name === myVote;
+      const div = document.createElement("div");
+      div.className = `category-vote-item ${isSelected ? 'selected' : ''}`;
+      div.innerHTML = `
+        <div class="category-vote-title">
+          <span>${cat.icon}</span>
+          <span>${escapeHTML(cat.name)}</span>
+        </div>
+        <span class="category-vote-badge">${count > 0 ? `${count} vote${count > 1 ? 's' : ''}` : 'Vote'}</span>
+      `;
+      div.onclick = () => voteForCategory(cat);
+      list.appendChild(div);
+    });
+  }
+
+  function voteForCategory(cat) {
+    if (!gameState.categoryVotes) gameState.categoryVotes = {};
+    gameState.categoryVotes[clientId] = cat.name;
+    gameState.selectedCategory = cat;
+
+    playTone(440, 0.08, 'sine', 0.15);
+    renderCategoryVotingUI();
+
+    publishMessage({
+      type: "CATEGORY_VOTE",
+      playerId: clientId,
+      categoryName: cat.name
+    });
+
+    // If host, update selectedCategory for the room
+    if (isCurrentUserHost()) {
+      publishMessage({
+        type: "SETTINGS_UPDATE",
+        selectedCategory: cat,
+        roundTime: gameState.roundTime,
+        customCategories: gameState.customCategories
+      });
+    }
+  }
+
+  function proposeCustomCategory() {
+    const input = document.getElementById("custom-category-input");
+    const name = input ? input.value.trim() : "";
+    if (!name) return;
+
+    if (!gameState.customCategories) gameState.customCategories = [];
+    if (!gameState.customCategories.includes(name)) {
+      gameState.customCategories.push(name);
+    }
+    input.value = "";
+
+    const catObj = { id: "custom_" + name, name: name, icon: "✨", words: [] };
+    voteForCategory(catObj);
+
+    publishMessage({
+      type: "SETTINGS_UPDATE",
+      selectedCategory: catObj,
+      roundTime: gameState.roundTime,
+      customCategories: gameState.customCategories
+    });
+    showToast(`Category "${name}" added!`);
+  }
+
+  function setRoundTime(seconds) {
+    if (!isCurrentUserHost()) return;
+    gameState.roundTime = seconds;
+    updateSettingsUI();
+    publishMessage({
+      type: "SETTINGS_UPDATE",
+      selectedCategory: gameState.selectedCategory,
+      roundTime: gameState.roundTime,
+      customCategories: gameState.customCategories
+    });
+  }
+
+  function updateSettingsUI() {
+    const pills = document.querySelectorAll("#timer-pill-group .pill-option");
+    const times = [60, 90, 120, 0];
+    pills.forEach((p, idx) => p.classList.toggle("selected", times[idx] === gameState.roundTime));
+  }
+
+  /* ==========================================================================
+     6. PHASE 1: WORD ASSIGNMENT ("Write for another player")
+     ========================================================================= */
+  let myAssignedTargetId = null;
+
+  function requestStartAssignment() {
+    initAudio();
+    const players = Object.values(roomRoster);
+    if (players.length < 2 && !confirm("Recommended at least 2 players. Continue for testing?")) {
+      return;
+    }
+
+    // Determine category: Pick the one with the most votes or default
+    const votes = gameState.categoryVotes || {};
+    const voteCounts = {};
+    Object.values(votes).forEach(cName => { voteCounts[cName] = (voteCounts[cName] || 0) + 1; });
+    let maxV = -1;
+    let chosenName = gameState.selectedCategory ? gameState.selectedCategory.name : PREMADE_CATEGORIES[0].name;
+    Object.keys(voteCounts).forEach(cName => {
+      if (voteCounts[cName] > maxV) {
+        maxV = voteCounts[cName];
+        chosenName = cName;
+      }
+    });
+
+    const all = getAllCategories();
+    const resolvedCategory = all.find(c => c.name === chosenName) || PREMADE_CATEGORIES[0];
+
+    // Create assignment ring: Player 0 writes for 1, 1 for 2, ..., N for 0
+    const shuffledIds = players.map(p => p.id).sort(() => Math.random() - 0.5);
+    const targetMap = {}; // authorId -> targetId
+    for (let i = 0; i < shuffledIds.length; i++) {
+      const authorId = shuffledIds[i];
+      const targetId = shuffledIds[(i + 1) % shuffledIds.length];
+      targetMap[authorId] = targetId;
+    }
+
+    gameState.status = "assignment";
+    gameState.selectedCategory = resolvedCategory;
+    gameState.targetMap = targetMap;
+    gameState.wordAssignments = {};
+    gameState.solvedPlayers = {};
+    gameState.speakerIndex = 0;
+    gameState.speakerOrder = shuffledIds;
+
+    publishMessage({
+      type: "START_ASSIGNMENT",
+      state: gameState,
+      roster: roomRoster
+    });
+
+    startAssignmentLocally();
+  }
+
+  function startAssignmentLocally() {
+    switchScreen("assignment-screen");
+    playChime();
+
+    const targetMap = gameState.targetMap || {};
+    myAssignedTargetId = targetMap[clientId] || Object.keys(roomRoster).find(id => id !== clientId) || clientId;
+
+    const targetPlayer = roomRoster[myAssignedTargetId] || { name: "Your Friend", avatar: "👤" };
+    document.getElementById("assignment-target-name").innerText = `${targetPlayer.avatar} ${targetPlayer.name}`;
+    document.getElementById("assignment-category-tag").innerText = `Category: ${gameState.selectedCategory.name}`;
+
+    const input = document.getElementById("secret-word-input");
+    if (input) {
+      input.value = "";
+      input.disabled = false;
+      input.focus();
+    }
+    const btn = document.getElementById("submit-word-btn");
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "Submit Secret Word ✓";
+    }
+
+    shuffleInspirationChips();
+    updateAssignmentTallyUI();
+  }
+
+  function shuffleInspirationChips() {
+    const container = document.getElementById("inspiration-chips");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const cat = gameState.selectedCategory;
+    let pool = (cat && cat.words && cat.words.length > 0) ? cat.words : PREMADE_CATEGORIES[0].words;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 8);
+
+    shuffled.forEach(w => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerText = w;
+      chip.onclick = () => {
+        const input = document.getElementById("secret-word-input");
+        if (input) input.value = w;
+        playTone(520, 0.05, 'sine', 0.1);
+      };
+      container.appendChild(chip);
+    });
+  }
+
+  function submitSecretWord() {
+    const input = document.getElementById("secret-word-input");
+    const word = input ? input.value.trim() : "";
+    if (!word) {
+      alert("Please enter a secret word!");
+      return;
+    }
+
+    if (!gameState.wordAssignments) gameState.wordAssignments = {};
+    gameState.wordAssignments[myAssignedTargetId] = {
+      authorId: clientId,
+      authorName: playerName,
+      word: word
+    };
+
+    const btn = document.getElementById("submit-word-btn");
+    btn.disabled = true;
+    btn.innerText = "Word Submitted ✓";
+    if (input) input.disabled = true;
+
+    playTone(659.25, 0.15, 'triangle', 0.2);
+
+    publishMessage({
+      type: "WORD_SUBMITTED",
+      authorId: clientId,
+      authorName: playerName,
+      targetId: myAssignedTargetId,
+      word: word
+    });
+
+    updateAssignmentTallyUI();
+    checkIfAllWordsSubmitted();
+  }
+
+  function updateAssignmentTallyUI() {
+    const total = Object.keys(roomRoster).length;
+    const count = Object.keys(gameState.wordAssignments || {}).length;
+    const tally = document.getElementById("assignment-status-tally");
+    if (tally) tally.innerText = `${count} / ${total} Players Submitted`;
+  }
+
+  function checkIfAllWordsSubmitted() {
+    const total = Object.keys(roomRoster).length;
+    const count = Object.keys(gameState.wordAssignments || {}).length;
+    if (isCurrentUserHost() && count >= total && total > 0) {
+      setTimeout(() => {
+        gameState.status = "game";
+        publishMessage({
+          type: "START_GAME",
+          state: gameState,
+          roster: roomRoster
+        });
+        startGameLocally();
+      }, 800);
+    }
+  }
+
+  /* =========================================================================
+     7. PHASE 2: MAIN HEADBAND GAMEPLAY (The Forehead Arena)
+     ========================================================================= */
+  function startGameLocally() {
+    switchScreen("game-screen");
+    playVictorySound();
+
+    document.getElementById("hud-category-name").innerText = `Category: ${gameState.selectedCategory.name}`;
+    const hostEndBtn = document.getElementById("host-conclude-btn");
+    if (hostEndBtn) hostEndBtn.style.display = isCurrentUserHost() ? "block" : "none";
+
+    renderHeadbandsGrid();
+    updateTurnUI();
+  }
+
+  function renderHeadbandsGrid() {
+    const myAssignment = (gameState.wordAssignments && gameState.wordAssignments[clientId]);
+    const myHeadbandEl = document.getElementById("my-headband-text");
+    const isMySolved = gameState.solvedPlayers && gameState.solvedPlayers[clientId];
+
+    if (isMySolved && myAssignment) {
+      myHeadbandEl.className = "headband-word-tag solved";
+      myHeadbandEl.innerText = `🎉 "${myAssignment.word}" (SOLVED!)`;
+    } else {
+      myHeadbandEl.className = "headband-word-tag hidden-word";
+      myHeadbandEl.innerText = "❓ ??? (SECRET ON YOUR HEADBAND)";
+    }
+
+    // Render other players
+    const grid = document.getElementById("other-headbands-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const activeSpeakerId = gameState.speakerOrder[gameState.speakerIndex];
+
+    Object.values(roomRoster).forEach(p => {
+      if (p.id === clientId) return; // Don't duplicate self in other grid
+
+      const assignment = gameState.wordAssignments ? gameState.wordAssignments[p.id] : null;
+      const wordText = assignment ? assignment.word : "???";
+      const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[p.id];
+      const isTurn = p.id === activeSpeakerId;
+
+      const card = document.createElement("div");
+      card.className = `headband-card ${isTurn ? 'is-active-turn' : ''} ${isSolved ? 'is-solved' : ''}`;
+      card.id = `headband-card-${p.id}`;
+      card.innerHTML = `
+        <div class="headband-strap"></div>
+        <div class="player-avatar">${p.avatar}</div>
+        <div style="font-weight:700; font-size:0.9rem; margin-bottom:2px;">${escapeHTML(p.name)}</div>
+        <div class="headband-word-tag ${isSolved ? 'solved' : ''}">
+          ${escapeHTML(wordText)}
+        </div>
+        <div style="font-size:0.72rem; color:${isSolved ? 'var(--yes-green)' : (isTurn ? 'var(--accent-gold)' : '#8e8e93')}; font-weight:700;">
+          ${isSolved ? '✓ SOLVED!' : (isTurn ? 'Asking Questions...' : 'Headband')}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function updateTurnUI() {
+    renderHeadbandsGrid();
+
+    const activeSpeakerId = gameState.speakerOrder[gameState.speakerIndex];
+    const activePlayer = roomRoster[activeSpeakerId] || { name: "Player", avatar: "👤" };
+    const isMyTurn = activeSpeakerId === clientId;
+
+    document.getElementById("hud-turn-player").innerText = isMyTurn ? "🌟 IT IS YOUR TURN TO ASK!" : `${activePlayer.avatar} ${activePlayer.name}'s Turn`;
+
+    const myControls = document.getElementById("my-turn-controls");
+    const otherHint = document.getElementById("other-turn-hint");
+    if (myControls) myControls.style.display = isMyTurn ? "block" : "none";
+    if (otherHint) otherHint.style.display = isMyTurn ? "none" : "block";
+
+    if (isMyTurn) playTone(587.33, 0.15, 'triangle', 0.25);
+  }
+
+  function fillQuestion(q) {
+    const input = document.getElementById("my-question-input");
+    if (input) input.value = q;
+    playTone(523.25, 0.05, 'sine', 0.1);
+  }
+
+  function submitMyQuestion() {
+    const input = document.getElementById("my-question-input");
+    const text = input ? input.value.trim() : "";
+    if (!text) return;
+
+    gameState.activeQuestion = {
+      authorId: clientId,
+      authorName: playerName,
+      text: text,
+      votes: {}
+    };
+    input.value = "";
+
+    publishMessage({
+      type: "SUBMIT_QUESTION",
+      question: gameState.activeQuestion
+    });
+
+    showActiveQuestionLocally();
+  }
+
+  function showActiveQuestionLocally() {
+    if (!gameState.activeQuestion) return;
+    const box = document.getElementById("question-display-box");
+    box.style.display = "block";
+
+    const q = gameState.activeQuestion;
+    document.getElementById("question-author-tag").innerText = `${q.authorName} asks:`;
+    document.getElementById("active-question-content").innerText = `"${q.text}"`;
+
+    // Reset vote buttons styling
+    document.querySelectorAll(".btn-vote-resp").forEach(b => b.classList.remove("selected"));
+
+    // If I asked the question, hide my voting buttons (I'm listening!)
+    const isMeAuthor = q.authorId === clientId;
+    const voterPanel = document.getElementById("voter-buttons-panel");
+    if (voterPanel) voterPanel.style.display = isMeAuthor ? "none" : "block";
+
+    playTone(659.25, 0.15, 'sine', 0.2);
+    updateQuestionVotesUI();
+  }
+
+  function castQuestionResponse(response) {
+    if (!gameState.activeQuestion) return;
+    if (!gameState.activeQuestion.votes) gameState.activeQuestion.votes = {};
+
+    gameState.activeQuestion.votes[clientId] = response;
+
+    document.querySelectorAll(".btn-vote-resp").forEach(b => b.classList.remove("selected"));
+    const btn = document.getElementById(`btn-resp-${response}`);
+    if (btn) btn.classList.add("selected");
+
+    if (response === 'yes') playTone(659.25, 0.1, 'triangle', 0.2);
+    else if (response === 'no') playTone(220, 0.15, 'sawtooth', 0.2);
+    else playTone(440, 0.1, 'sine', 0.2);
+
+    publishMessage({
+      type: "QUESTION_VOTE",
+      playerId: clientId,
+      response: response
+    });
+
+    updateQuestionVotesUI();
+  }
+
+  function updateQuestionVotesUI() {
+    if (!gameState.activeQuestion || !gameState.activeQuestion.votes) return;
+    const votes = Object.values(gameState.activeQuestion.votes);
+    let yes = 0, no = 0, maybe = 0;
+    votes.forEach(v => {
+      if (v === 'yes') yes++;
+      else if (v === 'no') no++;
+      else if (v === 'maybe') maybe++;
+    });
+
+    const pill = document.getElementById("vote-tally-pill");
+    if (pill) {
+      pill.innerHTML = `<span>🟢 ${yes} YES</span> • <span>🔴 ${no} NO</span> • <span>🟡 ${maybe} MAYBE</span>`;
+    }
+  }
+
+  function submitMyGuess() {
+    const input = document.getElementById("my-guess-input");
+    const guess = input ? input.value.trim() : "";
+    if (!guess) return;
+
+    const myAssignment = (gameState.wordAssignments && gameState.wordAssignments[clientId]);
+    if (!myAssignment) return;
+
+    const actualWord = myAssignment.word.toLowerCase().replace(/^(a|an|the)\s+/, "").trim();
+    const cleanGuess = guess.toLowerCase().replace(/^(a|an|the)\s+/, "").trim();
+
+    const isCorrect = cleanGuess === actualWord || actualWord.includes(cleanGuess) || cleanGuess.includes(actualWord);
+
+    input.value = "";
+
+    publishMessage({
+      type: "GUESS_RESULT",
+      playerId: clientId,
+      playerName: playerName,
+      guess: guess,
+      actualWord: myAssignment.word,
+      isCorrect: isCorrect
+    });
+
+    handleGuessResult({
+      playerId: clientId,
+      playerName: playerName,
+      guess: guess,
+      actualWord: myAssignment.word,
+      isCorrect: isCorrect
+    });
+  }
+
+  function handleGuessResult(data) {
+    if (data.isCorrect) {
+      if (!gameState.solvedPlayers) gameState.solvedPlayers = {};
+      gameState.solvedPlayers[data.playerId] = true;
+
+      // Award points
+      if (roomRoster[data.playerId]) {
+        roomRoster[data.playerId].score = (roomRoster[data.playerId].score || 0) + 100;
+      }
+
+      playVictorySound();
+      fireConfetti();
+      showToast(`🎉 ${data.playerName} GUESSED IT! The word was "${data.actualWord}"!`);
+
+      renderHeadbandsGrid();
+
+      // Check if everyone solved their words
+      const total = Object.keys(roomRoster).length;
+      const solvedCount = Object.keys(gameState.solvedPlayers).length;
+      if (solvedCount >= total && isCurrentUserHost()) {
+        setTimeout(concludeRound, 2000);
+      }
+    } else {
+      playBuzzer();
+      showToast(`❌ ${data.playerName} guessed "${data.guess}" - Not quite!`);
+    }
+  }
+
+  function passTurnToNextPlayer() {
+    const order = gameState.speakerOrder || Object.keys(roomRoster);
+    gameState.speakerIndex = (gameState.speakerIndex + 1) % order.length;
+    gameState.activeQuestion = null;
+
+    publishMessage({
+      type: "NEXT_TURN",
+      speakerIndex: gameState.speakerIndex
+    });
+
+    updateTurnUI();
+  }
+
+  function togglePeekModal() {
+    const modal = document.getElementById("peek-modal");
+    const isShowing = modal.style.display === "flex";
+    if (isShowing) {
+      modal.style.display = "none";
+    } else {
+      const myAssignment = (gameState.wordAssignments && gameState.wordAssignments[clientId]);
+      document.getElementById("peek-word-content").innerText = myAssignment ? `"${myAssignment.word}"` : "???";
+      modal.style.display = "flex";
+    }
+  }
+
+  /* ==========================================================================
+     8. PHASE 3: ROUND RECAP & SCOREBOARD
+     ========================================================================= */
+  function concludeRound() {
+    gameState.status = "recap";
+    publishMessage({
+      type: "REVEAL_ALL",
+      state: gameState,
+      roster: roomRoster
+    });
+    showRecapLocally();
+  }
+
+  function showRecapLocally() {
+    switchScreen("recap-screen");
+    playVictorySound();
+    fireConfetti();
+
+    // Render list of words and authors
+    const list = document.getElementById("round-recap-list");
+    list.innerHTML = "";
+
+    Object.keys(roomRoster).forEach(pId => {
+      const p = roomRoster[pId];
+      const assignment = gameState.wordAssignments ? gameState.wordAssignments[pId] : null;
+      const isSolved = gameState.solvedPlayers && gameState.solvedPlayers[pId];
+
+      const div = document.createElement("div");
+      div.className = "score-row";
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:700;">${p.avatar} ${escapeHTML(p.name)}'s Word:</div>
+          <div style="font-size:1.15rem; font-weight:800; color:var(--accent-gold);">${assignment ? escapeHTML(assignment.word) : "???"}</div>
+          <div style="font-size:0.75rem; color:#8e8e93;">Written by ${assignment ? escapeHTML(assignment.authorName) : "Friend"}</div>
+        </div>
+        <div style="font-size:1.1rem; font-weight:800; color:${isSolved ? 'var(--yes-green)' : 'var(--no-red)'};">
+          ${isSolved ? '✓ Guessed (+100)' : '❌ Unsolved'}
+        </div>
+      `;
+      list.appendChild(div);
+    });
+
+    // Scoreboard
+    const sb = document.getElementById("recap-scoreboard");
+    sb.innerHTML = "";
+    const sorted = Object.values(roomRoster).sort((a, b) => b.score - a.score);
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sorted.forEach((p, idx) => {
+      const row = document.createElement("div");
+      row.className = "score-row";
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>${medals[idx] || "🎖️"}</span>
+          <span style="font-weight:700;">${p.avatar} ${escapeHTML(p.name)}</span>
+        </div>
+        <span style="font-weight:800; color:var(--accent-gold);">${p.score} pts</span>
+      `;
+      sb.appendChild(row);
+    });
+
+    const nextBtn = document.getElementById("next-round-btn");
+    if (nextBtn) nextBtn.style.display = isCurrentUserHost() ? "block" : "none";
+  }
+
+  function startNextRound() {
+    if (!isCurrentUserHost()) return;
+    gameState.roundNumber++;
+    requestStartAssignment();
+  }
+
+  function returnToLobby() {
+    publishMessage({ type: "RETURN_TO_LOBBY" });
+    gameState.status = "lobby";
+    switchScreen("lobby-screen");
+    renderRosterUI();
+  }
+
+  function syncToActiveGameState() {
+    if (gameState.status === "assignment") {
+      startAssignmentLocally();
+    } else if (gameState.status === "game") {
+      startGameLocally();
+    } else if (gameState.status === "recap") {
+      showRecapLocally();
+    }
+  }
+
+  /* ==========================================================================
+     9. NATIVE CANVAS CONFETTI
+     ========================================================================= */
+  function fireConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ["#FFD60A", "#FF375F", "#0A84FF", "#30D158", "#BF5AF2", "#FF9F0A"];
+
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.7) * 18,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        vr: (Math.random() - 0.5) * 10,
+        alpha: 1
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.4;
+        p.rotation += p.vr;
+        p.alpha -= 0.012;
+
+        if (p.alpha > 0) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+      if (alive) requestAnimationFrame(animate);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function escapeHTML(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /* ==========================================================================
+     10. INITIALIZATION & INVITE LINK HANDLING
+     ========================================================================= */
+  window.addEventListener("DOMContentLoaded", () => {
+    // Check invite parameter
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room");
+    const nameInput = document.getElementById("player-name-input");
+    const codeInput = document.getElementById("room-code-input");
+    const invitedBanner = document.getElementById("invited-banner");
+
+    if (playerName && nameInput) {
+      nameInput.value = playerName;
+    }
+
+    if (roomParam && codeInput) {
+      const cleanCode = roomParam.trim().toUpperCase();
+      codeInput.value = cleanCode;
+      if (invitedBanner) invitedBanner.style.display = "block";
+      if (nameInput) {
+        if (!nameInput.value.trim()) nameInput.focus();
+        else codeInput.focus();
+      }
+    }
+
+    // Enter key submit in inputs
+    [nameInput, codeInput].forEach(inp => {
+      if (inp) {
+        inp.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            if (roomParam || (codeInput && codeInput.value.trim())) {
+              joinRoomByInput();
+            } else {
+              createRoom();
+            }
+          }
+        });
+      }
+    });
+
+    renderCategoryVotingUI();
+  });
+</script>
+</body>
+</html>
