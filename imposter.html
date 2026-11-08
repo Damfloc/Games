@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Imposter - Online Party Game</title>
+<!-- Paho MQTT WebSocket Client for Zero-Backend Free Real-Time Multiplayer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg-dark: #0a0b10;
+    --card-bg: #14161f;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --imposter-red: #ff3b30;
+    --imposter-glow: rgba(255, 59, 48, 0.4);
+    --innocent-blue: #0a84ff;
+    --innocent-glow: rgba(10, 132, 255, 0.4);
+    --accent-gold: #ffd60a;
+    --accent-green: #30d158;
+    --text-primary: #f5f5f7;
+    --text-secondary: #8e8e93;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    touch-action: manipulation;
+  }
+
+  /* Top Navigation Strip */
+  .top-navbar {
+    width: 100%;
+    max-width: 900px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-pill-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .nav-pill-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  .network-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .network-status-dot.connected { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+  .network-status-dot.connecting { background: var(--accent-gold); animation: pulseDot 1s infinite alternate; }
+  .network-status-dot.disconnected { background: var(--imposter-red); }
+
+  @keyframes pulseDot {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  /* Screens Wrapper */
+  .app-container {
+    width: 100%;
+    max-width: 680px;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .screen {
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeInScreen 0.25s ease-out;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeInScreen {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Typography */
+  h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; text-align: center; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; }
+  p.subtitle { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.45; text-align: center; margin-bottom: 24px; max-width: 500px; }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 15px 24px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #0a84ff, #0066cc);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(10, 132, 255, 0.45);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-imposter {
+    background: linear-gradient(135deg, #ff3b30, #c41e16);
+    box-shadow: 0 8px 24px rgba(255, 59, 48, 0.4);
+  }
+  .btn-imposter:hover { box-shadow: 0 12px 28px rgba(255, 59, 48, 0.5); }
+
+  .btn-secondary {
+    padding: 11px 18px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+  /* Section Containers */
+  .card-box {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+
+  .card-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+  }
+
+  /* Form Inputs */
+  .input-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a1a1a6;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .text-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1.05rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 16px;
+  }
+  .text-input:focus {
+    border-color: var(--innocent-blue);
+    box-shadow: 0 0 12px rgba(10, 132, 255, 0.3);
+  }
+
+  /* Pill Radio Options */
+  .pill-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .pill-option {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pill-option.selected {
+    background: var(--innocent-blue);
+    border-color: var(--innocent-blue);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35);
+  }
+
+  /* Lobby Roster & Player Badges */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .player-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .player-tile.is-host {
+    border-color: rgba(255, 214, 10, 0.4);
+    background: rgba(255, 214, 10, 0.05);
+  }
+  .player-tile.is-me {
+    border-color: rgba(10, 132, 255, 0.5);
+    box-shadow: 0 0 12px rgba(10, 132, 255, 0.2);
+  }
+  .player-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(255, 255, 255, 0.08);
+    margin-bottom: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+  }
+  .player-tile-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .player-tile-tag {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Room Code Box in Lobby */
+  .room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10, 132, 255, 0.1);
+    border: 1px dashed rgba(10, 132, 255, 0.4);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .room-code-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #fff;
+  }
+
+  /* ==========================================================================
+     SECRET CARD REVEAL (Anti-Peeking Design for Phones)
+     ========================================================================== */
+  .secret-reveal-wrapper {
+    width: 100%;
+    perspective: 1000px;
+    margin: 20px 0;
+  }
+
+  .secret-card {
+    width: 100%;
+    min-height: 380px;
+    border-radius: 24px;
+    background: var(--card-bg);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s, border-color 0.3s;
+  }
+
+  .secret-card.hidden {
+    background: linear-gradient(145deg, #181a24, #10121a);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+  }
+  .secret-card.hidden:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .secret-card.revealed.imposter {
+    border-color: var(--imposter-red);
+    box-shadow: 0 0 35px var(--imposter-glow);
+    background: radial-gradient(circle at 50% 20%, rgba(255,59,48,0.2) 0%, #15161e 70%);
+  }
+
+  .secret-card.revealed.innocent {
+    border-color: var(--innocent-blue);
+    box-shadow: 0 0 35px var(--innocent-glow);
+    background: radial-gradient(circle at 50% 20%, rgba(10,132,255,0.2) 0%, #15161e 70%);
+  }
+
+  .peek-btn {
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    pointer-events: none;
+  }
+
+  .secret-role-badge {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .secret-role-badge.imposter {
+    background: rgba(255, 59, 48, 0.2);
+    color: var(--imposter-red);
+    border: 1px solid rgba(255, 59, 48, 0.4);
+  }
+  .secret-role-badge.innocent {
+    background: rgba(10, 132, 255, 0.2);
+    color: var(--innocent-blue);
+    border: 1px solid rgba(10, 132, 255, 0.4);
+  }
+
+  .secret-person-name {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+  .secret-category-tag {
+    font-size: 0.9rem;
+    color: var(--accent-gold);
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .clue-callout-box {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 16px 18px;
+    width: 100%;
+    margin-top: 10px;
+    text-align: left;
+  }
+  .clue-callout-box.imposter-clue {
+    background: rgba(255, 59, 48, 0.1);
+    border-color: rgba(255, 59, 48, 0.35);
+  }
+  .clue-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--imposter-red);
+    margin-bottom: 4px;
+  }
+  .clue-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #fff;
+  }
+
+  /* Discussion Screen HUD */
+  .speaker-spotlight {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.15), rgba(191, 90, 242, 0.12));
+    border: 1px solid rgba(10, 132, 255, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .spotlight-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a1a1a6;
+    margin-bottom: 6px;
+  }
+  .spotlight-name {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .timer-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 8px 18px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+    color: #fff;
+  }
+  .timer-banner.urgent {
+    color: var(--imposter-red);
+    border-color: var(--imposter-red);
+    animation: pulseTimer 0.8s infinite alternate;
+  }
+  @keyframes pulseTimer {
+    from { transform: scale(1); }
+    to { transform: scale(1.04); }
+  }
+
+  /* Role Peek Bar at bottom of screen */
+  .peek-reminder-strip {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    margin-top: 16px;
+    user-select: none;
+  }
+
+  /* Voting Screen Grid */
+  .voting-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    width: 100%;
+    margin: 20px 0;
+  }
+  .vote-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .vote-card:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+  }
+  .vote-card.voted-for {
+    border-color: var(--imposter-red);
+    background: rgba(255, 59, 48, 0.15);
+    box-shadow: 0 0 16px var(--imposter-glow);
+  }
+
+  /* Elimination & Win Celebration Overlays */
+  .reveal-hero-box {
+    width: 100%;
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 36px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+  }
+  .reveal-hero-box.imposter-win {
+    border-color: var(--imposter-red);
+    box-shadow: 0 0 30px var(--imposter-glow);
+  }
+  .reveal-hero-box.innocent-win {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 30px rgba(48, 209, 88, 0.3);
+  }
+
+  /* Imposter Guess Modal */
+  .imposter-guess-box {
+    width: 100%;
+    background: rgba(255, 59, 48, 0.08);
+    border: 2px solid var(--imposter-red);
+    border-radius: 20px;
+    padding: 24px 18px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .guess-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .guess-btn {
+    padding: 14px 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .guess-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #fff;
+  }
+
+  /* Scoreboard */
+  .scoreboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+  }
+
+  /* Confetti Canvas */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Top Navbar Strip -->
+<nav class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>🕵️‍♂️</span>
+    <span>THE IMPOSTER</span>
+  </a>
+
+  <div class="nav-controls">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8e8e93;">
+      <span class="network-status-dot disconnected" id="network-dot"></span>
+      <span id="room-code-tag">No Room</span>
+    </div>
+    <button class="nav-pill-btn" onclick="toggleSound()" id="sound-btn">🔊</button>
+    <a href="index.html" class="nav-pill-btn">Exit</a>
+  </div>
+</nav>
+
+<div class="app-container">
+
+  <!-- =========================================================================
+       SCREEN 1: WELCOME & ROOM LOBBY
+       ========================================================================= -->
+  <div id="lobby-screen" class="screen active">
+    <h1 style="margin-top: 10px;">The Imposter</h1>
+    <p class="subtitle">Join a room on your phone! One secret imposter blends in while everyone else receives the famous person.</p>
+
+    <!-- Join / Create Switcher -->
+    <div class="card-box" id="entry-box">
+      <label class="input-label">Your Agent Name</label>
+      <input type="text" class="text-input" id="player-name-input" maxlength="15" placeholder="Enter your name">
+
+      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <button class="btn-primary" onclick="createRoom()" style="flex: 1;">Create New Room</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin: 12px 0;">
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        <span style="font-size: 0.8rem; color: #8e8e93; font-weight: 600;">OR JOIN ROOM</span>
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <input type="text" class="text-input" id="room-code-input" maxlength="6" placeholder="4-LETTER CODE" style="text-transform: uppercase; margin-bottom: 0; font-weight: 800; letter-spacing: 0.1em; text-align: center;">
+        <button class="btn-secondary" onclick="joinRoomByInput()" style="white-space: nowrap; font-weight: 700;">Join Room →</button>
+      </div>
+    </div>
+
+    <!-- Active Room Dashboard (Shown after joined) -->
+    <div class="card-box" id="room-dashboard" style="display: none;">
+      <div class="room-code-display">
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--innocent-blue); font-weight: 800; letter-spacing: 0.06em;">Room Code</div>
+          <div class="room-code-val" id="display-room-code">----</div>
+        </div>
+        <button class="btn-secondary" onclick="copyRoomLink()" style="background: rgba(10, 132, 255, 0.2); border-color: rgba(10, 132, 255, 0.4); color: #fff;">
+          <span>🔗 Share Link</span>
+        </button>
+      </div>
+
+      <!-- Host Settings (Editable only by host) -->
+      <div id="host-settings-panel">
+        <div class="card-box-header">
+          <span>Game Settings</span>
+          <span style="font-size: 0.75rem; color: var(--accent-gold);" id="host-indicator">👑 You are the Host</span>
+        </div>
+
+        <label class="input-label">Imposter Clue Difficulty</label>
+        <div class="pill-group" id="difficulty-pill-group">
+          <div class="pill-option selected" onclick="setClueDifficulty('normal')">Normal (Good Clue)</div>
+          <div class="pill-option" onclick="setClueDifficulty('vague')">Vague (Harder)</div>
+          <div class="pill-option" onclick="setClueDifficulty('category')">Category Only</div>
+        </div>
+
+        <label class="input-label">Discussion Time</label>
+        <div class="pill-group" id="time-pill-group">
+          <div class="pill-option" onclick="setDiscussionTime(60)">60s</div>
+          <div class="pill-option selected" onclick="setDiscussionTime(120)">2 Min</div>
+          <div class="pill-option" onclick="setDiscussionTime(180)">3 Min</div>
+          <div class="pill-option" onclick="setDiscussionTime(0)">Unlimited</div>
+        </div>
+      </div>
+
+      <!-- Joined Players Roster -->
+      <div class="card-box-header">
+        <span>Players in Room</span>
+        <span id="roster-count-badge">0 Players</span>
+      </div>
+      <div class="roster-grid" id="roster-grid">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">Start Game 🚀</button>
+      <p id="min-players-hint" style="font-size: 0.8rem; color: #8e8e93; margin-top: 8px; text-align: center;">Recommended 3+ players (You can test with fewer)</p>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SCREEN 2: SECRET IDENTITY REVEAL (Anti-Peeking for Phones)
+       ========================================================================= -->
+  <div id="reveal-screen" class="screen">
+    <div class="card-box-header" style="width: 100%; margin-bottom: 4px;">
+      <span>Round <span id="hud-round-num">1</span> Identity</span>
+      <span style="color: var(--accent-gold);">Private Card</span>
+    </div>
+    <p class="subtitle" style="margin-bottom: 12px;">Make sure no one is looking at your phone screen!</p>
+
+    <!-- Tap or Hold Card -->
+    <div class="secret-reveal-wrapper">
+      <div class="secret-card hidden" id="secret-card" onclick="toggleSecretCardReveal()">
+        <!-- Hidden State Contents -->
+        <div id="card-hidden-state">
+          <div style="font-size: 3.5rem; margin-bottom: 12px;">🔒</div>
+          <h2 style="margin-bottom: 6px;">Tap to Reveal Identity</h2>
+          <p style="font-size: 0.9rem; color: #8e8e93; max-width: 280px; margin: 0 auto 16px;">
+            Tap to see your secret role. Tap again to hide it before showing others.
+          </p>
+          <div class="peek-btn">👁️ Reveal Secret Role</div>
+        </div>
+
+        <!-- Revealed State Contents (Populated Dynamically) -->
+        <div id="card-revealed-state" style="display: none; width: 100%;">
+          <div class="secret-role-badge" id="card-role-badge">INNOCENT</div>
+          <div class="secret-person-name" id="card-person-name">Spider-Man</div>
+          <div class="secret-category-tag" id="card-category-name">🦸 Superheroes & Comics</div>
+
+          <div class="clue-callout-box" id="card-clue-box">
+            <div class="clue-label" id="card-clue-label">YOUR CLUE:</div>
+            <div class="clue-text" id="card-clue-content">Marvel hero based in NYC who swings between skyscrapers</div>
+          </div>
+
+          <div style="margin-top: 18px; font-size: 0.84rem; color: #a1a1a6; line-height: 1.4;" id="card-instructions">
+            Give subtle clues that prove you know this person without making it too obvious for the Imposter!
+          </div>
+
+          <div class="peek-btn" style="background: rgba(255,255,255,0.15); margin-top: 20px;">🙈 Tap to Hide Again</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="proceedToDiscussion()">I Know My Role → Start Clues</button>
+  </div>
+
+  <!-- =========================================================================
+       SCREEN 3: CLUES & DISCUSSION PHASE
+       ========================================================================= -->
+  <div id="game-screen" class="screen">
+    <!-- Timer Banner -->
+    <div class="timer-banner" id="game-timer-banner">
+      <span>⏱️</span>
+      <span id="game-timer-text">02:00</span>
+    </div>
+
+    <!-- Spotlight Speaker Tracker -->
+    <div class="speaker-spotlight">
+      <div class="spotlight-label">Current Speaker • Give 1 Clue or Ask a Question</div>
+      <div class="spotlight-name" id="current-speaker-name">Agent 123</div>
+      <div style="margin-top: 10px; display: flex; justify-content: center; gap: 8px;">
+        <button class="btn-secondary" onclick="advanceSpeaker()" style="font-size: 0.85rem; padding: 6px 14px;">Next Speaker ⏭️</button>
+      </div>
+    </div>
+
+    <div class="card-box">
+      <div class="card-box-header">
+        <span>How to Play this Round</span>
+      </div>
+      <ul style="text-align: left; font-size: 0.88rem; color: #a1a1a6; line-height: 1.6; padding-left: 20px;">
+        <li>Take turns giving <strong>one-word or short hints</strong> about the person.</li>
+        <li><strong>Innocents:</strong> Don't be too specific or the Imposter will guess who it is!</li>
+        <li><strong>Imposter:</strong> Use your clue, listen carefully, and act like you know who it is.</li>
+      </ul>
+    </div>
+
+    <!-- Sneak Peek Reminder Bar -->
+    <div class="peek-reminder-strip" onclick="toggleRoleModal()">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.2rem;">👁️</span>
+        <span style="font-size: 0.9rem; font-weight: 700;">Forgot your card? Tap to sneak a peek</span>
+      </div>
+      <span style="font-size: 0.8rem; color: var(--innocent-blue); font-weight: 700;">Show Me →</span>
+    </div>
+
+    <div style="margin-top: 24px; width: 100%;">
+      <button class="btn-primary btn-imposter" onclick="requestStartVoting()">Start Voting & Accusations 🗳️</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       SCREEN 4: VOTING BALLOT
+       ========================================================================= -->
+  <div id="voting-screen" class="screen">
+    <div style="font-size: 3rem; margin-bottom: 6px;">🗳️</div>
+    <h1>Vote Out the Imposter</h1>
+    <p class="subtitle">Tap the player you suspect is the Imposter. Once everyone has voted, the verdict will be revealed!</p>
+
+    <div style="font-size: 0.9rem; color: var(--accent-gold); font-weight: 700; margin-bottom: 10px;" id="voting-tally-status">
+      0 / 0 Votes Cast
+    </div>
+
+    <div class="voting-grid" id="voting-grid">
+      <!-- Players to vote for -->
+    </div>
+
+    <button class="btn-primary" id="submit-vote-btn" onclick="submitMyVote()" disabled>Cast My Vote</button>
+  </div>
+
+  <!-- =========================================================================
+       SCREEN 5: ELIMINATION & VERDICT REVEAL
+       ========================================================================= -->
+  <div id="elimination-screen" class="screen">
+    <div class="reveal-hero-box" id="elimination-hero-box">
+      <div style="font-size: 4rem; margin-bottom: 10px;" id="verdict-icon">🥁</div>
+      <div style="font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;" id="verdict-tag">Room Verdict</div>
+      <h1 id="verdict-headline" style="margin-bottom: 12px;">Tallying Votes...</h1>
+      <p id="verdict-subtext" style="color: #a1a1a6; font-size: 1.05rem; line-height: 1.4;"></p>
+    </div>
+
+    <!-- Imposter Last-Chance Guessing Box (Visible if Imposter was voted out) -->
+    <div class="imposter-guess-box" id="imposter-guess-container" style="display: none;">
+      <div style="font-size: 0.8rem; font-weight: 800; color: var(--imposter-red); text-transform: uppercase; letter-spacing: 0.08em;">Last Chance to Steal Victory!</div>
+      <h2 style="margin: 6px 0 8px;">Imposter, who was the Secret Person?</h2>
+      <p style="font-size: 0.88rem; color: #a1a1a6;">If the Imposter guesses right, they steal the win!</p>
+
+      <div class="guess-options-grid" id="guess-options-grid">
+        <!-- 4 choices generated dynamically -->
+      </div>
+    </div>
+
+    <!-- Final Match Stats & Next Round Actions -->
+    <div class="card-box" id="reveal-details-box" style="display: none;">
+      <div class="card-box-header"><span>Secret Identity Unveiled</span></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div>
+          <div style="font-size: 1.4rem; font-weight: 800;" id="true-person-title">Spider-Man</div>
+          <div style="font-size: 0.85rem; color: var(--accent-gold); font-weight: 700;" id="true-category-title">Superheroes & Comics</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.75rem; color: var(--imposter-red); font-weight: 800;">THE IMPOSTER WAS</div>
+          <div style="font-size: 1.15rem; font-weight: 700;" id="true-imposter-name">Agent 123</div>
+        </div>
+      </div>
+
+      <div class="clue-callout-box imposter-clue" style="margin-bottom: 16px;">
+        <div class="clue-label">The Imposter's Clue Was:</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: #fff;" id="true-clue-revealed">"..."</div>
+      </div>
+
+      <div class="card-box-header"><span>Live Match Standings</span></div>
+      <div class="scoreboard-list" id="match-scoreboard">
+        <!-- Live score rows -->
+      </div>
+    </div>
+
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+      <button class="btn-primary" id="next-round-btn" onclick="requestNextRound()" style="display: none;">Play Next Round ↺</button>
+      <button class="btn-secondary" onclick="returnToLobby()" style="width: 100%;">Back to Lobby 👥</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Quick Peek Modal for Game Screen -->
+<div id="peek-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:500; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card-bg); border:2px solid rgba(255,255,255,0.15); border-radius:20px; padding:24px; max-width:400px; width:100%; text-align:center;">
+    <h3 style="margin-bottom:12px;">Secret Role Reminder</h3>
+    <div id="modal-role-content" style="margin-bottom:18px;"></div>
+    <button class="btn-primary" onclick="toggleRoleModal()">Close (Hide Card)</button>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     1. EXTENSIVE VIRAL IMPOSTER DATABASE: REAL & FICTITIOUS PEOPLE
+     ========================================================================== */
+  const IMPOSTER_PEOPLE_DATABASE = [
+    // --- SUPERHEROES & COMICS ---
+    { name: "Spider-Man", category: "Superheroes", clueNormal: "Marvel teenage superhero from NYC who fights crime in a red & blue suit with web shooters", clueVague: "Popular superhero with insect or animal powers", distractors: ["Batman", "Iron Man", "Deadpool"] },
+    { name: "Batman", category: "Superheroes", clueNormal: "Billionaire vigilante of Gotham City who wears a dark bat cowl, drives the Batmobile, and has no superpowers", clueVague: "Dark DC comic superhero who operates in shadows", distractors: ["Superman", "Spider-Man", "Iron Man"] },
+    { name: "Iron Man", category: "Superheroes", clueNormal: "Genius billionaire Tony Stark who flies around in high-tech red and gold powered armor powered by an arc reactor", clueVague: "Avenger tech genius who built his own flying suit", distractors: ["Thor", "Captain America", "Cyborg"] },
+    { name: "Superman", category: "Superheroes", clueNormal: "Alien hero from Krypton who wears a red cape, has heat vision, flies, and works as Clark Kent at the Daily Planet", clueVague: "Invulnerable superhero with an S on his chest", distractors: ["Homelander", "Thor", "Captain Marvel"] },
+    { name: "Deadpool", category: "Superheroes", clueNormal: "Hilarious Marvel mercenary in a red suit who breaks the fourth wall, loves chimichangas, and can regenerate from anything", clueVague: "Violent and comedic superhero with dual swords", distractors: ["Wolverine", "Spider-Man", "The Joker"] },
+    { name: "Wolverine", category: "Superheroes", clueNormal: "Canadian mutant member of X-Men with adamantium skeleton, sharp metal claws extending from knuckles, and healing powers", clueVague: "Aggressive mutant with metallic blades", distractors: ["Deadpool", "Cyclops", "Magneto"] },
+    { name: "Wonder Woman", category: "Superheroes", clueNormal: "Amazonian warrior princess Diana from Themyscira with bulletproof bracelets, a golden lasso of truth, and tiara", clueVague: "Female mythological superhero wielding a lasso", distractors: ["Captain Marvel", "Black Widow", "Supergirl"] },
+    { name: "Hulk", category: "Superheroes", clueNormal: "Scientist Bruce Banner who transforms into a giant green rage monster who loves to smash everything", clueVague: "Giant green super-strong monster hero", distractors: ["Thing", "Thanos", "Shrek"] },
+    { name: "The Joker", category: "Superheroes", clueNormal: "Bat-nemesis clown prince of crime in Gotham with green hair, bleached skin, a purple suit, and a chaotic laugh", clueVague: "Famous psychopathic comic book clown villain", distractors: ["Pennywise", "Riddler", "Penguin"] },
+    { name: "Thanos", category: "Superheroes", clueNormal: "Purple Marvel cosmic titan who sought the six Infinity Stones on his golden gauntlet to snap away half of all life", clueVague: "Giant purple galactic villain obsessed with balance", distractors: ["Darkseid", "Kang the Conqueror", "Galactus"] },
+    { name: "Thor", category: "Superheroes", clueNormal: "Norse god of thunder and Avenger from Asgard who wields the magical hammer Mjolnir and controls lightning", clueVague: "Godly superhero wielding a legendary hammer", distractors: ["Loki", "Aquaman", "Hercules"] },
+    { name: "Black Panther", category: "Superheroes", clueNormal: "King T'Challa of Wakanda who wears a vibranium panther habit and protects his hidden advanced African nation", clueVague: "African king and superhero with feline theme", distractors: ["Miles Morales", "Falcon", "Batman"] },
+
+    // --- CARTOONS & ANIMATED ICONS ---
+    { name: "SpongeBob SquarePants", category: "Cartoons & Animation", clueNormal: "Optimistic yellow kitchen sponge who lives in a pineapple under the sea in Bikini Bottom and cooks Krabby Patties", clueVague: "Undersea cartoon character who works at a burger joint", distractors: ["Patrick Star", "Squidward", "Mickey Mouse"] },
+    { name: "Mickey Mouse", category: "Cartoons & Animation", clueNormal: "Iconic Disney mascot mouse with large round black ears, red shorts with white buttons, and yellow shoes", clueVague: "The most famous animated cartoon mouse in the world", distractors: ["Bugs Bunny", "Donald Duck", "Goofy"] },
+    { name: "Homer Simpson", category: "Cartoons & Animation", clueNormal: "Yellow cartoon dad from Springfield who loves pink glazed doughnuts, Duff beer, and shouts D'oh!", clueVague: "Lazy cartoon father with three kids and a blue-haired wife", distractors: ["Peter Griffin", "Fred Flintstone", "Bart Simpson"] },
+    { name: "Shrek", category: "Cartoons & Animation", clueNormal: "Big grumpy green ogre who lives in a swamp, marries Princess Fiona, and travels with a talking Donkey", clueVague: "Green fairytale monster who loves his private swamp", distractors: ["Hulk", "Grinch", "Mike Wazowski"] },
+    { name: "Buzz Lightyear", category: "Cartoons & Animation", clueNormal: "Space Ranger action figure from Toy Story who says 'To Infinity and Beyond' with pop-out wings and a wrist laser", clueVague: "Futuristic toy astronaut who thinks he is real", distractors: ["Sheriff Woody", "Iron Man", "Wall-E"] },
+    { name: "Pikachu", category: "Cartoons & Animation", clueNormal: "Electric yellow mouse Pokémon who travels on Ash Ketchum's shoulder and shocks opponents with Thunderbolt", clueVague: "Famous Japanese gaming creature with a lightning tail", distractors: ["Raichu", "Sonic", "Super Mario"] },
+    { name: "Scooby-Doo", category: "Cartoons & Animation", clueNormal: "Great Dane mystery dog who solves spooky ghost crimes with Shaggy, Velma, Fred and Daphne for Scooby Snacks", clueVague: "Talking cartoon dog who is terrified of ghosts", distractors: ["Pluto", "Goofy", "Garfield"] },
+    { name: "Elsa", category: "Cartoons & Animation", clueNormal: "Disney queen of Arendelle from Frozen with magical ice and snow powers who builds an ice castle singing Let It Go", clueVague: "Fairytale princess who accidentally freezes her kingdom", distractors: ["Anna", "Rapunzel", "Cinderella"] },
+    { name: "Bugs Bunny", category: "Cartoons & Animation", clueNormal: "Clever gray Warner Bros rabbit who munches on a carrot, outsmarts hunters, and asks 'What's up, Doc?'", clueVague: "Classic cartoon rabbit who loves carrots and disguises", distractors: ["Daffy Duck", "Mickey Mouse", "Porky Pig"] },
+    { name: "Super Mario", category: "Cartoons & Animation", clueNormal: "Italian video game plumber in red overalls and cap who jumps on Goombas, eats mushrooms, and saves Princess Peach", clueVague: "Gaming icon with mustache who rescues a princess in castles", distractors: ["Luigi", "Sonic the Hedgehog", "Wario"] },
+    { name: "Garfield", category: "Cartoons & Animation", clueNormal: "Lazy, fat orange striped cat who hates Mondays, loves eating lasagna, and torments the dog Odie", clueVague: "Orange cartoon feline obsessed with Italian food", distractors: ["Tom the Cat", "Sylvester", "Puss in Boots"] },
+    { name: "The Grinch", category: "Cartoons & Animation", clueNormal: "Cranky green furry creature who lives on Mt. Crumpit with his dog Max and plots to steal Christmas from Whoville", clueVague: "Green holiday creature whose heart is two sizes too small", distractors: ["Shrek", "Jack Skellington", "Scrooge"] },
+
+    // --- POP STARS & MUSICIANS ---
+    { name: "Taylor Swift", category: "Pop Stars & Music", clueNormal: "Global pop superstar known for the massive Eras Tour, Swifties fanbase, friendship bracelets, and re-recorded albums", clueVague: "Record-breaking American female pop and country singer", distractors: ["Beyoncé", "Ariana Grande", "Billie Eilish"] },
+    { name: "Michael Jackson", category: "Pop Stars & Music", clueNormal: "The King of Pop famous for the moonwalk, sparkly white glove, red Thriller jacket, and iconic high-pitched vocal hiccups", clueVague: "Legendary pop icon known for groundbreaking dance moves", distractors: ["Elvis Presley", "Prince", "Stevie Wonder"] },
+    { name: "Beyoncé", category: "Pop Stars & Music", clueNormal: "Queen Bey, superstar singer from Destiny's Child known for Single Ladies, Renaissance Tour, and incredible stage performances", clueVague: "Global R&B/pop queen married to a famous rapper", distractors: ["Rihanna", "Taylor Swift", "Whitney Houston"] },
+    { name: "Eminem", category: "Pop Stars & Music", clueNormal: "Slim Shady, fast-spitting Detroit hip-hop legend famous for Lose Yourself, bleached blonde hair, and 8 Mile", clueVague: "Legendary white rapper known for rapid-fire rhymes", distractors: ["Snoop Dogg", "Dr. Dre", "50 Cent"] },
+    { name: "Elvis Presley", category: "Pop Stars & Music", clueNormal: "The King of Rock and Roll from Graceland known for his pompadour hair, hip-shaking dancing, and Blue Suede Shoes", clueVague: "1950s rock pioneer who served in the army and loved peanut butter banana sandwiches", distractors: ["Freddie Mercury", "Johnny Cash", "John Lennon"] },
+    { name: "Freddie Mercury", category: "Pop Stars & Music", clueNormal: "Flamboyant lead singer of Queen with a powerful four-octave voice, iconic mustache, and Bohemian Rhapsody", clueVague: "British rock frontman who commanded Live Aid 1985", distractors: ["David Bowie", "Mick Jagger", "Elton John"] },
+    { name: "Billie Eilish", category: "Pop Stars & Music", clueNormal: "Gen Z alternative pop sensation known for whisper vocals, baggy clothes, dyed neon hair, and Bad Guy", clueVague: "Young Grammy-winning female artist who makes music with her brother", distractors: ["Olivia Rodrigo", "Ariana Grande", "Lorde"] },
+    { name: "Drake", category: "Pop Stars & Music", clueNormal: "Canadian hip-hop and R&B megastar from Toronto (the 6ix) known for Hotline Bling, God's Plan, and Certified Lover Boy", clueVague: "Top charting rapper who started on a teen drama TV show", distractors: ["Kendrick Lamar", "Kanye West", "Travis Scott"] },
+    { name: "Justin Bieber", category: "Pop Stars & Music", clueNormal: "Canadian pop star discovered on YouTube who sang Baby as a teen and became a worldwide heartthrob with Beliebers", clueVague: "Global male pop star who married Hailey Baldwin", distractors: ["Shawn Mendes", "Harry Styles", "Zayn Malik"] },
+    { name: "Rihanna", category: "Pop Stars & Music", clueNormal: "Barbadian music icon and billionaire behind Fenty Beauty known for Umbrella, Diamonds, and the Super Bowl halftime show", clueVague: "Caribbean pop and R&B queen who built a makeup empire", distractors: ["Beyoncé", "Nicki Minaj", "Cardi B"] },
+    { name: "Snoop Dogg", category: "Pop Stars & Music", clueNormal: "Laid-back West Coast rap legend known for Drop It Like It's Hot, braided hair, smoking, and friendship with Martha Stewart", clueVague: "West Coast hip-hop star with a signature chill swagger", distractors: ["Dr. Dre", "Ice Cube", "Tupac Shakur"] },
+    { name: "Ariana Grande", category: "Pop Stars & Music", clueNormal: "High-ponytail pop diva with whistle-register vocals known for 7 rings, Thank U, Next, and playing Glinda in Wicked", clueVague: "Petite pop star famous for high ponytail and Broadway voice", distractors: ["Taylor Swift", "Camila Cabello", "Selena Gomez"] },
+
+    // --- CELEBRITIES & ACTORS ---
+    { name: "Leonardo DiCaprio", category: "Hollywood Celebrities", clueNormal: "Oscar-winning Hollywood heartthrob who starred in Titanic, The Wolf of Wall Street, Inception, and The Revenant", clueVague: "Famous A-list actor who fought a bear and stood on a ship bow", distractors: ["Brad Pitt", "Johnny Depp", "Tom Cruise"] },
+    { name: "Dwayne 'The Rock' Johnson", category: "Hollywood Celebrities", clueNormal: "Bald muscular action megastar and former WWE wrestler famous for raising The People's Eyebrow and Jumanji", clueVague: "Massive pro wrestler turned highest-paid action star", distractors: ["John Cena", "Dave Bautista", "Vin Diesel"] },
+    { name: "Tom Cruise", category: "Hollywood Celebrities", clueNormal: "Hollywood daredevil action star who does his own crazy stunts hanging from planes in Mission: Impossible and Top Gun", clueVague: "Famous actor who loves running fast in movies and flying jets", distractors: ["Keanu Reeves", "Harrison Ford", "Brad Pitt"] },
+    { name: "Keanu Reeves", category: "Hollywood Celebrities", clueNormal: "Beloved internet nice guy and action star who played Neo in The Matrix, John Wick, and says 'Whoa'", clueVague: "Quiet martial arts action star who loves motorcycles and puppies", distractors: ["Tom Cruise", "Nicolas Cage", "Christian Bale"] },
+    { name: "Zendaya", category: "Hollywood Celebrities", clueNormal: "Fashion icon and Emmy-winning actress who stars in Euphoria, Dune as Chani, and plays MJ in Marvel's Spider-Man", clueVague: "Young trendsetting actress dating her Spider-Man co-star", distractors: ["Sydney Sweeney", "Florence Pugh", "Jenna Ortega"] },
+    { name: "Will Smith", category: "Hollywood Celebrities", clueNormal: "Fresh Prince of Bel-Air star, Men in Black agent, and Hollywood A-lister who played the Genie in Aladdin", clueVague: "Philly rapper turned blockbuster movie star", distractors: ["Jamie Foxx", "Eddie Murphy", "Denzel Washington"] },
+    { name: "Margot Robbie", category: "Hollywood Celebrities", clueNormal: "Australian powerhouse actress who brought Barbie to life on the big screen and played Harley Quinn in Suicide Squad", clueVague: "Blonde Aussie actress who produced and starred in a pink blockbuster", distractors: ["Emma Stone", "Scarlett Johansson", "Gal Gadot"] },
+    { name: "Johnny Depp", category: "Hollywood Celebrities", clueNormal: "Eccentric actor famous for portraying Captain Jack Sparrow, Edward Scissorhands, and Willy Wonka", clueVague: "Quirky method actor who loves pirate hats and Tim Burton films", distractors: ["Robert Downey Jr.", "Jim Carrey", "Orlando Bloom"] },
+    { name: "Arnold Schwarzenegger", category: "Hollywood Celebrities", clueNormal: "Austrian bodybuilder champion turned Terminator action star who was elected Governor of California", clueVague: "Muscular Austrian actor famous for saying 'I'll Be Back'", distractors: ["Sylvester Stallone", "Jean-Claude Van Damme", "Dwayne Johnson"] },
+    { name: "Jim Carrey", category: "Hollywood Celebrities", clueNormal: "Rubber-faced comedy genius famous for crazy physical acting in The Mask, Ace Ventura, Dumb and Dumber, and The Grinch", clueVague: "Canadian comedian known for extreme facial expressions", distractors: ["Adam Sandler", "Steve Carell", "Robin Williams"] },
+    { name: "Morgan Freeman", category: "Hollywood Celebrities", clueNormal: "Legendary Oscar-winning actor with the most recognizable, soothing deep voice in cinema who played God and narrated nature", clueVague: "Distinguished actor famous for narrating almost everything", distractors: ["Samuel L. Jackson", "Denzel Washington", "James Earl Jones"] },
+    { name: "Gordon Ramsay", category: "Celebrity & TV", clueNormal: "Furious British celebrity chef on Hell's Kitchen who screams at cooks, throws plates, and calls people an 'idiot sandwich'", clueVague: "Angry TV chef famous for demanding raw food be thrown away", distractors: ["Jamie Oliver", "Guy Fieri", "Bobby Flay"] },
+    { name: "MrBeast", category: "Celebrity & Internet", clueNormal: "Top YouTube creator Jimmy Donaldson famous for giving away millions of dollars, crazy challenges, and rebuilding Squid Game", clueVague: "Famous online creator who gives away islands and houses", distractors: ["PewDiePie", "Markiplier", "Logan Paul"] },
+
+    // --- ATHLETES & SPORTS ICONS ---
+    { name: "Lionel Messi", category: "Athletes & Sports", clueNormal: "Argentine soccer legend and World Cup champion who wore #10 for Barcelona, won 8 Ballon d'Ors, and plays in Miami", clueVague: "Short South American soccer GOAT with magical left foot", distractors: ["Cristiano Ronaldo", "Neymar", "Diego Maradona"] },
+    { name: "Cristiano Ronaldo", category: "Athletes & Sports", clueNormal: "Portuguese soccer superstar famous for his #7 jersey, CR7 brand, incredible header goals, and yelling 'SIUUU!'", clueVague: "Chiseled European soccer superstar with the most Instagram followers", distractors: ["Lionel Messi", "Kylian Mbappé", "David Beckham"] },
+    { name: "LeBron James", category: "Athletes & Sports", clueNormal: "NBA superstar 'King James' who plays for the Lakers, won championships in Miami and Cleveland, and broke all-time scoring record", clueVague: "Dominant basketball legend wearing #23 with multiple NBA rings", distractors: ["Michael Jordan", "Kobe Bryant", "Stephen Curry"] },
+    { name: "Michael Jordan", category: "Athletes & Sports", clueNormal: "Basketball GOAT who led the Chicago Bulls to six NBA championships in the 90s, famous for his Jumpman logo and Air Jordans", clueVague: "Legendary #23 basketball icon who starred in Space Jam", distractors: ["LeBron James", "Kobe Bryant", "Magic Johnson"] },
+    { name: "Usain Bolt", category: "Athletes & Sports", clueNormal: "Jamaican sprinting sensation known as the fastest man alive with world records in 100m and 200m and the lightning bolt pose", clueVague: "Olympic track star who won gold running at unmatched speeds", distractors: ["Carl Lewis", "Tyson Gay", "Michael Phelps"] },
+    { name: "Muhammad Ali", category: "Athletes & Sports", clueNormal: "Heavyweight boxing champion who 'floated like a butterfly and stung like a bee' and won the Rumble in the Jungle", clueVague: "Historic poetic boxing legend known as The Greatest", distractors: ["Mike Tyson", "Floyd Mayweather", "George Foreman"] },
+    { name: "Serena Williams", category: "Athletes & Sports", clueNormal: "Dominant American tennis queen who won 23 Grand Slam singles titles with powerful serves alongside sister Venus", clueVague: "Most successful female tennis champion of the modern era", distractors: ["Venus Williams", "Naomi Osaka", "Maria Sharapova"] },
+    { name: "Tiger Woods", category: "Athletes & Sports", clueNormal: "Legendary golf champion in his signature red Sunday polo shirt who dominated the Masters and PGA Tour for decades", clueVague: "Famous golfer who wears red shirts on championship Sundays", distractors: ["Phil Mickelson", "Rory McIlroy", "Jack Nicklaus"] },
+    { name: "Stephen Curry", category: "Athletes & Sports", clueNormal: "Golden State Warriors point guard who revolutionized basketball by sinking three-pointers from half court with mouthguard out", clueVague: "NBA superstar known as the greatest three-point shooter ever", distractors: ["Klay Thompson", "Kevin Durant", "James Harden"] },
+    { name: "Mike Tyson", category: "Athletes & Sports", clueNormal: "Fierce heavyweight knockout artist 'Iron Mike' with face tattoo, known for biting Evander Holyfield's ear and pet tigers", clueVague: "Terrifying boxing knockout king with a high-pitched voice", distractors: ["Muhammad Ali", "Evander Holyfield", "Tyson Fury"] },
+
+    // --- MOVIE & TV CHARACTERS ---
+    { name: "Harry Potter", category: "Movie Characters", clueNormal: "The Boy Who Lived with a lightning bolt scar on his forehead, round glasses, a wand, and an owl named Hedwig at Hogwarts", clueVague: "Young wizard who attended a British magical school", distractors: ["Ron Weasley", "Lord Voldemort", "Percy Jackson"] },
+    { name: "Darth Vader", category: "Movie Characters", clueNormal: "Star Wars Sith Lord in black armor and helmet with mechanical breathing who uses the dark side and tells Luke 'I am your father'", clueVague: "Galactic villain with a red lightsaber and famous breathing sound", distractors: ["Kylo Ren", "Emperor Palpatine", "Boba Fett"] },
+    { name: "Master Yoda", category: "Movie Characters", clueNormal: "Tiny green 900-year-old Jedi Master who talks in backwards sentences, trains Luke on Dagobah, and uses the Force", clueVague: "Ancient green alien who teaches Jedi wisdom", distractors: ["Baby Yoda", "Obi-Wan Kenobi", "Mace Windu"] },
+    { name: "James Bond (007)", category: "Movie Characters", clueNormal: "British secret MI6 agent with a license to kill who drinks martinis shaken not stirred, wears a tuxedo, and drives Aston Martins", clueVague: "Suave British spy with a 3-digit code name", distractors: ["Ethan Hunt", "Jason Bourne", "Austin Powers"] },
+    { name: "Captain Jack Sparrow", category: "Movie Characters", clueNormal: "Eccentric pirate captain of the Black Pearl who sways drunk, loves rum, wears dreadlocks, and carries a compass that doesn't point north", clueVague: "Pirates of the Caribbean captain with a swaggering walk", distractors: ["Captain Hook", "Barbossa", "Blackbeard"] },
+    { name: "Wednesday Addams", category: "Movie Characters", clueNormal: "Morbid, deadpan daughter of the Addams Family with dark pigtails who plays cello and did a viral dance with Thing the hand", clueVague: "Gothic high school girl who never smiles and investigates murders", distractors: ["Morticia Addams", "Coraline", "Sabrina"] },
+    { name: "Gandalf", category: "Movie Characters", clueNormal: "Wise wizard from Lord of the Rings with long white beard, pointy hat, and wooden staff who shouts 'You Shall Not Pass!'", clueVague: "Elderly fantasy wizard who guides a fellowship with a magic ring", distractors: ["Dumbledore", "Saruman", "Merlin"] },
+    { name: "Walter White", category: "Movie Characters", clueNormal: "High school chemistry teacher in Breaking Bad with cancer who cooks blue crystal and becomes the ruthless drug kingpin Heisenberg", clueVague: "Bald TV anti-hero who says 'I am the one who knocks'", distractors: ["Jesse Pinkman", "Saul Goodman", "Tony Soprano"] },
+    { name: "Michael Scott", category: "Movie Characters", clueNormal: "Awkward regional manager of Dunder Mifflin paper company in The Office who shouts 'That's What She Said!' and World's Best Boss mug", clueVague: "Cringe comedy TV boss who loves employee Dundie awards", distractors: ["Dwight Schrute", "Jim Halpert", "Ron Swanson"] },
+    { name: "Indiana Jones", category: "Movie Characters", clueNormal: "Archaeology professor with a fedora hat and leather whip who explores ancient tombs, flees giant boulders, and hates snakes", clueVague: "Treasure-hunting adventure hero who carries a whip", distractors: ["Han Solo", "Lara Croft", "Nathan Drake"] },
+
+    // --- HISTORICAL & ICONIC FIGURES ---
+    { name: "Albert Einstein", category: "Historical Figures", clueNormal: "Famed theoretical physicist with wild gray hair who developed the theory of relativity and the world's most famous formula E=mc²", clueVague: "Genius scientist with eccentric hair and Nobel Prize", distractors: ["Isaac Newton", "Nikola Tesla", "Stephen Hawking"] },
+    { name: "Cleopatra", category: "Historical Figures", clueNormal: "Last queen of Ancient Egypt known for her beauty, alliance with Julius Caesar, relationship with Mark Antony, and asp snakebite", clueVague: "Famous ancient female ruler along the Nile River", distractors: ["Nefertiti", "Queen Elizabeth", "Joan of Arc"] },
+    { name: "William Shakespeare", category: "Historical Figures", clueNormal: "English playwright and poet with a ruffled collar who wrote Romeo and Juliet, Hamlet, Macbeth, and asked 'To be or not to be'", clueVague: "The most famous writer of theater plays in English history", distractors: ["Charles Dickens", "Mark Twain", "Edgar Allan Poe"] },
+    { name: "Abraham Lincoln", category: "Historical Figures", clueNormal: "16th US President with a tall stovepipe top hat and chinstrap beard who signed the Emancipation Proclamation and is on the penny", clueVague: "Tall American president during the Civil War who gave Gettysburg Address", distractors: ["George Washington", "Thomas Jefferson", "Theodore Roosevelt"] },
+    { name: "Leonardo da Vinci", category: "Historical Figures", clueNormal: "Italian Renaissance polymath and painter who created the Mona Lisa, The Last Supper, and sketched early flying machines", clueVague: "Italian painter and inventor whose most famous painting has a mystery smile", distractors: ["Michelangelo", "Raphael", "Picasso"] },
+    { name: "Queen Elizabeth II", category: "Historical Figures", clueNormal: "Longest-reigning British monarch who ruled for 70 years, known for her colorful matching hats, pearls, and pet Corgis", clueVague: "British queen who lived in Buckingham Palace for most of a century", distractors: ["Queen Victoria", "Princess Diana", "Margaret Thatcher"] },
+    { name: "Julius Caesar", category: "Historical Figures", clueNormal: "Roman general and dictator who crossed the Rubicon, conquered Gaul, and was assassinated on the Ides of March (Et tu, Brute?)", clueVague: "Ancient Roman leader assassinated in the senate", distractors: ["Alexander the Great", "Nero", "Augustus"] },
+    { name: "Mahatma Gandhi", category: "Historical Figures", clueNormal: "Indian leader of peaceful nonviolent civil disobedience who wore round wire glasses and simple homespun cloth, leading salt march", clueVague: "Global icon of nonviolent protest and hunger strikes in India", distractors: ["Nelson Mandela", "Martin Luther King Jr.", "Dalai Lama"] },
+    { name: "Neil Armstrong", category: "Historical Figures", clueNormal: "American Apollo 11 astronaut who was the first human to walk on the Moon, saying 'One small step for man, one giant leap for mankind'", clueVague: "First space explorer to leave footprints on the lunar surface", distractors: ["Buzz Aldrin", "Yuri Gagarin", "John Glenn"] },
+    { name: "Santa Claus", category: "Iconic Figures", clueNormal: "Jolly bearded man in a red suit who lives at the North Pole, flies with flying reindeer on Christmas Eve, and eats milk & cookies", clueVague: "Holiday figure who checks a naughty and nice list", distractors: ["Easter Bunny", "Tooth Fairy", "Jack Frost"] }
+  ];
+
+  /* ==========================================================================
+     2. AUDIO SYNTHESIZER (Native Web Audio API)
+     ========================================================================== */
+  let audioCtx = null;
+  let isSoundEnabled = true;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, duration, type = 'sine', gainVal = 0.2) {
+    if (!isSoundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function playDrumroll() {
+    if (!isSoundEnabled) return;
+    try {
+      initAudio();
+      let count = 0;
+      const roll = setInterval(() => {
+        playTone(100 + Math.random() * 40, 0.05, 'triangle', 0.15);
+        count++;
+        if (count > 25) clearInterval(roll);
+      }, 70);
+    } catch (e) {}
+  }
+
+  function playDramaticSuspense() {
+    if (!isSoundEnabled) return;
+    playTone(130.81, 0.4, 'sawtooth', 0.25); // C3
+    setTimeout(() => playTone(123.47, 0.5, 'sawtooth', 0.25), 250); // B2
+  }
+
+  function playSuccessFanfare() {
+    if (!isSoundEnabled) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => playTone(freq, 0.28, 'triangle', 0.25), idx * 120);
+    });
+  }
+
+  function playImposterAlarm() {
+    if (!isSoundEnabled) return;
+    playTone(880, 0.15, 'sawtooth', 0.3);
+    setTimeout(() => playTone(440, 0.25, 'sawtooth', 0.3), 160);
+  }
+
+  function toggleSound() {
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById("sound-btn");
+    btn.innerText = isSoundEnabled ? "🔊" : "🔇";
+  }
+
+  /* ==========================================================================
+     3. NETWORKING ENGINE: PAHO MQTT OVER SECURE WEBSOCKETS
+     ========================================================================== */
+  let client = null;
+  let currentRoom = null;
+  let isConnected = false;
+  let clientId = "imp_" + Math.random().toString(36).substring(2, 9);
+  let playerName = "Agent " + Math.floor(Math.random() * 900 + 100);
+
+  // Room Roster & Authoritative State
+  let roomRoster = {}; // { [clientId]: { id, name, avatar, score, isHost, voteFor } }
+  let gameState = {
+    room: "",
+    status: "lobby", // 'lobby', 'reveal', 'discussion', 'voting', 'elimination'
+    roundNumber: 1,
+    hostId: null,
+    secretPerson: null,
+    imposterId: null,
+    clueDifficulty: "normal", // 'normal', 'vague', 'category'
+    discussionTime: 120, // seconds
+    speakerIndex: 0,
+    speakerOrder: [],
+    votes: {}, // { [voterId]: votedTargetId }
+    eliminatedId: null,
+    imposterGuessedCorrect: null
+  };
+
+  const seenMessageIds = new Set();
+
+  function connectToRoom(roomCode) {
+    initAudio();
+    currentRoom = roomCode.toUpperCase().trim();
+    gameState.room = currentRoom;
+
+    document.getElementById("room-code-tag").innerText = currentRoom;
+    document.getElementById("display-room-code").innerText = currentRoom;
+    updateNetworkStatus("connecting");
+
+    const host = "broker.emqx.io";
+    const port = 8084;
+    const path = "/mqtt";
+
+    client = new Paho.MQTT.Client(host, port, path, clientId);
+    client.onConnectionLost = onConnectionLost;
+    client.onMessageArrived = onMessageArrived;
+
+    client.connect({
+      useSSL: true,
+      timeout: 5,
+      keepAliveInterval: 30,
+      cleanSession: true,
+      onSuccess: onConnectSuccess,
+      onFailure: onConnectFailure
+    });
+  }
+
+  function onConnectSuccess() {
+    isConnected = true;
+    updateNetworkStatus("connected");
+
+    const topic = `games/imposter/${currentRoom}`;
+    client.subscribe(topic, { qos: 1 });
+
+    // Announce my arrival
+    publishMessage({
+      type: "PLAYER_JOIN",
+      player: {
+        id: clientId,
+        name: playerName,
+        avatar: getPlayerAvatar(playerName),
+        score: 0,
+        isHost: false
+      }
+    });
+
+    // Request sync from any existing players
+    publishMessage({
+      type: "REQUEST_SYNC"
+    });
+  }
+
+  function onConnectFailure(err) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    alert("Connection to game room failed. Retrying...");
+    setTimeout(() => connectToRoom(currentRoom), 2500);
+  }
+
+  function onConnectionLost(responseObject) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    if (responseObject.errorCode !== 0) {
+      setTimeout(() => connectToRoom(currentRoom), 2000);
+    }
+  }
+
+  function publishMessage(payload) {
+    if (!client || !isConnected) return;
+    const msgId = clientId + "_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6);
+    payload.senderId = clientId;
+    payload.msgId = msgId;
+
+    const message = new Paho.MQTT.Message(JSON.stringify(payload));
+    message.destinationName = `games/imposter/${currentRoom}`;
+    message.qos = 1;
+    client.send(message);
+  }
+
+  function onMessageArrived(message) {
+    try {
+      const data = JSON.parse(message.payloadString);
+      if (data.msgId) {
+        if (seenMessageIds.has(data.msgId)) return;
+        seenMessageIds.add(data.msgId);
+        if (seenMessageIds.size > 200) {
+          const first = seenMessageIds.values().next().value;
+          seenMessageIds.delete(first);
+        }
+      }
+      handleNetworkMessage(data);
+    } catch (e) {
+      console.warn("Message parsing error:", e);
+    }
+  }
+
+  function handleNetworkMessage(data) {
+    // If self echo, skip
+    if (data.senderId === clientId) return;
+
+    if (data.type === "REQUEST_SYNC") {
+      // If I am host or established player, reply with roster and state
+      if (roomRoster[clientId] && roomRoster[clientId].isHost) {
+        publishMessage({
+          type: "ROOM_SYNC",
+          roster: roomRoster,
+          state: gameState
+        });
+      }
+    } else if (data.type === "ROOM_SYNC") {
+      if (data.roster) {
+        Object.assign(roomRoster, data.roster);
+        renderRosterUI();
+      }
+      if (data.state && data.state.status !== "lobby" && gameState.status === "lobby") {
+        gameState = data.state;
+        syncToActiveGameState();
+      }
+    } else if (data.type === "PLAYER_JOIN") {
+      if (data.player && data.player.id) {
+        roomRoster[data.player.id] = data.player;
+        // First player to join is host
+        const playerIds = Object.keys(roomRoster);
+        if (playerIds.length === 1 || !gameState.hostId) {
+          gameState.hostId = playerIds[0];
+          roomRoster[playerIds[0]].isHost = true;
+        }
+        renderRosterUI();
+      }
+    } else if (data.type === "START_GAME") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startMissionLocally();
+    } else if (data.type === "NEXT_SPEAKER") {
+      gameState.speakerIndex = data.speakerIndex;
+      updateSpeakerUI();
+    } else if (data.type === "START_VOTING") {
+      startVotingPhaseLocally();
+    } else if (data.type === "VOTE_CAST") {
+      gameState.votes[data.voterId] = data.targetId;
+      updateVotingTallyUI();
+    } else if (data.type === "REVEAL_VERDICT") {
+      gameState = data.state;
+      showVerdictLocally();
+    } else if (data.type === "IMPOSTER_FINAL_GUESS") {
+      handleImposterGuessLocally(data.guessedName, data.isCorrect);
+    } else if (data.type === "NEXT_ROUND") {
+      gameState = data.state;
+      startMissionLocally();
+    } else if (data.type === "RETURN_TO_LOBBY") {
+      gameState.status = "lobby";
+      switchScreen("lobby-screen");
+      renderRosterUI();
+    }
+  }
+
+  function updateNetworkStatus(status) {
+    const dot = document.getElementById("network-dot");
+    dot.className = `network-status-dot ${status}`;
+  }
+
+  function getPlayerAvatar(name) {
+    const emojis = ["🦁", "🦊", "🐼", "🐯", "🐨", "🐸", "🐙", "🦄", "🦅", "🐺", "🐻", "🐵"];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+    return emojis[hash % emojis.length];
+  }
+
+  /* ==========================================================================
+     4. LOBBY & ROOM MANAGEMENT
+     ========================================================================== */
+  function createRoom() {
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+    savePlayerName();
+    connectToRoom(code);
+
+    // I am the host
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      score: 0,
+      isHost: true
+    };
+    gameState.hostId = clientId;
+
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    renderRosterUI();
+  }
+
+  function joinRoomByInput() {
+    const code = document.getElementById("room-code-input").value.trim().toUpperCase();
+    if (!code || code.length < 3) {
+      alert("Please enter a valid room code!");
+      return;
+    }
+    savePlayerName();
+    connectToRoom(code);
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      score: 0,
+      isHost: false
+    };
+
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    renderRosterUI();
+  }
+
+  function savePlayerName() {
+    const input = document.getElementById("player-name-input");
+    if (input && input.value.trim()) {
+      playerName = input.value.trim();
+    }
+  }
+
+  function renderRosterUI() {
+    const players = Object.values(roomRoster);
+    const grid = document.getElementById("roster-grid");
+    grid.innerHTML = "";
+
+    document.getElementById("roster-count-badge").innerText = `${players.length} Players`;
+
+    const isMeHost = gameState.hostId === clientId || (players[0] && players[0].id === clientId);
+    document.getElementById("host-settings-panel").style.display = isMeHost ? "block" : "none";
+    document.getElementById("start-game-btn").style.display = isMeHost ? "flex" : "none";
+
+    players.forEach(p => {
+      const isHost = p.id === gameState.hostId;
+      const isMe = p.id === clientId;
+      const div = document.createElement("div");
+      div.className = `player-tile ${isHost ? 'is-host' : ''} ${isMe ? 'is-me' : ''}`;
+      div.innerHTML = `
+        <div class="player-avatar">${p.avatar}</div>
+        <div class="player-tile-name">${escapeHTML(p.name)}</div>
+        <div class="player-tile-tag">${isHost ? '👑 Host' : (isMe ? 'You' : 'Player')}</div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function copyRoomLink() {
+    const url = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Room link copied! Send it to your friends: ${url}`);
+      }).catch(() => {
+        prompt("Copy this invite link:", url);
+      });
+    } else {
+      prompt("Copy this invite link:", url);
+    }
+  }
+
+  function setClueDifficulty(diff) {
+    gameState.clueDifficulty = diff;
+    const pills = document.querySelectorAll("#difficulty-pill-group .pill-option");
+    const diffs = ['normal', 'vague', 'category'];
+    pills.forEach((p, idx) => p.classList.toggle("selected", diffs[idx] === diff));
+  }
+
+  function setDiscussionTime(seconds) {
+    gameState.discussionTime = seconds;
+    const pills = document.querySelectorAll("#time-pill-group .pill-option");
+    const times = [60, 120, 180, 0];
+    pills.forEach((p, idx) => p.classList.toggle("selected", times[idx] === seconds));
+  }
+
+  /* ==========================================================================
+     5. GAME LAUNCH & ROLE ASSIGNMENT
+     ========================================================================== */
+  function requestStartGame() {
+    initAudio();
+    const players = Object.values(roomRoster);
+    if (players.length < 2 && !confirm("Recommended at least 3 players. Start anyway for testing?")) {
+      return;
+    }
+
+    // Pick random secret person from database
+    const person = IMPOSTER_PEOPLE_DATABASE[Math.floor(Math.random() * IMPOSTER_PEOPLE_DATABASE.length)];
+
+    // Pick 1 random imposter
+    const randomImposter = players[Math.floor(Math.random() * players.length)];
+
+    // Set speaker order
+    const shuffledOrder = players.map(p => p.id).sort(() => Math.random() - 0.5);
+
+    gameState.status = "reveal";
+    gameState.secretPerson = person;
+    gameState.imposterId = randomImposter.id;
+    gameState.speakerIndex = 0;
+    gameState.speakerOrder = shuffledOrder;
+    gameState.votes = {};
+    gameState.eliminatedId = null;
+    gameState.imposterGuessedCorrect = null;
+
+    publishMessage({
+      type: "START_GAME",
+      state: gameState,
+      roster: roomRoster
+    });
+
+    startMissionLocally();
+  }
+
+  function startMissionLocally() {
+    switchScreen("reveal-screen");
+    document.getElementById("hud-round-num").innerText = gameState.roundNumber;
+
+    // Reset card state to hidden
+    const card = document.getElementById("secret-card");
+    card.className = "secret-card hidden";
+    document.getElementById("card-hidden-state").style.display = "block";
+    document.getElementById("card-revealed-state").style.display = "none";
+
+    // Setup card info
+    const isImposter = gameState.imposterId === clientId;
+    const roleBadge = document.getElementById("card-role-badge");
+    const personName = document.getElementById("card-person-name");
+    const categoryTag = document.getElementById("card-category-name");
+    const clueBox = document.getElementById("card-clue-box");
+    const clueLabel = document.getElementById("card-clue-label");
+    const clueContent = document.getElementById("card-clue-content");
+    const instructions = document.getElementById("card-instructions");
+
+    if (isImposter) {
+      roleBadge.className = "secret-role-badge imposter";
+      roleBadge.innerText = "😈 YOU ARE THE IMPOSTER";
+      personName.innerText = "??? SECRET ???";
+      categoryTag.innerText = `Category: ${gameState.secretPerson.category}`;
+      clueBox.className = "clue-callout-box imposter-clue";
+      clueLabel.innerText = "YOUR SECRET CLUE:";
+
+      // Render clue based on difficulty
+      if (gameState.clueDifficulty === 'category') {
+        clueContent.innerText = `Only the category was provided: "${gameState.secretPerson.category}"`;
+      } else if (gameState.clueDifficulty === 'vague') {
+        clueContent.innerText = gameState.secretPerson.clueVague;
+      } else {
+        clueContent.innerText = gameState.secretPerson.clueNormal;
+      }
+
+      instructions.innerText = "Blend in! Listen closely to the clues given by innocents, bluff when asked, and do not get voted out!";
+    } else {
+      roleBadge.className = "secret-role-badge innocent";
+      roleBadge.innerText = "😇 YOU ARE INNOCENT";
+      personName.innerText = gameState.secretPerson.name;
+      categoryTag.innerText = `Category: ${gameState.secretPerson.category}`;
+      clueBox.className = "clue-callout-box";
+      clueLabel.innerText = "SECRET IDENTITY:";
+      clueContent.innerText = `The secret person is "${gameState.secretPerson.name}".`;
+      instructions.innerText = "Give a subtle clue that proves to others you know this person without making it too obvious for the Imposter!";
+    }
+
+    playDramaticSuspense();
+  }
+
+  let isCardRevealed = false;
+  function toggleSecretCardReveal() {
+    initAudio();
+    isCardRevealed = !isCardRevealed;
+    const card = document.getElementById("secret-card");
+    const isImposter = gameState.imposterId === clientId;
+
+    if (isCardRevealed) {
+      card.className = `secret-card revealed ${isImposter ? 'imposter' : 'innocent'}`;
+      document.getElementById("card-hidden-state").style.display = "none";
+      document.getElementById("card-revealed-state").style.display = "block";
+      if (isImposter) playImposterAlarm();
+      else playTone(523.25, 0.2, 'triangle', 0.2);
+    } else {
+      card.className = "secret-card hidden";
+      document.getElementById("card-hidden-state").style.display = "block";
+      document.getElementById("card-revealed-state").style.display = "none";
+    }
+  }
+
+  function proceedToDiscussion() {
+    switchScreen("game-screen");
+    gameState.status = "discussion";
+    updateSpeakerUI();
+    startDiscussionTimer();
+  }
+
+  /* ==========================================================================
+     6. CLUES & DISCUSSION PHASE
+     ========================================================================== */
+  let discussionTimerInterval = null;
+
+  function updateSpeakerUI() {
+    const speakerId = gameState.speakerOrder[gameState.speakerIndex % gameState.speakerOrder.length];
+    const speaker = roomRoster[speakerId];
+    const nameEl = document.getElementById("current-speaker-name");
+
+    if (speaker) {
+      const isMe = speaker.id === clientId;
+      nameEl.innerHTML = `${speaker.avatar} ${escapeHTML(speaker.name)} ${isMe ? '<span style="color:#0a84ff;">(YOU)</span>' : ''}`;
+    }
+  }
+
+  function advanceSpeaker() {
+    gameState.speakerIndex = (gameState.speakerIndex + 1) % gameState.speakerOrder.length;
+    publishMessage({
+      type: "NEXT_SPEAKER",
+      speakerIndex: gameState.speakerIndex
+    });
+    updateSpeakerUI();
+    playTone(660, 0.1, 'sine', 0.15);
+  }
+
+  function startDiscussionTimer() {
+    clearInterval(discussionTimerInterval);
+    if (!gameState.discussionTime || gameState.discussionTime <= 0) {
+      document.getElementById("game-timer-text").innerText = "No Timer";
+      return;
+    }
+
+    let timeLeft = gameState.discussionTime;
+    const banner = document.getElementById("game-timer-banner");
+    const text = document.getElementById("game-timer-text");
+
+    const updateDisplay = () => {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      text.innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      banner.classList.toggle("urgent", timeLeft <= 15);
+    };
+
+    updateDisplay();
+
+    discussionTimerInterval = setInterval(() => {
+      timeLeft--;
+      updateDisplay();
+      if (timeLeft <= 10 && timeLeft > 0) {
+        playTone(440, 0.05, 'sine', 0.1);
+      }
+      if (timeLeft <= 0) {
+        clearInterval(discussionTimerInterval);
+        playTone(300, 0.3, 'sawtooth', 0.2);
+        requestStartVoting();
+      }
+    }, 1000);
+  }
+
+  function toggleRoleModal() {
+    const modal = document.getElementById("peek-modal");
+    const isShowing = modal.style.display === "flex";
+    if (isShowing) {
+      modal.style.display = "none";
+    } else {
+      const isImposter = gameState.imposterId === clientId;
+      const content = document.getElementById("modal-role-content");
+      if (isImposter) {
+        content.innerHTML = `
+          <div style="color:var(--imposter-red); font-weight:800; font-size:1.1rem; margin-bottom:8px;">😈 YOU ARE THE IMPOSTER</div>
+          <div style="font-size:0.9rem; color:#a1a1a6;">Category: ${gameState.secretPerson.category}</div>
+          <div style="margin-top:10px; background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.3); border-radius:10px; padding:10px; font-weight:700;">
+            ${gameState.clueDifficulty === 'category' ? 'Only Category Known' : (gameState.clueDifficulty === 'vague' ? gameState.secretPerson.clueVague : gameState.secretPerson.clueNormal)}
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div style="color:var(--innocent-blue); font-weight:800; font-size:1.1rem; margin-bottom:8px;">😇 INNOCENT</div>
+          <div style="font-size:1.4rem; font-weight:800; color:#fff;">${gameState.secretPerson.name}</div>
+          <div style="font-size:0.9rem; color:var(--accent-gold); margin-top:4px;">${gameState.secretPerson.category}</div>
+        `;
+      }
+      modal.style.display = "flex";
+    }
+  }
+
+  /* ==========================================================================
+     7. VOTING & ACCUSATION PHASE
+     ========================================================================== */
+  let selectedVoteTargetId = null;
+
+  function requestStartVoting() {
+    clearInterval(discussionTimerInterval);
+    publishMessage({ type: "START_VOTING" });
+    startVotingPhaseLocally();
+  }
+
+  function startVotingPhaseLocally() {
+    switchScreen("voting-screen");
+    gameState.status = "voting";
+    gameState.votes = {};
+    selectedVoteTargetId = null;
+    document.getElementById("submit-vote-btn").disabled = true;
+
+    const players = Object.values(roomRoster);
+    const grid = document.getElementById("voting-grid");
+    grid.innerHTML = "";
+
+    players.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "vote-card";
+      div.id = `vote-card-${p.id}`;
+      div.innerHTML = `
+        <div class="player-avatar">${p.avatar}</div>
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:2px;">${escapeHTML(p.name)}</div>
+        <div style="font-size:0.75rem; color:#8e8e93;">${p.id === clientId ? '(You)' : 'Tap to accuse'}</div>
+      `;
+      div.onclick = () => selectVoteTarget(p.id);
+      grid.appendChild(div);
+    });
+
+    updateVotingTallyUI();
+  }
+
+  function selectVoteTarget(targetId) {
+    selectedVoteTargetId = targetId;
+    document.querySelectorAll(".vote-card").forEach(c => c.classList.remove("voted-for"));
+    const selected = document.getElementById(`vote-card-${targetId}`);
+    if (selected) selected.classList.add("voted-for");
+    document.getElementById("submit-vote-btn").disabled = false;
+    playTone(523.25, 0.08, 'sine', 0.15);
+  }
+
+  function submitMyVote() {
+    if (!selectedVoteTargetId) return;
+    gameState.votes[clientId] = selectedVoteTargetId;
+    document.getElementById("submit-vote-btn").disabled = true;
+    document.getElementById("submit-vote-btn").innerText = "Vote Registered ✓";
+
+    publishMessage({
+      type: "VOTE_CAST",
+      voterId: clientId,
+      targetId: selectedVoteTargetId
+    });
+
+    updateVotingTallyUI();
+    checkIfAllVotesIn();
+  }
+
+  function updateVotingTallyUI() {
+    const totalPlayers = Object.keys(roomRoster).length;
+    const votesCount = Object.keys(gameState.votes).length;
+    document.getElementById("voting-tally-status").innerText = `${votesCount} / ${totalPlayers} Votes Cast`;
+    checkIfAllVotesIn();
+  }
+
+  function checkIfAllVotesIn() {
+    const totalPlayers = Object.keys(roomRoster).length;
+    const votesCount = Object.keys(gameState.votes).length;
+
+    // Only host triggers verdict calculation
+    if (gameState.hostId === clientId && votesCount >= totalPlayers && totalPlayers > 0) {
+      calculateAndBroadcastVerdict();
+    }
+  }
+
+  function calculateAndBroadcastVerdict() {
+    // Tally votes
+    const tally = {};
+    Object.values(gameState.votes).forEach(targetId => {
+      tally[targetId] = (tally[targetId] || 0) + 1;
+    });
+
+    let maxVotes = -1;
+    let eliminatedId = null;
+    let isTie = false;
+
+    Object.keys(tally).forEach(targetId => {
+      if (tally[targetId] > maxVotes) {
+        maxVotes = tally[targetId];
+        eliminatedId = targetId;
+        isTie = false;
+      } else if (tally[targetId] === maxVotes) {
+        isTie = true;
+      }
+    });
+
+    gameState.status = "elimination";
+    gameState.eliminatedId = isTie ? "TIE" : eliminatedId;
+
+    publishMessage({
+      type: "REVEAL_VERDICT",
+      state: gameState
+    });
+
+    showVerdictLocally();
+  }
+
+  /* ==========================================================================
+     8. VERDICT & WINNER RESOLUTION
+     ========================================================================== */
+  function showVerdictLocally() {
+    switchScreen("elimination-screen");
+    playDrumroll();
+
+    const heroBox = document.getElementById("elimination-hero-box");
+    const icon = document.getElementById("verdict-icon");
+    const headline = document.getElementById("verdict-headline");
+    const subtext = document.getElementById("verdict-subtext");
+    const guessBox = document.getElementById("imposter-guess-container");
+    const detailsBox = document.getElementById("reveal-details-box");
+    const nextBtn = document.getElementById("next-round-btn");
+
+    guessBox.style.display = "none";
+    detailsBox.style.display = "none";
+    nextBtn.style.display = "none";
+
+    setTimeout(() => {
+      const eliminatedId = gameState.eliminatedId;
+      const imposterId = gameState.imposterId;
+      const isImposterEliminated = eliminatedId === imposterId;
+      const isTie = eliminatedId === "TIE";
+
+      const eliminatedPlayer = roomRoster[eliminatedId];
+      const imposterPlayer = roomRoster[imposterId];
+
+      if (isTie) {
+        icon.innerText = "⚖️";
+        headline.innerText = "It's a Tie Vote!";
+        subtext.innerHTML = `No consensus was reached! The <strong>Imposter (${imposterPlayer ? imposterPlayer.name : 'Unknown'})</strong> sneaks away undetected and wins the round!`;
+        heroBox.className = "reveal-hero-box imposter-win";
+        awardPoints("imposter");
+        showFinalRoundDetails();
+      } else if (isImposterEliminated) {
+        icon.innerText = "🚨";
+        headline.innerText = `${eliminatedPlayer.name} was the IMPOSTER!`;
+        subtext.innerText = "The room caught the Imposter! But wait... the Imposter has one last chance to steal the victory!";
+        heroBox.className = "reveal-hero-box innocent-win";
+
+        // Show Imposter Guessing Section
+        promptImposterGuess();
+      } else {
+        icon.innerText = "💔";
+        headline.innerText = `${eliminatedPlayer.name} was INNOCENT!`;
+        subtext.innerHTML = `The room voted out an innocent agent! The <strong>Imposter (${imposterPlayer ? imposterPlayer.name : 'Unknown'})</strong> wins the mission!`;
+        heroBox.className = "reveal-hero-box imposter-win";
+        awardPoints("imposter");
+        showFinalRoundDetails();
+      }
+    }, 2000);
+  }
+
+  function promptImposterGuess() {
+    const guessBox = document.getElementById("imposter-guess-container");
+    guessBox.style.display = "block";
+
+    const isMeImposter = gameState.imposterId === clientId;
+    const grid = document.getElementById("guess-options-grid");
+    grid.innerHTML = "";
+
+    // Generate 4 options: correct person + 3 distractors
+    const correctName = gameState.secretPerson.name;
+    const choices = [correctName, ...gameState.secretPerson.distractors].sort(() => Math.random() - 0.5);
+
+    choices.forEach(name => {
+      const btn = document.createElement("button");
+      btn.className = "guess-btn";
+      btn.innerText = name;
+      btn.disabled = !isMeImposter;
+      btn.onclick = () => submitImposterGuess(name);
+      grid.appendChild(btn);
+    });
+
+    if (!isMeImposter) {
+      document.getElementById("verdict-subtext").innerHTML = "Waiting for the Imposter to take their final guess...";
+    }
+  }
+
+  function submitImposterGuess(guessedName) {
+    const isCorrect = guessedName.toLowerCase().trim() === gameState.secretPerson.name.toLowerCase().trim();
+    gameState.imposterGuessedCorrect = isCorrect;
+
+    publishMessage({
+      type: "IMPOSTER_FINAL_GUESS",
+      guessedName: guessedName,
+      isCorrect: isCorrect
+    });
+
+    handleImposterGuessLocally(guessedName, isCorrect);
+  }
+
+  function handleImposterGuessLocally(guessedName, isCorrect) {
+    const guessBox = document.getElementById("imposter-guess-container");
+    guessBox.style.display = "none";
+
+    const heroBox = document.getElementById("elimination-hero-box");
+    const icon = document.getElementById("verdict-icon");
+    const headline = document.getElementById("verdict-headline");
+    const subtext = document.getElementById("verdict-subtext");
+    const imposterPlayer = roomRoster[gameState.imposterId];
+
+    if (isCorrect) {
+      icon.innerText = "🎭";
+      headline.innerText = "Imposter Guessed Correctly!";
+      subtext.innerHTML = `<strong>${imposterPlayer ? imposterPlayer.name : 'The Imposter'}</strong> correctly guessed <strong>"${guessedName}"</strong> and STEALS THE WIN!`;
+      heroBox.className = "reveal-hero-box imposter-win";
+      awardPoints("imposter");
+    } else {
+      icon.innerText = "🏆";
+      headline.innerText = "Innocents Win the Round!";
+      subtext.innerHTML = `The Imposter guessed <em>"${guessedName}"</em>, but the secret person was <strong>"${gameState.secretPerson.name}"</strong>! Innocents win!`;
+      heroBox.className = "reveal-hero-box innocent-win";
+      awardPoints("innocents");
+    }
+
+    showFinalRoundDetails();
+  }
+
+  function awardPoints(winner) {
+    if (winner === "imposter") {
+      if (roomRoster[gameState.imposterId]) {
+        roomRoster[gameState.imposterId].score += 200;
+      }
+      playImposterAlarm();
+    } else {
+      Object.values(roomRoster).forEach(p => {
+        if (p.id !== gameState.imposterId) {
+          p.score += 100;
+        }
+      });
+      playSuccessFanfare();
+      fireConfetti();
+    }
+  }
+
+  function showFinalRoundDetails() {
+    const detailsBox = document.getElementById("reveal-details-box");
+    detailsBox.style.display = "block";
+
+    document.getElementById("true-person-title").innerText = gameState.secretPerson.name;
+    document.getElementById("true-category-title").innerText = gameState.secretPerson.category;
+
+    const imposter = roomRoster[gameState.imposterId];
+    document.getElementById("true-imposter-name").innerText = imposter ? imposter.name : "Unknown";
+    document.getElementById("true-clue-revealed").innerText = `"${gameState.secretPerson.clueNormal}"`;
+
+    // Render scoreboard
+    const board = document.getElementById("match-scoreboard");
+    board.innerHTML = "";
+    const sorted = Object.values(roomRoster).sort((a, b) => b.score - a.score);
+
+    sorted.forEach((p, rank) => {
+      const medals = ["🥇", "🥈", "🥉"];
+      const row = document.createElement("div");
+      row.className = "score-row";
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>${medals[rank] || "🎖️"}</span>
+          <span style="font-weight:700;">${p.avatar} ${escapeHTML(p.name)}</span>
+        </div>
+        <span style="font-weight:800; color:var(--accent-gold);">${p.score} pts</span>
+      `;
+      board.appendChild(row);
+    });
+
+    const isMeHost = gameState.hostId === clientId;
+    const nextBtn = document.getElementById("next-round-btn");
+    nextBtn.style.display = isMeHost ? "flex" : "none";
+  }
+
+  function requestNextRound() {
+    gameState.roundNumber++;
+    requestStartGame();
+  }
+
+  function returnToLobby() {
+    publishMessage({ type: "RETURN_TO_LOBBY" });
+    gameState.status = "lobby";
+    switchScreen("lobby-screen");
+    renderRosterUI();
+  }
+
+  function syncToActiveGameState() {
+    if (gameState.status === "reveal") {
+      startMissionLocally();
+    } else if (gameState.status === "discussion") {
+      switchScreen("game-screen");
+      updateSpeakerUI();
+    } else if (gameState.status === "voting") {
+      startVotingPhaseLocally();
+    } else if (gameState.status === "elimination") {
+      showVerdictLocally();
+    }
+  }
+
+  /* Screen Switcher */
+  function switchScreen(screenId) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function escapeHTML(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /* ==========================================================================
+     9. CELEBRATORY CANVAS CONFETTI (Zero Dependencies)
+     ========================================================================== */
+  function fireConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const colors = ["#0A84FF", "#30D158", "#FF3B30", "#FFD60A", "#BF5AF2"];
+
+    for (let i = 0; i < 110; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.5) * 16 - 6,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        spin: (Math.random() - 0.5) * 10,
+        alpha: 1
+      });
+    }
+
+    let animationFrame;
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35; // gravity
+        p.rotation += p.spin;
+        p.alpha -= 0.009;
+
+        if (p.alpha > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+
+      if (alive) animationFrame = requestAnimationFrame(render);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    render();
+  }
+
+  /* Auto-Join URL Parameter Handler (?room=CODE) */
+  window.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room");
+    if (roomParam) {
+      document.getElementById("room-code-input").value = roomParam.toUpperCase();
+      joinRoomByInput();
+    }
+  });
+</script>
+</body>
+</html>
