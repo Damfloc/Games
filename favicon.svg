@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b1d28"/>
+      <stop offset="100%" stop-color="#0a0b10"/>
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="50%" stop-color="#5E5CE6"/>
+      <stop offset="100%" stop-color="#BF5AF2"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD60A"/>
+      <stop offset="100%" stop-color="#FF9F0A"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded card -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgGrad)" stroke="#2c2f3f" stroke-width="8"/>
+
+  <!-- Subtle ambient glow -->
+  <circle cx="256" cy="256" r="140" fill="url(#primaryGrad)" opacity="0.18" filter="url(#glow)"/>
+
+  <!-- Gamepad body -->
+  <path d="M172 176 C136 176 104 200 96 236 L72 328 C64 360 84 392 116 396 C144 400 172 384 184 358 L204 316 C208 308 216 304 224 304 L288 304 C296 304 304 308 308 316 L328 358 C340 384 368 400 396 396 C428 392 448 360 440 328 L416 236 C408 200 376 176 340 176 Z" 
+        fill="url(#primaryGrad)" filter="url(#glow)"/>
+
+  <!-- D-pad on left -->
+  <rect x="146" y="224" width="20" height="60" rx="6" fill="#ffffff" opacity="0.95"/>
+  <rect x="126" y="244" width="60" height="20" rx="6" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Action buttons on right -->
+  <circle cx="342" cy="236" r="10" fill="#FF453A"/>
+  <circle cx="366" cy="254" r="10" fill="#32D74B"/>
+  <circle cx="342" cy="272" r="10" fill="#0A84FF"/>
+  <circle cx="318" cy="254" r="10" fill="url(#accentGrad)"/>
+
+  <!-- Sparkle stars on top right -->
+  <path d="M400 110 L406 128 L424 134 L406 140 L400 158 L394 140 L376 134 L394 128 Z" fill="url(#accentGrad)"/>
+  <path d="M110 130 L114 142 L126 146 L114 150 L110 162 L106 150 L94 146 L106 142 Z" fill="#0A84FF"/>
+</svg>

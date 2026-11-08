@@ -1,0 +1,18 @@
+{
+  "name": "Game Night Hub",
+  "short_name": "GameNight",
+  "description": "Real-time online party games with friends on phone & desktop",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0e12",
+  "theme_color": "#0d0e12",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
