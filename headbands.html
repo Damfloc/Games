@@ -655,10 +655,10 @@
     </div>
 
     <label class="input-label" for="player-name-input">Your Player Name</label>
-    <input type="text" id="player-name-input" class="text-input" placeholder="e.g., Diego, Alex, Sarah..." maxlength="18" autocomplete="nickname">
+    <input type="text" id="player-name-input" class="text-input" placeholder="Enter your name" maxlength="18" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
 
     <label class="input-label" for="room-code-input">Room Code</label>
-    <input type="text" id="room-code-input" class="text-input" placeholder="e.g., HEAD" maxlength="6" style="text-transform: uppercase;">
+    <input type="text" id="room-code-input" class="text-input" placeholder="ROOM CODE" maxlength="6" style="text-transform: uppercase;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
 
     <div style="display: flex; gap: 10px; margin-top: 6px;">
       <button class="btn-primary" onclick="createRoom()" style="flex: 1;">Create Room 👑</button>
@@ -691,7 +691,7 @@
 
     <!-- Propose Custom Category -->
     <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-      <input type="text" id="custom-category-input" class="text-input" placeholder="Propose custom category (e.g., 90s Cartoons)..." maxlength="30" style="margin-bottom: 0;">
+      <input type="text" id="custom-category-input" class="text-input" placeholder="Enter custom category..." maxlength="30" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       <button class="btn-secondary" onclick="proposeCustomCategory()" style="width: auto; padding: 0 16px; white-space: nowrap;">+ Add</button>
     </div>
 
@@ -739,7 +739,7 @@
     </div>
 
     <label class="input-label" for="secret-word-input">Enter Secret Word or Person</label>
-    <input type="text" id="secret-word-input" class="text-input" placeholder="e.g., Microwave, Spider-Man, Eiffel Tower..." maxlength="30">
+    <input type="text" id="secret-word-input" class="text-input" placeholder="Enter secret word..." maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
 
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
       <span class="input-label" style="margin-bottom: 0;">Need inspiration? Tap to use:</span>
@@ -827,7 +827,7 @@
     <!-- Question Input -->
     <label class="input-label">Ask Everyone a Question</label>
     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-      <input type="text" id="my-question-input" class="text-input" placeholder="e.g., Am I found in a kitchen?" maxlength="60" style="margin-bottom: 0;">
+      <input type="text" id="my-question-input" class="text-input" placeholder="Type your question..." maxlength="60" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" spellcheck="false">
       <button class="btn-primary" onclick="submitMyQuestion()" style="width: auto; padding: 0 16px; white-space: nowrap;">Ask 📢</button>
     </div>
 
@@ -845,7 +845,7 @@
     <!-- Guess My Identity -->
     <label class="input-label" style="color: var(--accent-gold);">Ready to Guess What You Are?</label>
     <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <input type="text" id="my-guess-input" class="text-input" placeholder="Enter your guess (e.g. Microwave)..." maxlength="30" style="margin-bottom: 0;">
+      <input type="text" id="my-guess-input" class="text-input" placeholder="Enter your guess..." maxlength="30" style="margin-bottom: 0;" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       <button class="btn-primary" onclick="submitMyGuess()" style="width: auto; padding: 0 16px; white-space: nowrap; background: linear-gradient(135deg, #30D158, #0A84FF);">Guess 🎯</button>
     </div>
 
@@ -2037,8 +2037,9 @@
     const codeInput = document.getElementById("room-code-input");
     const invitedBanner = document.getElementById("invited-banner");
 
-    if (playerName && nameInput) {
-      nameInput.value = playerName;
+    // Ensure name input starts empty so no suggested name is shown
+    if (nameInput) {
+      nameInput.value = "";
     }
 
     if (roomParam && codeInput) {

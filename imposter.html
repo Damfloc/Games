@@ -756,7 +756,7 @@
     <!-- Join / Create Switcher -->
     <div class="card-box" id="entry-box">
       <label class="input-label">Your Agent Name</label>
-      <input type="text" class="text-input" id="player-name-input" maxlength="15" placeholder="Enter your name">
+      <input type="text" class="text-input" id="player-name-input" maxlength="15" placeholder="Enter your name" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
 
       <div style="display: flex; gap: 10px; margin-bottom: 16px;">
         <button class="btn-primary" onclick="createRoom()" style="flex: 1;">Create New Room</button>
@@ -769,7 +769,7 @@
       </div>
 
       <div style="display: flex; gap: 10px;">
-        <input type="text" class="text-input" id="room-code-input" maxlength="6" placeholder="4-LETTER CODE" style="text-transform: uppercase; margin-bottom: 0; font-weight: 800; letter-spacing: 0.1em; text-align: center;">
+        <input type="text" class="text-input" id="room-code-input" maxlength="6" placeholder="4-LETTER CODE" style="text-transform: uppercase; margin-bottom: 0; font-weight: 800; letter-spacing: 0.1em; text-align: center;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
         <button class="btn-secondary" onclick="joinRoomByInput()" style="white-space: nowrap; font-weight: 700;">Join Room →</button>
       </div>
     </div>
@@ -2420,15 +2420,11 @@
 
   /* URL Parameter Handler (?room=CODE) */
   window.addEventListener("DOMContentLoaded", () => {
-    // Restore saved player name if available
-    try {
-      const saved = localStorage.getItem("imposter_player_name");
-      const nameInput = document.getElementById("player-name-input");
-      if (saved && nameInput) {
-        nameInput.value = saved;
-        playerName = saved;
-      }
-    } catch (e) {}
+    // Ensure name input starts empty so no suggested name is shown
+    const nameInput = document.getElementById("player-name-input");
+    if (nameInput) {
+      nameInput.value = "";
+    }
 
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get("room");

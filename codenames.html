@@ -933,7 +933,7 @@
 
     <div class="input-group">
       <label class="input-label">Your Spy Codename</label>
-      <input type="text" class="text-input" id="player-name-input" placeholder="e.g. Agent Phoenix" maxlength="16">
+      <input type="text" class="text-input" id="player-name-input" placeholder="Enter your name" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
     </div>
 
     <button class="btn-primary" onclick="createRoom()">
@@ -944,7 +944,7 @@
 
     <div class="input-group">
       <label class="input-label">Room Code</label>
-      <input type="text" class="text-input" id="room-code-input" placeholder="e.g. SPY-42" maxlength="12" style="text-transform: uppercase;">
+      <input type="text" class="text-input" id="room-code-input" placeholder="ROOM CODE" maxlength="12" style="text-transform: uppercase;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     </div>
 
     <button class="btn-primary" style="background: rgba(255,255,255,0.12);" onclick="joinEnteredRoom()">
@@ -1094,7 +1094,7 @@
   <!-- Spymaster Clue Input Bar (Visible when it's your turn as Spymaster) -->
   <div class="clue-input-bar" id="spymaster-input-bar" style="display: none;">
     <span style="font-weight: 800; font-size: 0.9rem; color: #FFD60A;">Spymaster Clue:</span>
-    <input type="text" class="clue-input" id="clue-word-input" placeholder="ONE-WORD CLUE" maxlength="15">
+    <input type="text" class="clue-input" id="clue-word-input" placeholder="ONE-WORD CLUE" maxlength="15" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
     <select class="clue-number-select" id="clue-num-select">
       <option value="1">1</option>
       <option value="2">2</option>
@@ -2158,15 +2158,11 @@
 
   /* URL parameter handler (e.g. codenames.html?room=SPY-123) */
   window.addEventListener('DOMContentLoaded', () => {
-    // Restore saved name if available
-    try {
-      const saved = localStorage.getItem("codenames_player_name");
-      const nameInput = document.getElementById("player-name-input");
-      if (saved && nameInput) {
-        nameInput.value = saved;
-        playerName = saved;
-      }
-    } catch (e) {}
+    // Ensure name input starts empty so no suggested name is shown
+    const nameInput = document.getElementById("player-name-input");
+    if (nameInput) {
+      nameInput.value = "";
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');

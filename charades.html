@@ -1162,8 +1162,8 @@
       row.innerHTML = `
         <span class="team-dot" style="background: ${defaultTeam.color};"></span>
         <input type="text" class="team-name-input" id="team-name-input-${i}" 
-          value="${config.teams[i] ? config.teams[i].name : defaultTeam.name}" 
-          maxlength="20" placeholder="Team ${i + 1} Name">
+          value="${config.teams[i] && config.teams[i].name !== defaultTeam.name ? config.teams[i].name : ''}" 
+          maxlength="20" placeholder="Team ${i + 1}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
       `;
       container.appendChild(row);
     }
