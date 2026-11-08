@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trivia Showdown - Games Hub</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0d0e12;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .back-btn {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    color: #8E8E93;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    transform: translateX(-2px);
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: min(92vw, 540px);
+  }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 2.8rem; margin-bottom: 12px; }
+  .subtitle { font-size: 1.15rem; color: #8e8e93; margin-bottom: 28px; line-height: 1.5; }
+
+  .card-box {
+    background: #17181e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+    margin-bottom: 20px;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 18px;
+    font-size: 1rem;
+    color: #8e8e93;
+    font-weight: 600;
+  }
+  .timer-pill {
+    background: rgba(255, 69, 58, 0.15);
+    color: #FF453A;
+    border: 1px solid rgba(255, 69, 58, 0.3);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .score-pill {
+    background: rgba(50, 215, 75, 0.15);
+    color: #32D74B;
+    border: 1px solid rgba(50, 215, 75, 0.3);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  .question-text {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.4;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .option-btn {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #f5f5f7;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .option-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #0A84FF;
+    transform: translateY(-2px);
+  }
+  .option-btn.correct {
+    background: rgba(50, 215, 75, 0.3) !important;
+    border-color: #32D74B !important;
+    color: #32D74B !important;
+  }
+  .option-btn.wrong {
+    background: rgba(255, 69, 58, 0.3) !important;
+    border-color: #FF453A !important;
+    color: #FF453A !important;
+  }
+
+  .cta-btn {
+    padding: 15px 36px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: #0A84FF;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .cta-btn:hover { background: #0071e3; transform: scale(1.02); }
+  .cta-btn:active { background: #0060c0; transform: scale(0.98); }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← Games Hub</a>
+
+<!-- Start Screen -->
+<div id="start-screen" class="screen active">
+  <span style="font-size: 4rem; margin-bottom: 12px;">🧠</span>
+  <h1>Trivia Showdown</h1>
+  <p class="subtitle">Answer 10 rapid-fire questions across science, history, and pop culture. How many can you get right?</p>
+  <button class="cta-btn" onclick="startTrivia()">Start Trivia</button>
+</div>
+
+<!-- Game Screen -->
+<div id="game-screen" class="screen">
+  <div class="stats-bar">
+    <span id="question-count">Question 1 of 10</span>
+    <span class="timer-pill" id="timer">15s</span>
+    <span class="score-pill" id="score-display">Score: 0</span>
+  </div>
+
+  <div class="card-box">
+    <div class="question-text" id="question-text">Loading question...</div>
+    <div class="options-grid" id="options-grid"></div>
+  </div>
+</div>
+
+<!-- End Screen -->
+<div id="end-screen" class="screen">
+  <span style="font-size: 4rem; margin-bottom: 12px;" id="result-icon">🏆</span>
+  <h1>Trivia Complete!</h1>
+  <p class="subtitle">You scored <span id="final-score" style="color: #32D74B; font-weight: bold;">0</span> out of 10!</p>
+  <div style="display: flex; gap: 14px; margin-top: 10px;">
+    <button class="cta-btn" onclick="startTrivia()">Play Again</button>
+    <a href="index.html" style="text-decoration: none;">
+      <button class="cta-btn" type="button" style="background: rgba(255, 255, 255, 0.12);">All Games</button>
+    </a>
+  </div>
+</div>
+
+<script>
+  const triviaQuestions = [
+    {
+      question: "Which planet is known as the Red Planet?",
+      options: ["Venus", "Mars", "Jupiter", "Saturn"],
+      answer: 1
+    },
+    {
+      question: "What is the capital city of Australia?",
+      options: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+      answer: 2
+    },
+    {
+      question: "Who painted the Mona Lisa?",
+      options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Claude Monet"],
+      answer: 2
+    },
+    {
+      question: "What is the chemical symbol for Gold?",
+      options: ["Ag", "Au", "Fe", "Gd"],
+      answer: 1
+    },
+    {
+      question: "How many continents are there on Earth?",
+      options: ["5", "6", "7", "8"],
+      answer: 2
+    },
+    {
+      question: "Which ocean is the largest on Earth?",
+      options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
+      answer: 3
+    },
+    {
+      question: "In what year did the Titanic sink?",
+      options: ["1912", "1905", "1920", "1898"],
+      answer: 0
+    },
+    {
+      question: "What is the hardest natural substance on Earth?",
+      options: ["Gold", "Iron", "Diamond", "Platinum"],
+      answer: 2
+    },
+    {
+      question: "What gas do plants absorb from the atmosphere for photosynthesis?",
+      options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"],
+      answer: 1
+    },
+    {
+      question: "Which country invented paper?",
+      options: ["Egypt", "Greece", "China", "India"],
+      answer: 2
+    }
+  ];
+
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let timeLeft = 15;
+  let timerInterval = null;
+  let shuffledQuestions = [];
+
+  const startScreen = document.getElementById("start-screen");
+  const gameScreen = document.getElementById("game-screen");
+  const endScreen = document.getElementById("end-screen");
+  const questionCountEl = document.getElementById("question-count");
+  const timerEl = document.getElementById("timer");
+  const scoreDisplayEl = document.getElementById("score-display");
+  const questionTextEl = document.getElementById("question-text");
+  const optionsGridEl = document.getElementById("options-grid");
+  const finalScoreEl = document.getElementById("final-score");
+  const resultIconEl = document.getElementById("result-icon");
+
+  function startTrivia() {
+    score = 0;
+    currentQuestionIndex = 0;
+    shuffledQuestions = triviaQuestions.slice().sort(() => Math.random() - 0.5);
+
+    startScreen.classList.remove("active");
+    endScreen.classList.remove("active");
+    gameScreen.classList.add("active");
+
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    clearInterval(timerInterval);
+    timeLeft = 15;
+    timerEl.innerText = `${timeLeft}s`;
+    scoreDisplayEl.innerText = `Score: ${score}`;
+    questionCountEl.innerText = `Question ${currentQuestionIndex + 1} of ${shuffledQuestions.length}`;
+
+    const q = shuffledQuestions[currentQuestionIndex];
+    questionTextEl.innerText = q.question;
+    optionsGridEl.innerHTML = "";
+
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerText = opt;
+      btn.onclick = () => selectAnswer(idx);
+      optionsGridEl.appendChild(btn);
+    });
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerEl.innerText = `${timeLeft}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        handleTimeout();
+      }
+    }, 1000);
+  }
+
+  function selectAnswer(selectedIndex) {
+    clearInterval(timerInterval);
+    const q = shuffledQuestions[currentQuestionIndex];
+    const buttons = optionsGridEl.querySelectorAll(".option-btn");
+
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === q.answer) {
+        btn.classList.add("correct");
+      } else if (idx === selectedIndex) {
+        btn.classList.add("wrong");
+      }
+    });
+
+    if (selectedIndex === q.answer) {
+      score++;
+      scoreDisplayEl.innerText = `Score: ${score}`;
+    }
+
+    setTimeout(nextQuestion, 1200);
+  }
+
+  function handleTimeout() {
+    const q = shuffledQuestions[currentQuestionIndex];
+    const buttons = optionsGridEl.querySelectorAll(".option-btn");
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === q.answer) btn.classList.add("correct");
+    });
+    setTimeout(nextQuestion, 1200);
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < shuffledQuestions.length) {
+      loadQuestion();
+    } else {
+      endTrivia();
+    }
+  }
+
+  function endTrivia() {
+    clearInterval(timerInterval);
+    gameScreen.classList.remove("active");
+    endScreen.classList.add("active");
+    finalScoreEl.innerText = score;
+
+    if (score >= 8) {
+      resultIconEl.innerText = "🏆";
+    } else if (score >= 5) {
+      resultIconEl.innerText = "⭐";
+    } else {
+      resultIconEl.innerText = "💡";
+    }
+  }
+</script>
+</body>
+</html>

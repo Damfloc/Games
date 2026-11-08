@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Charades - Games Hub</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #121212;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .back-btn {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    color: #8E8E93;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    transform: translateX(-2px);
+  }
+
+  #start-screen, #game-screen, #end-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+  }
+  .active { display: flex !important; }
+
+  h1 { font-size: 3rem; margin-bottom: 20px; letter-spacing: -0.5px; }
+  .instructions { font-size: 1.2rem; color: #aaa; margin-top: 10px; line-height: 1.6; }
+
+  .word-card {
+    background: #242426;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    width: min(85vw, 420px);
+    height: min(45vh, 280px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2.5rem, 7vw, 4rem);
+    font-weight: 800;
+    margin: 24px 0;
+    transition: transform 0.2s, background-color 0.2s;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+    cursor: grab;
+  }
+  .word-card:active {
+    cursor: grabbing;
+  }
+
+  button {
+    padding: 15px 40px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    background: #0A84FF;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+  }
+  button:hover { background: #0071e3; }
+  button:active { background: #0060c0; transform: scale(0.98); }
+
+  #timer {
+    font-size: 2rem;
+    color: #FF453A;
+    font-weight: 800;
+    position: absolute;
+    top: 30px;
+    right: 30px;
+  }
+  #score-display {
+    font-size: 2rem;
+    color: #32D74B;
+    font-weight: 800;
+    position: absolute;
+    top: 30px;
+    left: min(200px, 40%);
+  }
+
+  .desktop-controls {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .desktop-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+  .desktop-btn.skip {
+    background: rgba(255, 69, 58, 0.2);
+    color: #FF453A;
+    border: 1px solid rgba(255, 69, 58, 0.4);
+  }
+  .desktop-btn.skip:hover { background: #FF453A; color: white; }
+  .desktop-btn.correct {
+    background: rgba(50, 215, 75, 0.2);
+    color: #32D74B;
+    border: 1px solid rgba(50, 215, 75, 0.4);
+  }
+  .desktop-btn.correct:hover { background: #32D74B; color: white; }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← Games Hub</a>
+
+<div id="start-screen" class="active">
+  <span style="font-size: 4rem; margin-bottom: 12px;">🎭</span>
+  <h1>Charades</h1>
+  <p class="instructions">Swipe Right = Correct<br>Swipe Left = Skip</p>
+  <p class="instructions" style="font-size: 0.95rem; color: #777; margin-top: 6px;">
+    (Or use Left / Right Arrow keys on desktop)
+  </p>
+  <button onclick="startGame()" style="margin-top: 30px;">Start Game</button>
+</div>
+
+<div id="game-screen">
+  <div id="score-display">0</div>
+  <div id="timer">60</div>
+  <div class="word-card" id="word-card">WORD</div>
+  <p class="instructions" style="font-size: 1rem;">Swipe card or click below</p>
+  <div class="desktop-controls">
+    <button class="desktop-btn skip" onclick="triggerSkip()">← Skip</button>
+    <button class="desktop-btn correct" onclick="triggerCorrect()">Correct →</button>
+  </div>
+</div>
+
+<div id="end-screen">
+  <span style="font-size: 3.5rem; margin-bottom: 12px;">🎉</span>
+  <h1>Time's Up!</h1>
+  <h2 style="font-size: 2rem; margin: 15px 0;">Final Score: <span id="final-score" style="color: #32D74B;">0</span></h2>
+  <div style="display: flex; gap: 12px; margin-top: 20px;">
+    <button onclick="resetGame()">Play Again</button>
+    <a href="index.html" style="text-decoration: none;">
+      <button type="button" style="background: rgba(255, 255, 255, 0.12);">All Games</button>
+    </a>
+  </div>
+</div>
+
+<script>
+  const words = [
+    "Apple", "Elephant", "Helicopter", "Guitar", "Sunshine", "Ocean",
+    "Kangaroo", "Pizza", "Firefighter", "Mountain", "Telescope",
+    "Butterfly", "Pyramid", "Robot", "Dragon", "Volcano",
+    "Astronaut", "Piano", "Bicycle", "Penguin", "Submarine",
+    "Campfire", "Skateboard", "Wizard", "Dolphin", "Popcorn"
+  ];
+  let score = 0;
+  let timeLeft = 60;
+  let timerInterval = null;
+  let currentWords = [];
+  
+  const startScreen = document.getElementById("start-screen");
+  const gameScreen = document.getElementById("game-screen");
+  const endScreen = document.getElementById("end-screen");
+  const wordCard = document.getElementById("word-card");
+  const timerEl = document.getElementById("timer");
+  const scoreEl = document.getElementById("score-display");
+  const finalScoreEl = document.getElementById("final-score");
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+  let isPointerDown = false;
+
+  function shuffle(array) {
+    return array.slice().sort(() => Math.random() - 0.5);
+  }
+
+  function startGame() {
+    score = 0;
+    timeLeft = 60;
+    currentWords = shuffle(words);
+    updateScore();
+    timerEl.innerText = timeLeft;
+    
+    startScreen.classList.remove("active");
+    endScreen.classList.remove("active");
+    gameScreen.classList.add("active");
+    
+    nextWord();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function updateTimer() {
+    timeLeft--;
+    timerEl.innerText = timeLeft;
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }
+
+  function nextWord() {
+    if (currentWords.length === 0) currentWords = shuffle(words);
+    wordCard.style.transition = "none";
+    wordCard.style.transform = "translateX(0)";
+    wordCard.style.backgroundColor = "#242426";
+    wordCard.innerText = currentWords.pop();
+  }
+
+  function updateScore() {
+    scoreEl.innerText = score;
+  }
+
+  function triggerCorrect() {
+    if (!gameScreen.classList.contains("active")) return;
+    score++;
+    wordCard.style.transition = "transform 0.2s, background-color 0.2s";
+    wordCard.style.transform = "translateX(100vw)";
+    wordCard.style.backgroundColor = "#32D74B";
+    updateScore();
+    setTimeout(nextWord, 200);
+  }
+
+  function triggerSkip() {
+    if (!gameScreen.classList.contains("active")) return;
+    wordCard.style.transition = "transform 0.2s, background-color 0.2s";
+    wordCard.style.transform = "translateX(-100vw)";
+    wordCard.style.backgroundColor = "#FF453A";
+    updateScore();
+    setTimeout(nextWord, 200);
+  }
+
+  function handleSwipe() {
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 50) { 
+      if (diff > 0) {
+        triggerCorrect();
+      } else {
+        triggerSkip();
+      }
+    }
+  }
+
+  // Touch Support
+  wordCard.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  wordCard.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  // Mouse Drag Support
+  wordCard.addEventListener('mousedown', e => {
+    isPointerDown = true;
+    touchStartX = e.clientX;
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (isPointerDown) {
+      isPointerDown = false;
+      touchEndX = e.clientX;
+      handleSwipe();
+    }
+  });
+
+  // Keyboard Navigation (Desktop friendly)
+  window.addEventListener('keydown', e => {
+    if (!gameScreen.classList.contains("active")) return;
+    if (e.key === 'ArrowRight') {
+      triggerCorrect();
+    } else if (e.key === 'ArrowLeft') {
+      triggerSkip();
+    }
+  });
+
+  function endGame() {
+    clearInterval(timerInterval);
+    gameScreen.classList.remove("active");
+    endScreen.classList.add("active");
+    finalScoreEl.innerText = score;
+  }
+
+  function resetGame() {
+    startScreen.classList.add("active");
+    endScreen.classList.remove("active");
+  }
+</script>
+</body>
+</html>

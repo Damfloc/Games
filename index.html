@@ -2,138 +2,301 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Charades</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games Portal - Select a Game</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
-  #start-screen, #game-screen, #end-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; }
-  .active { display: flex !important; }
-  h1 { font-size: 3rem; margin-bottom: 20px; }
-  .word-card { background: #333; border-radius: 20px; width: 80%; height: 50%; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: bold; margin: 20px 0; transition: transform 0.2s, background-color 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-  button { padding: 15px 40px; font-size: 1.5rem; background: #0A84FF; color: white; border: none; border-radius: 10px; cursor: pointer; }
-  button:active { background: #0060c0; }
-  #timer { font-size: 2rem; color: #FF453A; font-weight: bold; position: absolute; top: 40px; right: 30px; }
-  #score-display { font-size: 2rem; color: #32D74B; font-weight: bold; position: absolute; top: 40px; left: 30px; }
-  .instructions { font-size: 1.2rem; color: #aaa; margin-top: 10px; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0d0e12;
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(10, 132, 255, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(50, 215, 75, 0.08) 0%, transparent 40%);
+    color: #f5f5f7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  header {
+    text-align: center;
+    max-width: 680px;
+    margin-bottom: 48px;
+  }
+
+  .pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    color: #0A84FF;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #a1a1a6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  p.subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #86868b;
+    line-height: 1.5;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 24px;
+    width: 100%;
+    max-width: 1040px;
+  }
+
+  .game-card {
+    background: #17181e;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+                border-color 0.25s ease;
+  }
+
+  .game-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(10, 132, 255, 0.15);
+    border-color: rgba(10, 132, 255, 0.4);
+  }
+
+  .game-card.disabled {
+    cursor: default;
+    opacity: 0.65;
+  }
+  .game-card.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .game-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .game-icon.charades { background: linear-gradient(135deg, rgba(10,132,255,0.2), rgba(94,92,230,0.2)); }
+  .game-icon.trivia   { background: linear-gradient(135deg, rgba(50,215,75,0.2), rgba(10,132,255,0.2)); }
+  .game-icon.scramble { background: linear-gradient(135deg, rgba(255,159,10,0.2), rgba(255,69,58,0.2)); }
+  .game-icon.party    { background: linear-gradient(135deg, rgba(255,55,95,0.2), rgba(175,82,222,0.2)); }
+
+  .status-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+  .status-badge.live {
+    background: rgba(50, 215, 75, 0.15);
+    color: #32D74B;
+    border: 1px solid rgba(50, 215, 75, 0.3);
+  }
+  .status-badge.soon {
+    background: rgba(255, 255, 255, 0.06);
+    color: #86868b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .game-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .game-desc {
+    font-size: 0.95rem;
+    color: #8e8e93;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    min-height: 44px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .tag {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #a1a1a6;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .card-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: #0A84FF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-align: center;
+  }
+  .game-card:hover .card-action {
+    background: #0071e3;
+  }
+  .card-action.disabled {
+    background: rgba(255, 255, 255, 0.08);
+    color: #636366;
+    cursor: not-allowed;
+  }
+
+  footer {
+    margin-top: auto;
+    padding-top: 48px;
+    font-size: 0.85rem;
+    color: #636366;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
 
-<div id="start-screen" class="active">
-  <h1>Charades</h1>
-  <p class="instructions">Swipe Right = Correct<br>Swipe Left = Skip</p>
-  <button onclick="startGame()" style="margin-top: 30px;">Start Game</button>
-</div>
+<header>
+  <div class="pill-badge">🎮 Game Central</div>
+  <h1>Choose Your Game</h1>
+  <p class="subtitle">Select any tile below to start playing solo or with your party.</p>
+</header>
 
+<main class="game-grid">
+  <!-- Charades Tile -->
+  <a href="charades.html" class="game-card">
+    <div>
+      <div class="card-top">
+        <div class="game-icon charades">🎭</div>
+        <span class="status-badge live">● Ready to Play</span>
+      </div>
+      <h2 class="game-title">Charades</h2>
+      <p class="game-desc">Act out words and guess against the clock! Swipe right if guessed correctly, or swipe left to pass.</p>
+      <div class="tags">
+        <span class="tag">⏱️ 60s Timer</span>
+        <span class="tag">👥 2+ Players</span>
+        <span class="tag">📱 Touch & Keys</span>
+      </div>
+    </div>
+    <div class="card-action">Play Charades →</div>
+  </a>
 
-<div id="game-screen">
-  <div id="score-display">0</div>
-  <div id="timer">60</div>
-  <div class="word-card" id="word-card">WORD</div>
-  <p class="instructions">Swipe card to play</p>
-</div>
+  <!-- Trivia Showdown Tile -->
+  <a href="trivia.html" class="game-card">
+    <div>
+      <div class="card-top">
+        <div class="game-icon trivia">🧠</div>
+        <span class="status-badge live">● Ready to Play</span>
+      </div>
+      <h2 class="game-title">Trivia Showdown</h2>
+      <p class="game-desc">Put your general knowledge to the test with multiple-choice questions across history, science, and pop culture.</p>
+      <div class="tags">
+        <span class="tag">⚡ Rapid Fire</span>
+        <span class="tag">🎯 10 Questions</span>
+        <span class="tag">🏆 High Scores</span>
+      </div>
+    </div>
+    <div class="card-action">Play Trivia →</div>
+  </a>
 
-<div id="end-screen">
-  <h1>Time's Up!</h1>
-  <h2>Final Score: <span id="final-score">0</span></h2>
-  <button onclick="resetGame()" style="margin-top: 30px;">Play Again</button>
-</div>
+  <!-- Word Scramble Tile -->
+  <div class="game-card disabled">
+    <div>
+      <div class="card-top">
+        <div class="game-icon scramble">🔠</div>
+        <span class="status-badge soon">Coming Soon</span>
+      </div>
+      <h2 class="game-title">Word Scramble</h2>
+      <p class="game-desc">Race against the timer to unscramble mixed-up letters and discover hidden party words.</p>
+      <div class="tags">
+        <span class="tag">🧩 Word Puzzle</span>
+        <span class="tag">⏳ Speed Run</span>
+      </div>
+    </div>
+    <div class="card-action disabled">In Development</div>
+  </div>
 
-<script>
-  const words = ["Apple", "Elephant", "Helicopter", "Guitar", "Sunshine", "Ocean", "Kangaroo", "Pizza", "Firefighter", "Mountain", "Telescope", "Butterfly", "Pyramid", "Robot", "Dragon", "Volcano", "Astronaut", "Piano", "Bicycle", "Penguin"];
-  let score = 0;
-  let timeLeft = 60;
-  let timerInterval;
-  let currentWords = [];
-  
-  const startScreen = document.getElementById("start-screen");
-  const gameScreen = document.getElementById("game-screen");
-  const endScreen = document.getElementById("end-screen");
-  const wordCard = document.getElementById("word-card");
-  const timerEl = document.getElementById("timer");
-  const scoreEl = document.getElementById("score-display");
-  const finalScoreEl = document.getElementById("final-score");
+  <!-- Truth or Dare Tile -->
+  <div class="game-card disabled">
+    <div>
+      <div class="card-top">
+        <div class="game-icon party">🎲</div>
+        <span class="status-badge soon">Coming Soon</span>
+      </div>
+      <h2 class="game-title">Truth or Dare</h2>
+      <p class="game-desc">Exciting challenges, spicy truths, and hilarious dares to get any group laughing together.</p>
+      <div class="tags">
+        <span class="tag">🎉 Party Mode</span>
+        <span class="tag">🔥 Icebreaker</span>
+      </div>
+    </div>
+    <div class="card-action disabled">In Development</div>
+  </div>
+</main>
 
-  let touchStartX = 0;
-  let touchEndX = 0;
+<footer>
+  <p>Add more games anytime by creating a new game file and linking it here.</p>
+</footer>
 
-  function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
-  }
-
-  function startGame() {
-    score = 0;
-    timeLeft = 60;
-    currentWords = shuffle([...words]);
-    updateScore();
-    timerEl.innerText = timeLeft;
-    
-    startScreen.classList.remove("active");
-    endScreen.classList.remove("active");
-    gameScreen.classList.add("active");
-    
-    nextWord();
-    timerInterval = setInterval(updateTimer, 1000);
-  }
-
-  function updateTimer() {
-    timeLeft--;
-    timerEl.innerText = timeLeft;
-    if (timeLeft <= 0) {
-      endGame();
-    }
-  }
-
-  function nextWord() {
-    if (currentWords.length === 0) currentWords = shuffle([...words]);
-    wordCard.style.transition = "none";
-    wordCard.style.transform = "translateX(0)";
-    wordCard.style.backgroundColor = "#333";
-    wordCard.innerText = currentWords.pop();
-  }
-
-  function updateScore() {
-    scoreEl.innerText = score;
-  }
-
-  function handleSwipe() {
-    const diff = touchEndX - touchStartX;
-    if (Math.abs(diff) > 50) { 
-      wordCard.style.transition = "transform 0.2s, background-color 0.2s";
-      if (diff > 0) {
-        score++;
-        wordCard.style.transform = "translateX(100vw)";
-        wordCard.style.backgroundColor = "#32D74B";
-      } else {
-        wordCard.style.transform = "translateX(-100vw)";
-        wordCard.style.backgroundColor = "#FF453A";
-      }
-      updateScore();
-      setTimeout(nextWord, 200);
-    }
-  }
-
-  wordCard.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-  });
-
-  wordCard.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  });
-
-  function endGame() {
-    clearInterval(timerInterval);
-    gameScreen.classList.remove("active");
-    endScreen.classList.add("active");
-    finalScoreEl.innerText = score;
-  }
-
-  function resetGame() {
-    startScreen.classList.add("active");
-    endScreen.classList.remove("active");
-  }
-</script>
 </body>
 </html>
