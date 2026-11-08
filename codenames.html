@@ -1303,9 +1303,13 @@
     }, 2000);
   }
 
+  const seenMessageIds = new Set();
+
   function publishMessage(payload) {
     if (!client || !isConnected) return;
     try {
+      payload.senderId = clientId;
+      payload.msgId = `${clientId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const message = new Paho.MQTT.Message(JSON.stringify(payload));
       message.destinationName = `damfloc/codenames/${currentRoom}`;
       message.qos = 1;
@@ -1321,26 +1325,43 @@
   }
 
   function handleNetworkMessage(data) {
+    if (!data || typeof data !== "object") return;
+
+    // Deduplicate: ignore if we already processed this message ID
+    if (data.msgId) {
+      if (seenMessageIds.has(data.msgId)) return;
+      seenMessageIds.add(data.msgId);
+      if (seenMessageIds.size > 200) {
+        const first = seenMessageIds.values().next().value;
+        seenMessageIds.delete(first);
+      }
+    }
+
+    // Ignore self-echo! Senders execute actions locally immediately.
+    if (data.senderId === clientId) {
+      return;
+    }
+
     if (data.type === "REQUEST_SYNC") {
-      // Respond with my presence and current game state if any
+      // Respond to peer's sync request
       publishMessage({
         type: "PLAYER_SYNC",
         player: roomRoster[clientId],
         gameState: gameState.status === "playing" ? gameState : null,
-        target: data.sender
+        target: data.senderId
       });
     } else if (data.type === "PLAYER_JOIN" || data.type === "PLAYER_SYNC") {
-      if (data.player && data.player.id) {
+      if (data.player && data.player.id && data.player.id !== clientId) {
         roomRoster[data.player.id] = data.player;
         renderRosterUI();
       }
-      // If sync returned active game, sync game state
+      // If sync returned active game from host, sync state
       if (data.gameState && data.gameState.status === "playing" && gameState.status !== "playing") {
         gameState = data.gameState;
         startGameLocally();
       }
     } else if (data.type === "ROLE_UPDATE") {
-      if (data.player && data.player.id) {
+      if (data.player && data.player.id && data.player.id !== clientId) {
         roomRoster[data.player.id] = data.player;
         renderRosterUI();
       }
@@ -1352,7 +1373,7 @@
       switchScreen("lobby-screen");
       document.getElementById("victory-modal").classList.remove("active");
       renderRosterUI();
-      addLog(`Teams returned to Lobby.`);
+      addLog(`<span class="log-badge system">LOBBY</span> Teams returned to waiting room.`, "system");
     } else if (data.type === "REVEAL_CARD") {
       executeCardReveal(data.cardId, data.playerName);
     } else if (data.type === "GIVE_CLUE") {
@@ -1364,7 +1385,7 @@
       renderBoard();
       renderHUD();
       document.getElementById("victory-modal").classList.remove("active");
-      addLog(`<strong>${data.playerName}</strong> reshuffled with 25 new cards.`);
+      addLog(`<span class="log-badge system">RESHUFFLE</span> <strong>${data.playerName}</strong> reshuffled with 25 new cards.`, "system");
     }
   }
 
