@@ -1276,7 +1276,7 @@
         name: playerName,
         avatar: getPlayerAvatar(playerName),
         score: 0,
-        isHost: false
+        isHost: isCurrentUserHost()
       }
     });
 
@@ -1376,6 +1376,13 @@
           if (roomRoster[playerIds[0]]) roomRoster[playerIds[0]].isHost = true;
         }
         renderRosterUI();
+        if (isCurrentUserHost()) {
+          publishMessage({
+            type: "ROOM_SYNC",
+            roster: roomRoster,
+            state: gameState
+          });
+        }
       }
     } else if (data.type === "PLAYER_READY") {
       if (!gameState.readyPlayers) gameState.readyPlayers = {};
@@ -1420,6 +1427,10 @@
     } else if (data.type === "RETURN_TO_LOBBY") {
       gameState.status = "lobby";
       switchScreen("lobby-screen");
+      const entryBox = document.getElementById("entry-box");
+      if (entryBox) entryBox.style.display = "none";
+      const roomDashboard = document.getElementById("room-dashboard");
+      if (roomDashboard) roomDashboard.style.display = "block";
       renderRosterUI();
     }
   }
@@ -2338,6 +2349,10 @@
     publishMessage({ type: "RETURN_TO_LOBBY" });
     gameState.status = "lobby";
     switchScreen("lobby-screen");
+    const entryBox = document.getElementById("entry-box");
+    if (entryBox) entryBox.style.display = "none";
+    const roomDashboard = document.getElementById("room-dashboard");
+    if (roomDashboard) roomDashboard.style.display = "block";
     renderRosterUI();
   }
 
@@ -2431,8 +2446,10 @@
 
   /* URL Parameter Handler (?room=CODE) */
   window.addEventListener("DOMContentLoaded", () => {
-    // Ensure name input starts empty so no suggested name is shown
     const nameInput = document.getElementById("player-name-input");
+    const codeInput = document.getElementById("room-code-input");
+
+    // Ensure name input starts empty so no suggested name is shown
     if (nameInput) {
       nameInput.value = "";
     }
@@ -2441,7 +2458,6 @@
     const roomParam = params.get("room");
     if (roomParam) {
       const formattedCode = roomParam.trim().toUpperCase();
-      const codeInput = document.getElementById("room-code-input");
       if (codeInput) codeInput.value = formattedCode;
 
       // Update subtitle to inform the user they were invited to this room
@@ -2451,15 +2467,12 @@
       }
 
       // Pre-focus the name input so they can type immediately
-      const nameInput = document.getElementById("player-name-input");
       if (nameInput) {
         setTimeout(() => nameInput.focus(), 250);
       }
     }
 
     // Allow pressing Enter in inputs to submit
-    const nameInput = document.getElementById("player-name-input");
-    const codeInput = document.getElementById("room-code-input");
     [nameInput, codeInput].forEach(inp => {
       if (inp) {
         inp.addEventListener("keydown", (e) => {
