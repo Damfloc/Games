@@ -676,25 +676,155 @@
   }
   .end-turn-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.02); }
 
-  /* Game Log / Terminal */
+  /* Game Log & Mission Feed - High Contrast & Color Coded */
   .log-panel {
     width: 100%;
     max-width: 900px;
-    background: rgba(0, 0, 0, 0.25);
+    background: #14151c;
     border: 1px solid var(--card-border);
-    border-radius: 14px;
-    padding: 12px 16px;
-    max-height: 120px;
+    border-radius: 16px;
+    padding: 12px 14px;
+    max-height: 150px;
     overflow-y: auto;
-    font-family: ui-monospace, Menlo, Monaco, monospace;
-    font-size: 0.85rem;
-    color: #8e8e93;
+    font-size: 0.9rem;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
   }
-  .log-entry { line-height: 1.4; }
-  .log-entry strong { color: #f5f5f7; }
+  @media (max-width: 600px) {
+    .log-panel {
+      max-height: 110px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      gap: 6px;
+    }
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid #555;
+    line-height: 1.35;
+    flex-wrap: wrap;
+    color: #e5e5ea;
+  }
+  .log-entry.red {
+    background: rgba(255, 59, 48, 0.1);
+    border-left: 4px solid var(--red-team);
+  }
+  .log-entry.blue {
+    background: rgba(10, 132, 255, 0.1);
+    border-left: 4px solid var(--blue-team);
+  }
+  .log-entry.neutral {
+    background: rgba(199, 178, 153, 0.08);
+    border-left: 4px solid var(--neutral-card);
+  }
+  .log-entry.assassin {
+    background: rgba(255, 69, 58, 0.18);
+    border-left: 4px solid #FF453A;
+  }
+
+  .log-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .log-badge.red { background: var(--red-team); color: #fff; }
+  .log-badge.blue { background: var(--blue-team); color: #fff; }
+  .log-badge.neutral { background: var(--neutral-card); color: #111; }
+  .log-badge.assassin { background: #000; border: 1px solid #FF453A; color: #FF453A; }
+  .log-badge.system { background: rgba(255, 255, 255, 0.12); color: #a1a1a6; }
+
+  .log-clue-highlight {
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    color: #FFD60A;
+    background: rgba(255, 214, 10, 0.16);
+    border: 1px solid rgba(255, 214, 10, 0.35);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .log-clue-count {
+    font-weight: 800;
+    color: #fff;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+
+  /* HUD Clue Display Card at Top */
+  .hud-clue-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 12px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hud-clue-card.red {
+    background: rgba(255, 59, 48, 0.16);
+    border: 1px solid rgba(255, 59, 48, 0.4);
+  }
+  .hud-clue-card.blue {
+    background: rgba(10, 132, 255, 0.16);
+    border: 1px solid rgba(10, 132, 255, 0.4);
+  }
+  .hud-team-tag {
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+  }
+  .hud-clue-card.red .hud-team-tag { color: var(--red-team); }
+  .hud-clue-card.blue .hud-team-tag { color: var(--blue-team); }
+
+  .hud-clue-word {
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    color: #FFD60A;
+    background: rgba(255, 214, 10, 0.2);
+    border: 1px solid rgba(255, 214, 10, 0.4);
+    padding: 2px 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(255, 214, 10, 0.2);
+  }
+  .hud-clue-count {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #fff;
+  }
+  .hud-guesses-left {
+    font-size: 0.82rem;
+    color: #a1a1a6;
+    font-weight: 600;
+  }
+  @media (max-width: 600px) {
+    .hud-clue-card {
+      padding: 4px 8px;
+      gap: 5px;
+    }
+    .hud-clue-word {
+      font-size: 1.05rem;
+      padding: 1px 6px;
+    }
+    .hud-team-tag {
+      font-size: 0.75rem;
+    }
+  }
 
   /* Victory Modal Overlay */
   #victory-modal {
@@ -1083,6 +1213,7 @@
     status: "lobby", // 'lobby' or 'playing'
     startingTeam: "red",
     currentTurn: "red",
+    lastClueTeam: null,
     redLeft: 9,
     blueLeft: 8,
     cards: [],
@@ -1423,6 +1554,7 @@
       status: "playing",
       startingTeam: startTeam,
       currentTurn: startTeam,
+      lastClueTeam: null,
       redLeft: startTeam === "red" ? 9 : 8,
       blueLeft: startTeam === "blue" ? 9 : 8,
       cards: shuffledWords.map((word, idx) => ({
@@ -1496,13 +1628,34 @@
 
     const clueDisplay = document.getElementById("current-clue-display");
     if (gameState.currentClue) {
-      clueDisplay.innerHTML = `Clue: <strong>${gameState.currentClue.word}</strong> (${gameState.currentClue.number}) • <em>${gameState.guessesLeft} guess${gameState.guessesLeft === 1 ? '' : 'es'} left</em>`;
+      const clueTeam = gameState.currentTurn;
+      clueDisplay.innerHTML = `
+        <div class="hud-clue-card ${clueTeam}">
+          <span class="hud-team-tag">${clueTeam === 'red' ? '🔴 RED CLUE:' : '🔵 BLUE CLUE:'}</span>
+          <span class="hud-clue-word">"${gameState.currentClue.word}"</span>
+          <span class="hud-clue-count">(${gameState.currentClue.number} Cards)</span>
+          <span class="hud-guesses-left">• ${gameState.guessesLeft} guess${gameState.guessesLeft === 1 ? '' : 'es'} left</span>
+        </div>
+      `;
     } else {
-      clueDisplay.innerText = `Waiting for ${gameState.currentTurn === 'red' ? 'Red' : 'Blue'} Spymaster to give a clue...`;
+      const activeTeamName = gameState.currentTurn === 'red' ? '🔴 Red Spymaster' : '🔵 Blue Spymaster';
+      clueDisplay.innerHTML = `<span style="color: #a1a1a6;">Waiting for <strong>${activeTeamName}</strong> to give a clue...</span>`;
     }
 
+    // A Spymaster can only give a clue if:
+    // 1. My role is spymaster
+    // 2. It is my team's turn
+    // 3. No clue is currently active
+    // 4. No winner yet
+    // 5. My team did NOT give the last clue (cannot give clues in a row!)
     const spymasterBar = document.getElementById("spymaster-input-bar");
-    const isMyTurnSpymaster = (myRole === "spymaster" && myTeam === gameState.currentTurn && !gameState.currentClue && !gameState.winner);
+    const isMyTurnSpymaster = (
+      myRole === "spymaster" &&
+      myTeam === gameState.currentTurn &&
+      !gameState.currentClue &&
+      !gameState.winner &&
+      gameState.lastClueTeam !== myTeam
+    );
     spymasterBar.style.display = isMyTurnSpymaster ? "flex" : "none";
   }
 
@@ -1522,15 +1675,15 @@
     if (!card || card.revealed || gameState.winner) return;
 
     if (myRole === "spymaster") {
-      addLog("Spymasters cannot tap cards! Only Operatives guess.");
+      addLog("<span class='log-badge system'>WARNING</span> Spymasters cannot tap cards! Only Operatives guess.", "system");
       return;
     }
     if (myTeam !== gameState.currentTurn) {
-      addLog(`It is not your team's turn to guess.`);
+      addLog("<span class='log-badge system'>WAIT</span> It is not your team's turn to guess.", "system");
       return;
     }
     if (!gameState.currentClue) {
-      addLog("Wait for your Spymaster to give a clue before guessing!");
+      addLog("<span class='log-badge system'>WAIT</span> Wait for your Spymaster to give a clue before guessing!", "system");
       return;
     }
 
@@ -1558,7 +1711,12 @@
       if (currentTurn === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
       else gameState.blueLeft = Math.max(0, gameState.blueLeft - 1);
 
-      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Correct agent!`);
+      const teamBadge = currentTurn === "red" ? '<span class="log-badge red">🔴 RED GUESS</span>' : '<span class="log-badge blue">🔵 BLUE GUESS</span>';
+      addLog(`
+        ${teamBadge}
+        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff; font-size: 0.95rem;">"${card.word}"</strong></span>
+        <span style="color: #32D74B; font-weight: 800;">✓ Correct Agent!</span>
+      `, currentTurn);
 
       if (gameState.redLeft === 0) {
         handleGameOver("red", "Red Team successfully located all their secret agents!");
@@ -1572,27 +1730,41 @@
       if (typeof gameState.guessesLeft === 'number') {
         gameState.guessesLeft--;
         if (gameState.guessesLeft <= 0) {
-          addLog(`${currentTurn === 'red' ? 'Red' : 'Blue'} Team finished all permitted guesses.`);
+          addLog(`<span class="log-badge system">PASS</span> ${currentTurn === 'red' ? 'Red' : 'Blue'} Team used all allowed guesses.`, currentTurn);
           switchTurn();
         }
       }
     } else if (card.type === "assassin") {
       playAssassinTone();
       const winningTeam = currentTurn === "red" ? "blue" : "red";
-      addLog(`☠️ <strong>${guesserName || 'Operative'}</strong> contacted the ASSASSIN (<strong>${card.word}</strong>)!`);
+      addLog(`
+        <span class="log-badge assassin">☠️ ASSASSIN</span>
+        <span><strong>${guesserName || 'Operative'}</strong> touched the ASSASSIN (<strong style="color: #FF453A;">"${card.word}"</strong>)!</span>
+        <span style="color: #FF453A; font-weight: 800;">Instant Defeat!</span>
+      `, "assassin");
       handleGameOver(winningTeam, `${currentTurn === 'red' ? 'Red' : 'Blue'} Team touched the Assassin! Instant loss!`);
       return;
     } else if (card.type === "neutral") {
       playNeutralTone();
-      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Innocent Bystander! Turn ended.`);
+      const teamBadge = currentTurn === "red" ? '<span class="log-badge red">🔴 RED GUESS</span>' : '<span class="log-badge blue">🔵 BLUE GUESS</span>';
+      addLog(`
+        ${teamBadge}
+        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff;">"${card.word}"</strong></span>
+        <span style="color: #C7B299; font-weight: 700;">⚪ Neutral Bystander! Turn ended.</span>
+      `, "neutral");
       switchTurn();
     } else {
       playNeutralTone();
       const otherTeam = currentTurn === "red" ? "blue" : "red";
+      const teamBadge = currentTurn === "red" ? '<span class="log-badge red">🔴 RED GUESS</span>' : '<span class="log-badge blue">🔵 BLUE GUESS</span>';
       if (otherTeam === "red") gameState.redLeft = Math.max(0, gameState.redLeft - 1);
       else gameState.blueLeft = Math.max(0, gameState.blueLeft - 1);
 
-      addLog(`<strong>${guesserName || 'Operative'}</strong> picked <strong>${card.word}</strong> — Opponent's agent! Turn ended.`);
+      addLog(`
+        ${teamBadge}
+        <span><strong>${guesserName || 'Operative'}</strong> picked <strong style="color: #fff;">"${card.word}"</strong></span>
+        <span style="color: #FF453A; font-weight: 700;">— ${otherTeam.toUpperCase()} Agent! Turn ended.</span>
+      `, otherTeam);
 
       if (gameState.redLeft === 0) {
         handleGameOver("red", "Red Team won because the opponent revealed their final agent!");
@@ -1610,6 +1782,24 @@
   }
 
   function submitClue() {
+    // Check if it's my team's turn
+    if (myTeam !== gameState.currentTurn) {
+      alert(`It is ${gameState.currentTurn.toUpperCase()} Team's turn right now!`);
+      return;
+    }
+
+    // Check if clue is already active
+    if (gameState.currentClue) {
+      alert("A clue has already been submitted for this turn! Operatives must guess or pass.");
+      return;
+    }
+
+    // Check if this same team gave the last clue (cannot make clues in a row!)
+    if (gameState.lastClueTeam === gameState.currentTurn) {
+      alert(`The other team's Spymaster must take their turn before you can give another clue!`);
+      return;
+    }
+
     const wordInput = document.getElementById("clue-word-input");
     const numSelect = document.getElementById("clue-num-select");
     const word = wordInput.value.trim().toUpperCase();
@@ -1641,15 +1831,23 @@
     initAudio();
     playSuccessTone();
     gameState.currentClue = clue;
+    gameState.lastClueTeam = team;
     gameState.guessesLeft = clue.number === "∞" ? 99 : (parseInt(clue.number, 10) + 1);
 
-    addLog(`Spymaster <strong>${spymasterName || 'Spymaster'}</strong> (${team.toUpperCase()}) gave clue: <strong>${clue.word}</strong> (${clue.number})`);
+    const teamBadge = team === 'red' ? '<span class="log-badge red">🔴 RED CLUE</span>' : '<span class="log-badge blue">🔵 BLUE CLUE</span>';
+    addLog(`
+      ${teamBadge}
+      <span class="log-clue-highlight">"${clue.word}"</span>
+      <span class="log-clue-count">(${clue.number} cards)</span>
+      <span style="color: #a1a1a6; font-size: 0.82rem;">from <strong>${spymasterName || 'Spymaster'}</strong></span>
+    `, team);
+
     renderHUD();
   }
 
   function handleEndTurnClick() {
     if (gameState.currentTurn !== myTeam) {
-      addLog("You can only pass when it is your team's turn.");
+      addLog("<span class='log-badge system'>WAIT</span> You can only pass when it is your team's turn.", "system");
       return;
     }
     publishMessage({
@@ -1661,14 +1859,26 @@
   }
 
   function executeEndTurn(team, pName) {
-    addLog(`<strong>${pName || 'Team'}</strong> ended their guessing turn.`);
+    const teamBadge = team === 'red' ? '<span class="log-badge red">🔴 RED PASS</span>' : '<span class="log-badge blue">🔵 BLUE PASS</span>';
+    addLog(`
+      ${teamBadge}
+      <span><strong>${pName || 'Team'}</strong> chose to end their guessing turn.</span>
+    `, team);
     switchTurn();
   }
 
   function switchTurn() {
-    gameState.currentTurn = gameState.currentTurn === "red" ? "blue" : "red";
+    const nextTurn = gameState.currentTurn === "red" ? "blue" : "red";
+    gameState.currentTurn = nextTurn;
     gameState.currentClue = null;
     gameState.guessesLeft = 0;
+
+    const nextTeamBadge = nextTurn === "red" ? '<span class="log-badge red">🔴 RED TURN</span>' : '<span class="log-badge blue">🔵 BLUE TURN</span>';
+    addLog(`
+      ${nextTeamBadge}
+      <span>Turn ended. Now <strong>${nextTurn === 'red' ? 'Red' : 'Blue'} Team</strong>'s turn to play!</span>
+    `, nextTurn);
+
     renderHUD();
   }
 
@@ -1733,11 +1943,12 @@
     });
   }
 
-  function addLog(html) {
+  function addLog(html, teamType = "system") {
     const panel = document.getElementById("log-panel");
+    if (!panel) return;
     const div = document.createElement("div");
-    div.className = "log-entry";
-    div.innerHTML = `• ${html}`;
+    div.className = `log-entry ${teamType}`;
+    div.innerHTML = html;
     panel.appendChild(div);
     panel.scrollTop = panel.scrollHeight;
   }
