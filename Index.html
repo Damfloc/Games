@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Charades</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
+  #start-screen, #game-screen, #end-screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; }
+  .active { display: flex !important; }
+  h1 { font-size: 3rem; margin-bottom: 20px; }
+  .word-card { background: #333; border-radius: 20px; width: 80%; height: 50%; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: bold; margin: 20px 0; transition: transform 0.2s, background-color 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+  button { padding: 15px 40px; font-size: 1.5rem; background: #0A84FF; color: white; border: none; border-radius: 10px; cursor: pointer; }
+  button:active { background: #0060c0; }
+  #timer { font-size: 2rem; color: #FF453A; font-weight: bold; position: absolute; top: 40px; right: 30px; }
+  #score-display { font-size: 2rem; color: #32D74B; font-weight: bold; position: absolute; top: 40px; left: 30px; }
+  .instructions { font-size: 1.2rem; color: #aaa; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div id="start-screen" class="active">
+  <h1>Charades</h1>
+  <p class="instructions">Swipe Right = Correct<br>Swipe Left = Skip</p>
+  <button onclick="startGame()" style="margin-top: 30px;">Start Game</button>
+</div>
+
+<div id="game-screen">
+  <div id="score-display">0</div>
+  <div id="timer">60</div>
+  <div class="word-card" id="word-card">WORD</div>
+  <p class="instructions">Swipe card to play</p>
+</div>
+
+<div id="end-screen">
+  <h1>Time's Up!</h1>
+  <h2>Final Score: <span id="final-score">0</span></h2>
+  <button onclick="resetGame()" style="margin-top: 30px;">Play Again</button>
+</div>
+
+<script>
+  const words = ["Apple", "Elephant", "Helicopter", "Guitar", "Sunshine", "Ocean", "Kangaroo", "Pizza", "Firefighter", "Mountain", "Telescope", "Butterfly", "Pyramid", "Robot", "Dragon", "Volcano", "Astronaut", "Piano", "Bicycle", "Penguin"];
+  let score = 0;
+  let timeLeft = 60;
+  let timerInterval;
+  let currentWords = [];
+  
+  const startScreen = document.getElementById("start-screen");
+  const gameScreen = document.getElementById("game-screen");
+  const endScreen = document.getElementById("end-screen");
+  const wordCard = document.getElementById("word-card");
+  const timerEl = document.getElementById("timer");
+  const scoreEl = document.getElementById("score-display");
+  const finalScoreEl = document.getElementById("final-score");
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  function startGame() {
+    score = 0;
+    timeLeft = 60;
+    currentWords = shuffle([...words]);
+    updateScore();
+    timerEl.innerText = timeLeft;
+    
+    startScreen.classList.remove("active");
+    endScreen.classList.remove("active");
+    gameScreen.classList.add("active");
+    
+    nextWord();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function updateTimer() {
+    timeLeft--;
+    timerEl.innerText = timeLeft;
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }
+
+  function nextWord() {
+    if (currentWords.length === 0) currentWords = shuffle([...words]);
+    wordCard.style.transition = "none";
+    wordCard.style.transform = "translateX(0)";
+    wordCard.style.backgroundColor = "#333";
+    wordCard.innerText = currentWords.pop();
+  }
+
+  function updateScore() {
+    scoreEl.innerText = score;
+  }
+
+  function handleSwipe() {
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 50) { 
+      wordCard.style.transition = "transform 0.2s, background-color 0.2s";
+      if (diff > 0) {
+        score++;
+        wordCard.style.transform = "translateX(100vw)";
+        wordCard.style.backgroundColor = "#32D74B";
+      } else {
+        wordCard.style.transform = "translateX(-100vw)";
+        wordCard.style.backgroundColor = "#FF453A";
+      }
+      updateScore();
+      setTimeout(nextWord, 200);
+    }
+  }
+
+  wordCard.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  wordCard.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  });
+
+  function endGame() {
+    clearInterval(timerInterval);
+    gameScreen.classList.remove("active");
+    endScreen.classList.add("active");
+    finalScoreEl.innerText = score;
+  }
+
+  function resetGame() {
+    startScreen.classList.add("active");
+    endScreen.classList.remove("active
