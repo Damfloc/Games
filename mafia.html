@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mafia Online - Real-Time Social Deduction Game</title>
+<meta name="description" content="Play the classic Mafia party game online with friends! Real-time secret night actions, role balancing from 4 to 16+ players, and live daytime voting.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0a0a0e">
+
+<!-- Open Graph / Social Previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Mafia Online - Join Room">
+<meta property="og:description" content="You've been invited to play Mafia Online! Can Town eliminate the Mafia, or will the Syndicate take over?">
+<meta property="og:image" content="favicon.svg">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mafia Online - Join Room">
+<meta name="twitter:description" content="Play Mafia Online in real-time with friends on phone & desktop!">
+<meta name="twitter:image" content="favicon.svg">
+
+<!-- iOS Mobile Web App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mafia">
+
+<!-- Paho MQTT WebSocket Client for Zero-Backend Free Real-Time Multiplayer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg-dark: #090a0f;
+    --card-bg: #13151f;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --mafia-red: #ff3b30;
+    --mafia-glow: rgba(255, 59, 48, 0.35);
+    --town-blue: #0a84ff;
+    --town-glow: rgba(10, 132, 255, 0.35);
+    --doctor-green: #30d158;
+    --detective-yellow: #ffd60a;
+    --neutral-purple: #bf5af2;
+    --sk-orange: #ff9f0a;
+    --text-primary: #f5f5f7;
+    --text-secondary: #8e8e93;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-dark);
+    background-image:
+      radial-gradient(circle at 15% 15%, rgba(255, 59, 48, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 85% 85%, rgba(10, 132, 255, 0.10) 0%, transparent 45%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  /* Top Navigation Bar */
+  .top-bar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    z-index: 100;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--card-border);
+    transition: background 0.2s, color 0.2s;
+  }
+  .back-btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+  .network-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .network-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff453a;
+    box-shadow: 0 0 8px #ff453a;
+  }
+  .network-dot.connected {
+    background: #32d74b;
+    box-shadow: 0 0 8px #32d74b;
+  }
+
+  /* Screens Wrapper */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 840px;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Title & Subtitles */
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    text-align: center;
+    background: linear-gradient(180deg, #ffffff 0%, #b0b0b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    max-width: 580px;
+  }
+
+  /* Glass Card Box */
+  .card-box {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 28px 24px;
+    width: 100%;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    margin-bottom: 20px;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, #ff3b30 0%, #e02820 100%);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 24px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(255, 59, 48, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(255, 59, 48, 0.5);
+    filter: brightness(1.05);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.16); }
+
+  .btn-town {
+    background: linear-gradient(135deg, #0a84ff 0%, #0070e0 100%);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 24px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.35);
+    width: 100%;
+  }
+
+  /* Form Inputs */
+  .text-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 1.1rem;
+    color: #fff;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+  }
+  .text-input:focus {
+    border-color: #0A84FF;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Lobby Room Header */
+  .room-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .room-code-tag {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--detective-yellow);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Player Grid in Lobby */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .roster-tile {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 16px 10px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .roster-tile.is-host {
+    border-color: rgba(255, 214, 10, 0.45);
+    background: rgba(255, 214, 10, 0.06);
+  }
+  .roster-tile.is-me {
+    border-color: rgba(10, 132, 255, 0.5);
+    background: rgba(10, 132, 255, 0.08);
+  }
+  .roster-avatar { font-size: 2.2rem; margin-bottom: 6px; }
+  .roster-name { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .roster-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Role Distribution Preview */
+  .roles-preview-box {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .roles-preview-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .roles-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--card-border);
+  }
+  .role-badge.mafia { background: rgba(255, 59, 48, 0.15); border-color: rgba(255, 59, 48, 0.35); color: #ff3b30; }
+  .role-badge.doctor { background: rgba(48, 209, 88, 0.15); border-color: rgba(48, 209, 88, 0.35); color: #30d158; }
+  .role-badge.detective { background: rgba(255, 214, 10, 0.15); border-color: rgba(255, 214, 10, 0.35); color: #ffd60a; }
+  .role-badge.town { background: rgba(10, 132, 255, 0.15); border-color: rgba(10, 132, 255, 0.35); color: #0a84ff; }
+  .role-badge.neutral { background: rgba(191, 90, 242, 0.15); border-color: rgba(191, 90, 242, 0.35); color: #bf5af2; }
+  .role-badge.sk { background: rgba(255, 159, 10, 0.15); border-color: rgba(255, 159, 10, 0.35); color: #ff9f0a; }
+
+  /* =========================================================================
+     ROLE REVEAL SCREEN
+     ========================================================================= */
+  .role-card-display {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 24px;
+    padding: 36px 28px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: #141620;
+    margin-bottom: 24px;
+  }
+  .role-card-display.mafia {
+    border-color: var(--mafia-red);
+    box-shadow: 0 0 40px var(--mafia-glow);
+  }
+  .role-card-display.town {
+    border-color: var(--town-blue);
+    box-shadow: 0 0 40px var(--town-glow);
+  }
+  .role-card-display.neutral {
+    border-color: var(--neutral-purple);
+    box-shadow: 0 0 40px rgba(191, 90, 242, 0.35);
+  }
+  .role-icon-large { font-size: 5rem; margin-bottom: 12px; }
+  .role-name-large { font-size: 2.2rem; font-weight: 800; margin-bottom: 6px; }
+  .role-alignment-tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  .role-desc-text {
+    font-size: 1rem;
+    color: #c7c7cc;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+  .role-secret-partners {
+    background: rgba(255, 59, 48, 0.12);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.95rem;
+    color: #ff8b85;
+    margin-top: 12px;
+  }
+
+  /* =========================================================================
+     NIGHT PHASE SCREEN
+     ========================================================================= */
+  .night-container {
+    width: 100%;
+    max-width: 620px;
+    background: #0b0d14;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+  .phase-badge.night { background: rgba(94, 92, 230, 0.2); color: #5E5CE6; border: 1px solid rgba(94, 92, 230, 0.4); }
+  .phase-badge.day { background: rgba(255, 214, 10, 0.2); color: #FFD60A; border: 1px solid rgba(255, 214, 10, 0.4); }
+
+  .phase-timer {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+
+  .night-instruction {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #e5e5ea;
+  }
+
+  /* Action Targets Grid */
+  .target-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .target-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 14px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+  }
+  .target-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  .target-card.selected {
+    border-color: #0A84FF;
+    background: rgba(10, 132, 255, 0.2);
+    box-shadow: 0 0 16px rgba(10, 132, 255, 0.4);
+  }
+  .target-card.selected.mafia-target {
+    border-color: #FF3B30;
+    background: rgba(255, 59, 48, 0.25);
+    box-shadow: 0 0 16px rgba(255, 59, 48, 0.45);
+  }
+  .target-card.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .target-avatar { font-size: 2rem; margin-bottom: 4px; }
+  .target-name { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Detective Result Banner */
+  .investigation-banner {
+    display: none;
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  }
+  .investigation-banner.guilty {
+    background: rgba(255, 59, 48, 0.2);
+    border: 1px solid #FF3B30;
+    color: #ff453a;
+  }
+  .investigation-banner.innocent {
+    background: rgba(50, 215, 75, 0.2);
+    border: 1px solid #32D74B;
+    color: #32d74b;
+  }
+
+  /* =========================================================================
+     DAY DISCUSSION & VOTING SCREEN
+     ========================================================================= */
+  .morning-report-card {
+    background: #191c28;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .newspaper-header {
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #a1a1a6;
+    margin-bottom: 8px;
+  }
+  .newspaper-headline {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #fff;
+  }
+  .newspaper-body {
+    font-size: 1rem;
+    color: #c7c7cc;
+    line-height: 1.5;
+  }
+
+  /* Voting Grid */
+  .vote-badge-counter {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #FF3B30;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
+  }
+
+  .skip-vote-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.04);
+    color: #8E8E93;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+  }
+  .skip-vote-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  .skip-vote-btn.selected {
+    border-color: #ffd60a;
+    background: rgba(255, 214, 10, 0.15);
+    color: #ffd60a;
+  }
+
+  /* Ghost Overlay Indicator */
+  .ghost-banner {
+    display: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #a1a1a6;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  /* Game Over Modal */
+  #game-over-screen {
+    text-align: center;
+  }
+  .winner-banner {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .winner-sub {
+    font-size: 1.15rem;
+    color: #c7c7cc;
+    margin-bottom: 24px;
+  }
+
+  /* Final Role Reveal List */
+  .final-role-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 24px;
+  }
+  .final-role-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<div class="top-bar">
+  <a href="index.html" class="back-btn">
+    <span>←</span> Exit to Games Hub
+  </a>
+  <div class="network-pill">
+    <div class="network-dot" id="network-dot"></div>
+    <span id="network-label">Connecting...</span>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 1: LANDING & ROOM CREATION
+     ========================================================================== -->
+<div id="landing-screen" class="screen active">
+  <span style="font-size: 3.5rem; margin-bottom: 8px;">🕵️‍♂️</span>
+  <h1>Mafia Online</h1>
+  <p class="subtitle">The legendary social deduction party game. Find the Mafia before the Syndicate eliminates the Town!</p>
+
+  <div class="card-box" style="max-width: 440px;">
+    <input type="text" class="text-input" id="player-name-input" maxlength="15" placeholder="Enter your player name" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+
+    <button class="btn-primary" onclick="createRoom()" style="margin-bottom: 14px;">
+      <span>👑 Create New Room</span>
+    </button>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin: 10px 0;">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+      <span style="font-size: 0.85rem; color: #777; text-transform: uppercase;">or join room</span>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+    </div>
+
+    <input type="text" class="text-input" id="room-code-input" maxlength="8" placeholder="ENTER ROOM CODE" style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">
+
+    <button class="btn-secondary" onclick="joinRoomByInput()" style="width: 100%;">
+      <span>Enter Room →</span>
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 2: WAITING LOBBY
+     ========================================================================== -->
+<div id="lobby-screen" class="screen">
+  <div class="card-box">
+    <div class="room-header">
+      <div>
+        <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888;">Room Code</span>
+        <div class="room-code-tag" id="lobby-code-display">MAF-101</div>
+      </div>
+      <button class="btn-secondary" onclick="copyInviteLink()">
+        <span>🔗 Copy Invite Link</span>
+      </button>
+    </div>
+
+    <!-- Live Players Grid -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="font-size: 0.95rem; font-weight: 700;">Players in Lobby (<span id="player-count-num">1</span>)</span>
+      <span style="font-size: 0.85rem; color: #888;">Min 4 players • Scales to 16+</span>
+    </div>
+    <div class="roster-grid" id="roster-grid"></div>
+
+    <!-- Automatic Role Distribution Preview based on Player Count -->
+    <div class="roles-preview-box">
+      <div class="roles-preview-title">
+        <span>Automatic Roles for This Match</span>
+        <span id="role-scale-count">1 Mafia, 1 Cop, 1 Doc, Town</span>
+      </div>
+      <div class="roles-badge-list" id="roles-badge-list"></div>
+    </div>
+
+    <!-- Host Start Control -->
+    <div id="host-action-box" style="display: none;">
+      <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">
+        <span>🚀 Start Game</span>
+      </button>
+    </div>
+    <div id="guest-waiting-msg" style="text-align: center; color: #888; font-size: 0.95rem; padding: 12px;">
+      Waiting for room host to start the game...
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 3: SECRET ROLE REVEAL
+     ========================================================================== -->
+<div id="role-reveal-screen" class="screen">
+  <span style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px;">Keep this confidential</span>
+  <h2 style="font-size: 1.8rem; margin-bottom: 20px;">Your Secret Identity</h2>
+
+  <div class="role-card-display" id="my-role-card">
+    <div class="role-icon-large" id="role-card-icon">🕵️‍♂️</div>
+    <div class="role-name-large" id="role-card-name">Mafia</div>
+    <div class="role-alignment-tag" id="role-card-alignment">Mafia Syndicate</div>
+    <div class="role-desc-text" id="role-card-desc">Eliminate the Town members until the Mafia controls the city.</div>
+    <div class="role-secret-partners" id="role-card-partners" style="display: none;"></div>
+  </div>
+
+  <div style="font-size: 0.95rem; color: #888; margin-bottom: 18px;" id="reveal-countdown-msg">Night falls in 8s...</div>
+  <button class="btn-secondary" id="reveal-ready-btn" onclick="markReadyForNight()">
+    <span>✓ I Understand My Role</span>
+  </button>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 4: NIGHT PHASE (Secret Actions)
+     ========================================================================== -->
+<div id="night-screen" class="screen">
+  <div class="night-container">
+    <div class="phase-badge night">🌙 Night Phase <span id="night-number-text">1</span></div>
+    <div class="phase-timer" id="night-timer">25</div>
+
+    <div class="ghost-banner" id="ghost-banner-night">
+      👻 You were eliminated. You are observing from the shadows.
+    </div>
+
+    <div class="night-instruction" id="night-instruction-text">
+      The town is sleeping. Choose a player to eliminate.
+    </div>
+
+    <!-- Secret Targets Grid -->
+    <div class="target-grid" id="night-target-grid"></div>
+
+    <div class="investigation-banner" id="investigation-result-banner"></div>
+
+    <button class="btn-primary" id="confirm-night-action-btn" onclick="submitNightAction()" style="margin-top: 12px; display: none;">
+      <span>Confirm Action</span>
+    </button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 5: DAY PHASE (Sunrise, Discussion & Voting)
+     ========================================================================== -->
+<div id="day-screen" class="screen">
+  <div class="phase-badge day">☀️ Day Phase <span id="day-number-text">1</span></div>
+
+  <!-- Sunrise Newspaper Card -->
+  <div class="morning-report-card">
+    <div class="newspaper-header">📰 The Daily Chronicle</div>
+    <div class="newspaper-headline" id="morning-headline">Sunrise in Town</div>
+    <div class="newspaper-body" id="morning-body">Last night was peaceful. Nobody died.</div>
+  </div>
+
+  <div class="ghost-banner" id="ghost-banner-day">
+    👻 You are deceased. You may watch discussions and voting, but your vote cannot be counted.
+  </div>
+
+  <div class="card-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.3rem;">Town Discussion & Voting</h3>
+        <p style="font-size: 0.85rem; color: #888;">Vote to eliminate who you believe is Mafia, or choose Skip.</p>
+      </div>
+      <div class="phase-timer" id="day-timer" style="font-size: 2rem; margin: 0; color: #ffd60a;">60</div>
+    </div>
+
+    <button class="skip-vote-btn" id="skip-vote-btn" onclick="selectVoteTarget('SKIP')">
+      🕊️ Vote to Skip / No Elimination Today
+    </button>
+
+    <div class="target-grid" id="day-voting-grid"></div>
+
+    <button class="btn-primary" id="cast-vote-btn" onclick="submitDayVote()" style="display: none;">
+      <span>Cast Vote</span>
+    </button>
+
+    <div id="host-end-vote-box" style="display: none; margin-top: 14px;">
+      <button class="btn-secondary" onclick="forceEndVotingEarly()" style="width: 100%;">
+        <span>⏱️ End Discussion Early (Host)</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     SCREEN 6: GAME OVER SUMMARY
+     ========================================================================== -->
+<div id="game-over-screen" class="screen">
+  <div class="card-box" style="max-width: 540px;">
+    <div class="winner-banner" id="game-over-winner-title">Town Wins!</div>
+    <div class="winner-sub" id="game-over-winner-desc">The Mafia has been eliminated and peace is restored.</div>
+
+    <h4 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px;">True Roles Revealed</h4>
+    <div class="final-role-list" id="final-role-list"></div>
+
+    <div id="rematch-host-box" style="display: none;">
+      <button class="btn-primary" onclick="requestRematch()">
+        <span>🔄 Play Again (New Roles)</span>
+      </button>
+    </div>
+    <div id="rematch-guest-msg" style="color: #888; font-size: 0.95rem; margin-top: 12px;">
+      Waiting for host to start a rematch...
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     1. ROLE DEFINITIONS & DYNAMIC BALANCING
+     ========================================================================== */
+  const ROLES = {
+    GODFATHER: {
+      name: "Godfather",
+      team: "mafia",
+      icon: "🎩",
+      badgeClass: "mafia",
+      desc: "Leader of the Mafia Syndicate. You choose who to eliminate each night. To the Detective, you appear innocent!",
+      nightPrompt: "Select a player for the Syndicate to whack:",
+      hasNightAction: true
+    },
+    MAFIOSO: {
+      name: "Mafioso",
+      team: "mafia",
+      icon: "🔫",
+      badgeClass: "mafia",
+      desc: "Member of the Mafia Syndicate. Work with the Godfather to choose victims and eliminate the Town.",
+      nightPrompt: "Confer with the Mafia and select a victim to eliminate:",
+      hasNightAction: true
+    },
+    CONSIGLIERE: {
+      name: "Consigliere",
+      team: "mafia",
+      icon: "💼",
+      badgeClass: "mafia",
+      desc: "Mafia Advisor. Each night, investigate a player to discover their exact role for the Syndicate.",
+      nightPrompt: "Select a player to uncover their exact secret role:",
+      hasNightAction: true
+    },
+    DETECTIVE: {
+      name: "Detective",
+      team: "town",
+      icon: "🔍",
+      badgeClass: "detective",
+      desc: "Town Investigator. Each night, investigate 1 suspect to learn if they are Suspicious (Mafia) or Innocent.",
+      nightPrompt: "Select 1 suspect to investigate their alignment:",
+      hasNightAction: true
+    },
+    DOCTOR: {
+      name: "Doctor",
+      team: "town",
+      icon: "💉",
+      badgeClass: "doctor",
+      desc: "Town Medic. Each night, choose 1 player to protect from death. You cannot heal yourself two nights in a row.",
+      nightPrompt: "Select 1 player to protect from harm tonight:",
+      hasNightAction: true
+    },
+    VIGILANTE: {
+      name: "Vigilante",
+      team: "town",
+      icon: "🎯",
+      badgeClass: "town",
+      desc: "Rogue Gunslinger. You take justice into your own hands. You may take 1 shot at night if you suspect someone.",
+      nightPrompt: "Take a secret shot at someone, or hold your fire:",
+      hasNightAction: true
+    },
+    BODYGUARD: {
+      name: "Bodyguard",
+      team: "town",
+      icon: "🛡️",
+      badgeClass: "town",
+      desc: "Town Protector. Guard 1 player. If your target is attacked, you and the attacker both die, saving your target.",
+      nightPrompt: "Select 1 player to guard tonight:",
+      hasNightAction: true
+    },
+    MAYOR: {
+      name: "Mayor",
+      team: "town",
+      icon: "🏛️",
+      badgeClass: "town",
+      desc: "Town Leader. Your vote counts as 2 votes during daytime eliminations once revealed.",
+      nightPrompt: "You have no night action. Rest up for tomorrow's debates.",
+      hasNightAction: false
+    },
+    TOWNIE: {
+      name: "Citizen",
+      team: "town",
+      icon: "🏘️",
+      badgeClass: "town",
+      desc: "Loyal Town Citizen. You have no special night action. Use your keen observation during daytime debates to find the Mafia!",
+      nightPrompt: "You are sleeping peacefully in bed. Listen closely for any noises...",
+      hasNightAction: false
+    },
+    JESTER: {
+      name: "Jester",
+      team: "neutral",
+      icon: "🃏",
+      badgeClass: "neutral",
+      desc: "Chaotic Neutral. Your only goal is to act suspicious and convince the Town to vote you out! You win if executed during day voting.",
+      nightPrompt: "You have no night action. Plan your suspicious act for tomorrow!",
+      hasNightAction: false
+    },
+    SERIAL_KILLER: {
+      name: "Serial Killer",
+      team: "serial_killer",
+      icon: "🔪",
+      badgeClass: "sk",
+      desc: "Solo Killer. You kill 1 person every night. You win if you are the last person standing!",
+      nightPrompt: "Select your target for tonight's kill:",
+      hasNightAction: true
+    }
+  };
+
+  /**
+   * Generates the optimal balanced role list based on player count (4 to 16+)
+   */
+  function getRolesForPlayerCount(count) {
+    if (count <= 4) {
+      return ["GODFATHER", "DETECTIVE", "DOCTOR", "TOWNIE"];
+    } else if (count === 5) {
+      return ["GODFATHER", "DETECTIVE", "DOCTOR", "TOWNIE", "TOWNIE"];
+    } else if (count === 6) {
+      return ["GODFATHER", "MAFIOSO", "DETECTIVE", "DOCTOR", "TOWNIE", "TOWNIE"];
+    } else if (count === 7) {
+      return ["GODFATHER", "MAFIOSO", "DETECTIVE", "DOCTOR", "TOWNIE", "TOWNIE", "TOWNIE"];
+    } else if (count === 8) {
+      return ["GODFATHER", "MAFIOSO", "DETECTIVE", "DOCTOR", "VIGILANTE", "JESTER", "TOWNIE", "TOWNIE"];
+    } else if (count === 9) {
+      return ["GODFATHER", "MAFIOSO", "DETECTIVE", "DOCTOR", "VIGILANTE", "JESTER", "TOWNIE", "TOWNIE", "TOWNIE"];
+    } else if (count === 10) {
+      return ["GODFATHER", "MAFIOSO", "CONSIGLIERE", "DETECTIVE", "DOCTOR", "VIGILANTE", "JESTER", "TOWNIE", "TOWNIE", "TOWNIE"];
+    } else if (count === 11) {
+      return ["GODFATHER", "MAFIOSO", "CONSIGLIERE", "DETECTIVE", "DOCTOR", "VIGILANTE", "BODYGUARD", "JESTER", "TOWNIE", "TOWNIE", "TOWNIE"];
+    } else if (count === 12) {
+      return ["GODFATHER", "MAFIOSO", "CONSIGLIERE", "DETECTIVE", "DOCTOR", "VIGILANTE", "BODYGUARD", "MAYOR", "JESTER", "TOWNIE", "TOWNIE", "TOWNIE"];
+    } else if (count >= 13) {
+      // 13+ scale with Serial Killer
+      const base = ["GODFATHER", "MAFIOSO", "CONSIGLIERE", "SERIAL_KILLER", "DETECTIVE", "DOCTOR", "VIGILANTE", "BODYGUARD", "MAYOR", "JESTER"];
+      while (base.length < count) {
+        if (base.filter(r => r.includes("MAFI")).length < Math.floor(count / 3)) {
+          base.push("MAFIOSO");
+        } else {
+          base.push("TOWNIE");
+        }
+      }
+      return base;
+    }
+    return ["GODFATHER", "DETECTIVE", "DOCTOR", "TOWNIE"];
+  }
+
+  /* ==========================================================================
+     2. AUDIO SYNTHESIZER (Native Web Audio API)
+     ========================================================================== */
+  let audioCtx = null;
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+    try {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playNightChime() {
+    playTone(260, 0.4, 'triangle', 0.2);
+    setTimeout(() => playTone(196, 0.7, 'sine', 0.25), 250);
+  }
+
+  function playSunriseChime() {
+    playTone(392, 0.25, 'sine', 0.2);
+    setTimeout(() => playTone(523.25, 0.3, 'sine', 0.2), 150);
+    setTimeout(() => playTone(659.25, 0.5, 'sine', 0.25), 300);
+  }
+
+  function playGavel() {
+    playTone(130, 0.2, 'square', 0.3);
+    setTimeout(() => playTone(100, 0.35, 'square', 0.35), 180);
+  }
+
+  /* ==========================================================================
+     3. NETWORKING & STATE
+     ========================================================================== */
+  let client = null;
+  let isConnected = false;
+  let currentRoom = "";
+  const clientId = "usr_" + Math.random().toString(36).substring(2, 9);
+  let playerName = "";
+  let roomRoster = {}; // id -> { id, name, avatar, isHost, isAlive, role }
+
+  let gameState = {
+    room: "",
+    hostId: "",
+    status: "lobby", // lobby | reveal | night | day | over
+    roundNumber: 1,
+    nightCount: 1,
+    nightTimer: 25,
+    dayTimer: 60,
+    nightActions: {}, // playerId -> targetId
+    dayVotes: {},     // voterId -> targetId / "SKIP"
+    lastNightReport: { deaths: [], healed: false, message: "" },
+    winner: null      // "town" | "mafia" | "jester" | "serial_killer"
+  };
+
+  const AVATARS = ["🕵️", "🕶️", "💼", "🎩", "🧥", "🍷", "🥃", "🪓", "🚬", "🎲", "🪙", "🌹", "📜", "🎻", "🕯️", "🐺"];
+  function getPlayerAvatar(name) {
+    let hash = 0;
+    for (let i = 0; i < (name || "").length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATARS[Math.abs(hash) % AVATARS.length];
+  }
+
+  function isCurrentUserHost() {
+    if (gameState.hostId && gameState.hostId === clientId) return true;
+    const playerIds = Object.keys(roomRoster);
+    if (playerIds.length > 0 && playerIds[0] === clientId) return true;
+    return false;
+  }
+
+  function connectToRoom(code) {
+    initAudio();
+    currentRoom = code.toUpperCase().trim();
+    gameState.room = currentRoom;
+
+    document.getElementById("lobby-code-display").innerText = currentRoom;
+    updateNetworkStatus("connecting");
+
+    const host = "broker.emqx.io";
+    const port = 8084;
+    const path = "/mqtt";
+
+    try {
+      if (typeof Paho !== "undefined" && Paho.MQTT) {
+        client = new Paho.MQTT.Client(host, port, path, clientId);
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        client.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: onConnectSuccess,
+          onFailure: onConnectFailure
+        });
+      }
+    } catch (e) {
+      console.warn("MQTT init error:", e);
+    }
+  }
+
+  function onConnectSuccess() {
+    isConnected = true;
+    updateNetworkStatus("connected");
+
+    const topic = `games/mafia/${currentRoom}`;
+    client.subscribe(topic, { qos: 1 });
+
+    // Announce presence
+    publishMessage({
+      type: "PLAYER_JOIN",
+      player: {
+        id: clientId,
+        name: playerName,
+        avatar: getPlayerAvatar(playerName),
+        isHost: isCurrentUserHost(),
+        isAlive: true
+      }
+    });
+
+    // Request state sync from room
+    publishMessage({ type: "REQUEST_SYNC" });
+  }
+
+  function onConnectFailure(err) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    setTimeout(() => {
+      if (!isConnected && currentRoom) connectToRoom(currentRoom);
+    }, 2500);
+  }
+
+  function onConnectionLost(response) {
+    isConnected = false;
+    updateNetworkStatus("disconnected");
+    setTimeout(() => {
+      if (currentRoom) connectToRoom(currentRoom);
+    }, 2000);
+  }
+
+  const seenMessageIds = new Set();
+  function publishMessage(payload) {
+    if (!client || !isConnected) return;
+    try {
+      payload.senderId = clientId;
+      payload.msgId = `${clientId}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const message = new Paho.MQTT.Message(JSON.stringify(payload));
+      message.destinationName = `games/mafia/${currentRoom}`;
+      message.qos = 1;
+      client.send(message);
+    } catch (e) {}
+  }
+
+  function onMessageArrived(message) {
+    try {
+      const data = JSON.parse(message.payloadString);
+      if (!data || typeof data !== "object") return;
+
+      if (data.msgId) {
+        if (seenMessageIds.has(data.msgId)) return;
+        seenMessageIds.add(data.msgId);
+        if (seenMessageIds.size > 200) {
+          const first = seenMessageIds.values().next().value;
+          seenMessageIds.delete(first);
+        }
+      }
+
+      if (data.senderId === clientId) return; // avoid self-echo
+      handleNetworkMessage(data);
+    } catch (e) {}
+  }
+
+  function handleNetworkMessage(data) {
+    if (data.type === "REQUEST_SYNC") {
+      if (isCurrentUserHost()) {
+        publishMessage({
+          type: "ROOM_SYNC",
+          roster: roomRoster,
+          state: gameState
+        });
+      }
+    } else if (data.type === "ROOM_SYNC") {
+      if (data.roster) {
+        Object.assign(roomRoster, data.roster);
+        renderLobbyRoster();
+      }
+      if (data.state) {
+        gameState = data.state;
+        syncToActiveGameState();
+      }
+    } else if (data.type === "PLAYER_JOIN") {
+      if (data.player && data.player.id) {
+        roomRoster[data.player.id] = data.player;
+        const pids = Object.keys(roomRoster);
+        if (!gameState.hostId || !roomRoster[gameState.hostId]) {
+          gameState.hostId = pids[0];
+          if (roomRoster[pids[0]]) roomRoster[pids[0]].isHost = true;
+        }
+        renderLobbyRoster();
+        if (isCurrentUserHost()) {
+          publishMessage({
+            type: "ROOM_SYNC",
+            roster: roomRoster,
+            state: gameState
+          });
+        }
+      }
+    } else if (data.type === "START_GAME") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startRoleRevealPhase();
+    } else if (data.type === "START_NIGHT") {
+      gameState = data.state;
+      startNightPhaseLocally();
+    } else if (data.type === "NIGHT_ACTION_UPDATE") {
+      if (!gameState.nightActions) gameState.nightActions = {};
+      gameState.nightActions[data.playerId] = data.targetId;
+      // If host, check if all night actions are submitted
+      if (isCurrentUserHost()) checkAllNightActionsSubmitted();
+    } else if (data.type === "START_DAY") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startDayPhaseLocally();
+    } else if (data.type === "DAY_VOTE_UPDATE") {
+      if (!gameState.dayVotes) gameState.dayVotes = {};
+      gameState.dayVotes[data.voterId] = data.targetId;
+      renderDayVotingGrid();
+      if (isCurrentUserHost()) checkAllDayVotesSubmitted();
+    } else if (data.type === "GAME_OVER") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      showGameOverLocally();
+    } else if (data.type === "REMATCH") {
+      gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      startRoleRevealPhase();
+    }
+  }
+
+  function updateNetworkStatus(status) {
+    const dot = document.getElementById("network-dot");
+    const label = document.getElementById("network-label");
+    if (!dot || !label) return;
+    dot.className = `network-dot ${status === 'connected' ? 'connected' : ''}`;
+    label.innerText = status === 'connected' ? 'Live Room' : (status === 'connecting' ? 'Connecting...' : 'Offline');
+  }
+
+  /* ==========================================================================
+     4. LOBBY & ROOM CREATION
+     ========================================================================== */
+  function createRoom() {
+    const nameInput = document.getElementById("player-name-input");
+    let nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
+    }
+    playerName = nameVal;
+
+    const code = "MAF-" + Math.floor(100 + Math.random() * 900);
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      isHost: true,
+      isAlive: true
+    };
+    gameState.hostId = clientId;
+
+    switchScreen("lobby-screen");
+    renderLobbyRoster();
+    connectToRoom(code);
+  }
+
+  function joinRoomByInput() {
+    const nameInput = document.getElementById("player-name-input");
+    let nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+      nameVal = "Agent " + Math.floor(100 + Math.random() * 900);
+      if (nameInput) nameInput.value = nameVal;
+    }
+    playerName = nameVal;
+
+    const codeInput = document.getElementById("room-code-input");
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
+    if (!code || code.length < 3) {
+      alert("Please enter a valid room code!");
+      if (codeInput) codeInput.focus();
+      return;
+    }
+
+    roomRoster[clientId] = {
+      id: clientId,
+      name: playerName,
+      avatar: getPlayerAvatar(playerName),
+      isHost: false,
+      isAlive: true
+    };
+
+    switchScreen("lobby-screen");
+    renderLobbyRoster();
+    connectToRoom(code);
+  }
+
+  function copyInviteLink() {
+    const url = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Invite link copied to clipboard!\n\nSend this link to friends:\n${url}`);
+      }).catch(() => prompt("Copy this invite link:", url));
+    } else {
+      prompt("Copy this invite link:", url);
+    }
+  }
+
+  function renderLobbyRoster() {
+    const grid = document.getElementById("roster-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const players = Object.values(roomRoster);
+    const countEl = document.getElementById("player-count-num");
+    if (countEl) countEl.innerText = players.length;
+
+    players.forEach(p => {
+      const isHost = p.id === gameState.hostId || (players[0] && players[0].id === p.id);
+      const isMe = p.id === clientId;
+      const tile = document.createElement("div");
+      tile.className = `roster-tile ${isHost ? 'is-host' : ''} ${isMe ? 'is-me' : ''}`;
+      tile.innerHTML = `
+        <div class="roster-avatar">${p.avatar}</div>
+        <div class="roster-name">${escapeHTML(p.name)}</div>
+        <div class="roster-tag">${isHost ? '👑 Host' : (isMe ? 'You' : 'Player')}</div>
+      `;
+      grid.appendChild(tile);
+    });
+
+    // Update dynamic role preview
+    const roleKeys = getRolesForPlayerCount(Math.max(4, players.length));
+    const badgeList = document.getElementById("roles-badge-list");
+    const scaleCountText = document.getElementById("role-scale-count");
+    if (badgeList) {
+      badgeList.innerHTML = "";
+      roleKeys.forEach(rk => {
+        const role = ROLES[rk];
+        if (role) {
+          const badge = document.createElement("span");
+          badge.className = `role-badge ${role.badgeClass}`;
+          badge.innerHTML = `${role.icon} ${role.name}`;
+          badgeList.appendChild(badge);
+        }
+      });
+    }
+    if (scaleCountText) {
+      const mafiaCount = roleKeys.filter(r => r.includes("MAFI") || r === "GODFATHER").length;
+      scaleCountText.innerText = `${mafiaCount} Mafia • ${roleKeys.length - mafiaCount} Town/Neutral`;
+    }
+
+    // Host controls
+    const isMeHost = isCurrentUserHost();
+    const hostBox = document.getElementById("host-action-box");
+    const guestMsg = document.getElementById("guest-waiting-msg");
+    const startBtn = document.getElementById("start-game-btn");
+
+    if (hostBox) hostBox.style.display = isMeHost ? "block" : "none";
+    if (guestMsg) guestMsg.style.display = isMeHost ? "none" : "block";
+
+    if (startBtn) {
+      if (players.length < 4) {
+        startBtn.innerHTML = `<span>⏳ Need ${4 - players.length} More Player(s)</span>`;
+        startBtn.style.opacity = "0.6";
+        startBtn.disabled = true;
+      } else {
+        startBtn.innerHTML = `<span>🚀 Start Game (${players.length} Players)</span>`;
+        startBtn.style.opacity = "1";
+        startBtn.disabled = false;
+      }
+    }
+  }
+
+  /* ==========================================================================
+     5. START GAME & ROLE ASSIGNMENT
+     ========================================================================== */
+  function requestStartGame() {
+    if (!isCurrentUserHost()) return;
+    const players = Object.values(roomRoster);
+    if (players.length < 4) {
+      alert("At least 4 players are required to start Mafia!");
+      return;
+    }
+
+    const assignedRoles = getRolesForPlayerCount(players.length);
+    // Shuffle roles randomly
+    for (let i = assignedRoles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [assignedRoles[i], assignedRoles[j]] = [assignedRoles[j], assignedRoles[i]];
+    }
+
+    // Assign to players
+    players.forEach((p, idx) => {
+      p.role = assignedRoles[idx];
+      p.isAlive = true;
+    });
+
+    gameState.status = "reveal";
+    gameState.roundNumber = 1;
+    gameState.nightCount = 1;
+    gameState.winner = null;
+
+    publishMessage({
+      type: "START_GAME",
+      state: gameState,
+      roster: roomRoster
+    });
+
+    startRoleRevealPhase();
+  }
+
+  function startRoleRevealPhase() {
+    switchScreen("role-reveal-screen");
+    const me = roomRoster[clientId];
+    if (!me || !me.role) return;
+
+    const roleInfo = ROLES[me.role];
+    const cardEl = document.getElementById("my-role-card");
+    const iconEl = document.getElementById("role-card-icon");
+    const nameEl = document.getElementById("role-card-name");
+    const alignEl = document.getElementById("role-card-alignment");
+    const descEl = document.getElementById("role-card-desc");
+    const partnersEl = document.getElementById("role-card-partners");
+
+    if (iconEl) iconEl.innerText = roleInfo.icon;
+    if (nameEl) nameEl.innerText = roleInfo.name;
+    if (descEl) descEl.innerText = roleInfo.desc;
+
+    if (cardEl) {
+      cardEl.className = `role-card-display ${roleInfo.team}`;
+    }
+
+    if (alignEl) {
+      alignEl.innerText = roleInfo.team === "mafia" ? "Mafia Syndicate" : (roleInfo.team === "town" ? "Town Citizen" : "Neutral");
+      alignEl.style.background = roleInfo.team === "mafia" ? "rgba(255, 59, 48, 0.2)" : (roleInfo.team === "town" ? "rgba(10, 132, 255, 0.2)" : "rgba(191, 90, 242, 0.2)");
+      alignEl.style.color = roleInfo.team === "mafia" ? "#ff453a" : (roleInfo.team === "town" ? "#0A84FF" : "#bf5af2");
+    }
+
+    // If Mafia, show fellow Mafia members
+    if (roleInfo.team === "mafia" && partnersEl) {
+      const fellowMafia = Object.values(roomRoster)
+        .filter(p => p.id !== clientId && ROLES[p.role] && ROLES[p.role].team === "mafia")
+        .map(p => `${p.avatar} ${p.name} (${ROLES[p.role].name})`);
+
+      if (fellowMafia.length > 0) {
+        partnersEl.style.display = "block";
+        partnersEl.innerHTML = `<strong>Your Syndicate Partners:</strong><br>${fellowMafia.join("<br>")}`;
+      } else {
+        partnersEl.style.display = "block";
+        partnersEl.innerHTML = `You are the sole Mafia operative in this city. Tread carefully!`;
+      }
+    } else if (partnersEl) {
+      partnersEl.style.display = "none";
+    }
+
+    // 10s auto-advance or button click
+    let timeLeft = 10;
+    const cdMsg = document.getElementById("reveal-countdown-msg");
+    const readyBtn = document.getElementById("reveal-ready-btn");
+    if (readyBtn) readyBtn.style.display = "inline-flex";
+
+    const revealTimer = setInterval(() => {
+      timeLeft--;
+      if (cdMsg) cdMsg.innerText = `Night falls in ${timeLeft}s...`;
+      if (timeLeft <= 0) {
+        clearInterval(revealTimer);
+        if (isCurrentUserHost()) advanceToNightPhase();
+      }
+    }, 1000);
+  }
+
+  function markReadyForNight() {
+    const readyBtn = document.getElementById("reveal-ready-btn");
+    if (readyBtn) {
+      readyBtn.innerText = "Waiting for other players...";
+      readyBtn.disabled = true;
+    }
+    if (isCurrentUserHost()) {
+      setTimeout(() => advanceToNightPhase(), 1500);
+    }
+  }
+
+  /* ==========================================================================
+     6. NIGHT PHASE (Automated Action Execution)
+     ========================================================================= */
+  let nightCountdownInterval = null;
+  let selectedNightTargetId = null;
+
+  function advanceToNightPhase() {
+    gameState.status = "night";
+    gameState.nightTimer = 25;
+    gameState.nightActions = {};
+
+    publishMessage({
+      type: "START_NIGHT",
+      state: gameState
+    });
+
+    startNightPhaseLocally();
+  }
+
+  function startNightPhaseLocally() {
+    switchScreen("night-screen");
+    playNightChime();
+
+    selectedNightTargetId = null;
+    const nightNumText = document.getElementById("night-number-text");
+    if (nightNumText) nightNumText.innerText = gameState.nightCount;
+
+    const me = roomRoster[clientId];
+    const isAlive = me && me.isAlive;
+    const role = me ? ROLES[me.role] : null;
+
+    const ghostBanner = document.getElementById("ghost-banner-night");
+    if (ghostBanner) ghostBanner.style.display = isAlive ? "none" : "block";
+
+    const instText = document.getElementById("night-instruction-text");
+    const confirmBtn = document.getElementById("confirm-night-action-btn");
+    const invBanner = document.getElementById("investigation-result-banner");
+    if (invBanner) invBanner.style.display = "none";
+
+    if (isAlive && role && role.hasNightAction) {
+      if (instText) instText.innerText = role.nightPrompt;
+      renderNightTargetGrid(role);
+      if (confirmBtn) confirmBtn.style.display = "none";
+    } else {
+      if (instText) {
+        instText.innerText = isAlive 
+          ? "You are sleeping peacefully in bed. Listen closely for any noises in the street..."
+          : "You are deceased. You watch silently from above as the night unfolds.";
+      }
+      renderNightTargetGrid(null); // empty / disabled
+      if (confirmBtn) confirmBtn.style.display = "none";
+    }
+
+    // Start night countdown
+    if (nightCountdownInterval) clearInterval(nightCountdownInterval);
+    let secondsLeft = gameState.nightTimer || 25;
+    const timerEl = document.getElementById("night-timer");
+    if (timerEl) timerEl.innerText = secondsLeft;
+
+    nightCountdownInterval = setInterval(() => {
+      secondsLeft--;
+      if (timerEl) timerEl.innerText = secondsLeft;
+      if (secondsLeft <= 0) {
+        clearInterval(nightCountdownInterval);
+        if (isCurrentUserHost()) resolveNightAndAdvanceToDay();
+      }
+    }, 1000);
+  }
+
+  function renderNightTargetGrid(role) {
+    const grid = document.getElementById("night-target-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    if (!role || !role.hasNightAction) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; padding: 24px; color: #777;">🌙 Rest peacefully until sunrise...</div>`;
+      return;
+    }
+
+    const livingPlayers = Object.values(roomRoster).filter(p => p.isAlive);
+
+    livingPlayers.forEach(p => {
+      // Disallow targeting self for Mafia kill or Detective
+      const isSelf = p.id === clientId;
+      const isMafiaPartner = role.team === "mafia" && roomRoster[p.id] && ROLES[roomRoster[p.id].role] && ROLES[roomRoster[p.id].role].team === "mafia";
+      const isInvalidTarget = (role.team === "mafia" && (isSelf || isMafiaPartner)) || (role === ROLES.DETECTIVE && isSelf);
+
+      const card = document.createElement("div");
+      card.className = `target-card ${isInvalidTarget ? 'disabled' : ''} ${selectedNightTargetId === p.id ? 'selected ' + (role.team === 'mafia' ? 'mafia-target' : '') : ''}`;
+      card.innerHTML = `
+        <div class="target-avatar">${p.avatar}</div>
+        <div class="target-name">${escapeHTML(p.name)}</div>
+      `;
+
+      if (!isInvalidTarget) {
+        card.onclick = () => selectNightTarget(p.id, role);
+      }
+      grid.appendChild(card);
+    });
+  }
+
+  function selectNightTarget(targetId, role) {
+    selectedNightTargetId = targetId;
+    renderNightTargetGrid(role);
+
+    const confirmBtn = document.getElementById("confirm-night-action-btn");
+    if (confirmBtn) {
+      confirmBtn.style.display = "inline-flex";
+      confirmBtn.innerHTML = `<span>Confirm Action on ${escapeHTML(roomRoster[targetId]?.name || 'Player')}</span>`;
+    }
+  }
+
+  function submitNightAction() {
+    if (!selectedNightTargetId) return;
+    const me = roomRoster[clientId];
+    const role = me ? ROLES[me.role] : null;
+
+    if (!gameState.nightActions) gameState.nightActions = {};
+    gameState.nightActions[clientId] = selectedNightTargetId;
+
+    // If Detective, immediately show local investigation result
+    if (role === ROLES.DETECTIVE) {
+      const target = roomRoster[selectedNightTargetId];
+      const targetRole = target ? ROLES[target.role] : null;
+      // Godfather investigates as innocent!
+      const isGuilty = targetRole && targetRole.team === "mafia" && target.role !== "GODFATHER";
+      const banner = document.getElementById("investigation-result-banner");
+      if (banner) {
+        banner.style.display = "block";
+        banner.className = `investigation-banner ${isGuilty ? 'guilty' : 'innocent'}`;
+        banner.innerHTML = isGuilty 
+          ? `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>SUSPICIOUS (MAFIA)!</strong>`
+          : `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>NOT SUSPICIOUS (TOWN / GODFATHER).</strong>`;
+      }
+    }
+
+    const confirmBtn = document.getElementById("confirm-night-action-btn");
+    if (confirmBtn) {
+      confirmBtn.innerText = "✓ Action Locked In";
+      confirmBtn.disabled = true;
+    }
+
+    publishMessage({
+      type: "NIGHT_ACTION_UPDATE",
+      playerId: clientId,
+      targetId: selectedNightTargetId
+    });
+
+    if (isCurrentUserHost()) checkAllNightActionsSubmitted();
+  }
+
+  function checkAllNightActionsSubmitted() {
+    const livingActiveRoles = Object.values(roomRoster)
+      .filter(p => p.isAlive && ROLES[p.role] && ROLES[p.role].hasNightAction);
+
+    const actionCount = Object.keys(gameState.nightActions || {}).length;
+    if (actionCount >= livingActiveRoles.length) {
+      // All submitted, speed up to sunrise!
+      if (nightCountdownInterval) clearInterval(nightCountdownInterval);
+      setTimeout(() => resolveNightAndAdvanceToDay(), 1500);
+    }
+  }
+
+  /* ==========================================================================
+     7. NIGHT RESOLUTION & DAY PHASE
+     ========================================================================== */
+  function resolveNightAndAdvanceToDay() {
+    if (!isCurrentUserHost()) return;
+    if (nightCountdownInterval) clearInterval(nightCountdownInterval);
+
+    const actions = gameState.nightActions || {};
+    let mafiaTargetId = null;
+    let doctorTargetId = null;
+    let skTargetId = null;
+    let vigiTargetId = null;
+
+    // Identify targets
+    Object.keys(actions).forEach(actorId => {
+      const actor = roomRoster[actorId];
+      if (!actor || !actor.isAlive) return;
+      const targetId = actions[actorId];
+
+      if (ROLES[actor.role]?.team === "mafia") {
+        mafiaTargetId = targetId; // mafia consensus or leader
+      } else if (actor.role === "DOCTOR") {
+        doctorTargetId = targetId;
+      } else if (actor.role === "SERIAL_KILLER") {
+        skTargetId = targetId;
+      } else if (actor.role === "VIGILANTE") {
+        vigiTargetId = targetId;
+      }
+    });
+
+    const deadThisNight = [];
+    let doctorSavedSomeone = false;
+
+    // Resolve Mafia attack
+    if (mafiaTargetId) {
+      if (mafiaTargetId === doctorTargetId) {
+        doctorSavedSomeone = true;
+      } else {
+        deadThisNight.push(mafiaTargetId);
+      }
+    }
+
+    // Resolve Serial Killer attack
+    if (skTargetId && !deadThisNight.includes(skTargetId)) {
+      if (skTargetId === doctorTargetId) {
+        doctorSavedSomeone = true;
+      } else {
+        deadThisNight.push(skTargetId);
+      }
+    }
+
+    // Resolve Vigilante shot
+    if (vigiTargetId && !deadThisNight.includes(vigiTargetId)) {
+      if (vigiTargetId === doctorTargetId) {
+        doctorSavedSomeone = true;
+      } else {
+        deadThisNight.push(vigiTargetId);
+      }
+    }
+
+    // Apply deaths
+    deadThisNight.forEach(pid => {
+      if (roomRoster[pid]) roomRoster[pid].isAlive = false;
+    });
+
+    // Generate morning news headline
+    let headline = "Peaceful Sunrise in Town";
+    let body = "The sun rises over the city. Miraculously, nobody was killed last night!";
+    if (doctorSavedSomeone && deadThisNight.length === 0) {
+      body += " The Town Medic successfully saved a citizen's life!";
+    }
+
+    if (deadThisNight.length > 0) {
+      const deadNames = deadThisNight.map(id => {
+        const p = roomRoster[id];
+        return p ? `<strong>${escapeHTML(p.name)}</strong> (${ROLES[p.role]?.name || 'Citizen'})` : 'A Citizen';
+      });
+      headline = deadThisNight.length === 1 ? "Tragedy in the Night!" : "Double Homicide Shakes the Town!";
+      body = `As morning broke, the town discovered the body of ${deadNames.join(" and ")}!`;
+    }
+
+    gameState.lastNightReport = {
+      deaths: deadThisNight,
+      healed: doctorSavedSomeone,
+      headline: headline,
+      message: body
+    };
+
+    // Check win conditions
+    const win = checkWinCondition();
+    if (win) {
+      gameState.status = "over";
+      gameState.winner = win;
+      publishMessage({
+        type: "GAME_OVER",
+        state: gameState,
+        roster: roomRoster
+      });
+      showGameOverLocally();
+      return;
+    }
+
+    // Advance to Day
+    gameState.status = "day";
+    gameState.dayTimer = 60;
+    gameState.dayVotes = {};
+
+    publishMessage({
+      type: "START_DAY",
+      state: gameState,
+      roster: roomRoster
+    });
+
+    startDayPhaseLocally();
+  }
+
+  let dayCountdownInterval = null;
+  let selectedDayVoteTargetId = null;
+
+  function startDayPhaseLocally() {
+    switchScreen("day-screen");
+    playSunriseChime();
+
+    selectedDayVoteTargetId = null;
+    const dayNumText = document.getElementById("day-number-text");
+    if (dayNumText) dayNumText.innerText = gameState.roundNumber;
+
+    // Set morning report
+    const report = gameState.lastNightReport || {};
+    const headlineEl = document.getElementById("morning-headline");
+    const bodyEl = document.getElementById("morning-body");
+    if (headlineEl) headlineEl.innerText = report.headline || "Sunrise in Town";
+    if (bodyEl) bodyEl.innerHTML = report.message || "Nobody died last night.";
+
+    const me = roomRoster[clientId];
+    const isAlive = me && me.isAlive;
+    const ghostBanner = document.getElementById("ghost-banner-day");
+    if (ghostBanner) ghostBanner.style.display = isAlive ? "none" : "block";
+
+    const skipBtn = document.getElementById("skip-vote-btn");
+    const castBtn = document.getElementById("cast-vote-btn");
+    const hostEndBox = document.getElementById("host-end-vote-box");
+
+    if (skipBtn) {
+      skipBtn.className = "skip-vote-btn";
+      skipBtn.disabled = !isAlive;
+    }
+    if (castBtn) {
+      castBtn.style.display = "none";
+      castBtn.disabled = false;
+      castBtn.innerText = "Cast Vote";
+    }
+    if (hostEndBox) {
+      hostEndBox.style.display = isCurrentUserHost() ? "block" : "none";
+    }
+
+    renderDayVotingGrid();
+
+    // Day timer countdown
+    if (dayCountdownInterval) clearInterval(dayCountdownInterval);
+    let secondsLeft = gameState.dayTimer || 60;
+    const timerEl = document.getElementById("day-timer");
+    if (timerEl) timerEl.innerText = secondsLeft;
+
+    dayCountdownInterval = setInterval(() => {
+      secondsLeft--;
+      if (timerEl) timerEl.innerText = secondsLeft;
+      if (secondsLeft <= 0) {
+        clearInterval(dayCountdownInterval);
+        if (isCurrentUserHost()) resolveDayVotesAndAdvance();
+      }
+    }, 1000);
+  }
+
+  function renderDayVotingGrid() {
+    const grid = document.getElementById("day-voting-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const livingPlayers = Object.values(roomRoster).filter(p => p.isAlive);
+    const votes = gameState.dayVotes || {};
+
+    // Count votes per target
+    const voteCounts = {};
+    Object.values(votes).forEach(tgt => {
+      voteCounts[tgt] = (voteCounts[tgt] || 0) + 1;
+    });
+
+    const me = roomRoster[clientId];
+    const isAlive = me && me.isAlive;
+
+    livingPlayers.forEach(p => {
+      const isSelected = selectedDayVoteTargetId === p.id;
+      const count = voteCounts[p.id] || 0;
+
+      const card = document.createElement("div");
+      card.className = `target-card ${isSelected ? 'selected' : ''} ${!isAlive ? 'disabled' : ''}`;
+      card.innerHTML = `
+        <div class="target-avatar">${p.avatar}</div>
+        <div class="target-name">${escapeHTML(p.name)}</div>
+        ${count > 0 ? `<div class="vote-badge-counter">${count}</div>` : ''}
+      `;
+
+      if (isAlive) {
+        card.onclick = () => selectVoteTarget(p.id);
+      }
+      grid.appendChild(card);
+    });
+
+    // Update skip vote button state
+    const skipBtn = document.getElementById("skip-vote-btn");
+    const skipCount = voteCounts["SKIP"] || 0;
+    if (skipBtn) {
+      skipBtn.className = `skip-vote-btn ${selectedDayVoteTargetId === 'SKIP' ? 'selected' : ''}`;
+      skipBtn.innerHTML = `🕊️ Vote to Skip / No Elimination Today ${skipCount > 0 ? `(${skipCount} votes)` : ''}`;
+    }
+  }
+
+  function selectVoteTarget(targetId) {
+    selectedDayVoteTargetId = targetId;
+    renderDayVotingGrid();
+
+    const castBtn = document.getElementById("cast-vote-btn");
+    if (castBtn) {
+      castBtn.style.display = "inline-flex";
+      castBtn.innerHTML = targetId === "SKIP"
+        ? `<span>Cast Vote: Skip Elimination</span>`
+        : `<span>Cast Vote to Eliminate ${escapeHTML(roomRoster[targetId]?.name || 'Player')}</span>`;
+    }
+  }
+
+  function submitDayVote() {
+    if (!selectedDayVoteTargetId) return;
+
+    if (!gameState.dayVotes) gameState.dayVotes = {};
+    gameState.dayVotes[clientId] = selectedDayVoteTargetId;
+
+    const castBtn = document.getElementById("cast-vote-btn");
+    if (castBtn) {
+      castBtn.innerText = "✓ Vote Registered";
+      castBtn.disabled = true;
+    }
+
+    renderDayVotingGrid();
+
+    publishMessage({
+      type: "DAY_VOTE_UPDATE",
+      voterId: clientId,
+      targetId: selectedDayVoteTargetId
+    });
+
+    if (isCurrentUserHost()) checkAllDayVotesSubmitted();
+  }
+
+  function checkAllDayVotesSubmitted() {
+    const livingPlayers = Object.values(roomRoster).filter(p => p.isAlive);
+    const votesCast = Object.keys(gameState.dayVotes || {}).length;
+
+    if (votesCast >= livingPlayers.length) {
+      if (dayCountdownInterval) clearInterval(dayCountdownInterval);
+      setTimeout(() => resolveDayVotesAndAdvance(), 1500);
+    }
+  }
+
+  function forceEndVotingEarly() {
+    if (!isCurrentUserHost()) return;
+    if (confirm("End daytime voting now and tally the results?")) {
+      if (dayCountdownInterval) clearInterval(dayCountdownInterval);
+      resolveDayVotesAndAdvance();
+    }
+  }
+
+  /* ==========================================================================
+     8. DAY VOTE RESOLUTION & WIN CONDITIONS
+     ========================================================================== */
+  function resolveDayVotesAndAdvance() {
+    if (!isCurrentUserHost()) return;
+    if (dayCountdownInterval) clearInterval(dayCountdownInterval);
+
+    playGavel();
+
+    const votes = gameState.dayVotes || {};
+    const voteTally = {};
+    const livingPlayers = Object.values(roomRoster).filter(p => p.isAlive);
+
+    Object.keys(votes).forEach(voterId => {
+      const targetId = votes[voterId];
+      const voter = roomRoster[voterId];
+      // Mayor votes count as 2!
+      const weight = (voter && voter.role === "MAYOR") ? 2 : 1;
+      voteTally[targetId] = (voteTally[targetId] || 0) + weight;
+    });
+
+    let highestTarget = null;
+    let highestCount = 0;
+    let isTie = false;
+
+    Object.keys(voteTally).forEach(tgt => {
+      const c = voteTally[tgt];
+      if (c > highestCount) {
+        highestCount = c;
+        highestTarget = tgt;
+        isTie = false;
+      } else if (c === highestCount && highestCount > 0) {
+        isTie = true;
+      }
+    });
+
+    let eliminatedPlayer = null;
+    let eliminationMessage = "";
+
+    if (!highestTarget || isTie || highestTarget === "SKIP") {
+      eliminationMessage = isTie 
+        ? "The vote resulted in a tie! The town could not reach a verdict. Nobody was eliminated."
+        : "The majority of the town voted to skip elimination today. Nobody was executed.";
+    } else {
+      eliminatedPlayer = roomRoster[highestTarget];
+      if (eliminatedPlayer) {
+        eliminatedPlayer.isAlive = false;
+        eliminationMessage = `By majority vote of the town, <strong>${escapeHTML(eliminatedPlayer.name)}</strong> has been executed! They were <strong>${ROLES[eliminatedPlayer.role]?.name || 'Citizen'}</strong>!`;
+
+        // Check if JESTER won!
+        if (eliminatedPlayer.role === "JESTER") {
+          gameState.status = "over";
+          gameState.winner = "jester";
+          publishMessage({
+            type: "GAME_OVER",
+            state: gameState,
+            roster: roomRoster
+          });
+          showGameOverLocally();
+          return;
+        }
+      }
+    }
+
+    // Check Win Condition
+    const win = checkWinCondition();
+    if (win) {
+      gameState.status = "over";
+      gameState.winner = win;
+      publishMessage({
+        type: "GAME_OVER",
+        state: gameState,
+        roster: roomRoster
+      });
+      showGameOverLocally();
+      return;
+    }
+
+    // Advance to Next Night
+    gameState.roundNumber++;
+    gameState.nightCount++;
+    alert(eliminationMessage.replace(/<[^>]+>/g, ''));
+    advanceToNightPhase();
+  }
+
+  function checkWinCondition() {
+    const living = Object.values(roomRoster).filter(p => p.isAlive);
+    const mafiaCount = living.filter(p => ROLES[p.role]?.team === "mafia").length;
+    const townCount = living.filter(p => ROLES[p.role]?.team === "town").length;
+    const skCount = living.filter(p => p.role === "SERIAL_KILLER").length;
+
+    // Serial Killer solo win
+    if (skCount > 0 && living.length <= 2 && mafiaCount === 0) {
+      return "serial_killer";
+    }
+
+    // Mafia wins when they reach parity with living non-mafia (and SK is dead)
+    if (mafiaCount > 0 && mafiaCount >= (living.length - mafiaCount) && skCount === 0) {
+      return "mafia";
+    }
+
+    // Town wins when all Mafia and Serial Killers are dead
+    if (mafiaCount === 0 && skCount === 0) {
+      return "town";
+    }
+
+    return null; // Game continues
+  }
+
+  function showGameOverLocally() {
+    switchScreen("game-over-screen");
+    const win = gameState.winner || "town";
+    const titleEl = document.getElementById("game-over-winner-title");
+    const descEl = document.getElementById("game-over-winner-desc");
+
+    if (win === "town") {
+      titleEl.innerText = "🏆 Town Victory!";
+      titleEl.style.color = "#0A84FF";
+      descEl.innerText = "The Town citizens have successfully discovered and eliminated all Mafia!";
+    } else if (win === "mafia") {
+      titleEl.innerText = "🎩 Mafia Victory!";
+      titleEl.style.color = "#FF3B30";
+      descEl.innerText = "The Syndicate has overtaken the city! The Mafia controls the town.";
+    } else if (win === "jester") {
+      titleEl.innerText = "🃏 The Jester Wins!";
+      titleEl.style.color = "#BF5AF2";
+      descEl.innerText = "The Jester tricked the entire town into voting them out! Chaos reigns.";
+    } else if (win === "serial_killer") {
+      titleEl.innerText = "🔪 Serial Killer Wins!";
+      titleEl.style.color = "#FF9F0A";
+      descEl.innerText = "The Serial Killer was the last survivor standing in the shadows.";
+    }
+
+    // Populate role reveals
+    const list = document.getElementById("final-role-list");
+    if (list) {
+      list.innerHTML = "";
+      Object.values(roomRoster).forEach(p => {
+        const role = ROLES[p.role] || ROLES.TOWNIE;
+        const row = document.createElement("div");
+        row.className = "final-role-item";
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>${p.avatar}</span>
+            <span style="font-weight: 700;">${escapeHTML(p.name)}</span>
+            ${!p.isAlive ? '<span style="color: #777; font-size: 0.8rem;">(Dead)</span>' : ''}
+          </div>
+          <span class="role-badge ${role.badgeClass}">${role.icon} ${role.name}</span>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    const rematchBox = document.getElementById("rematch-host-box");
+    const rematchGuest = document.getElementById("rematch-guest-msg");
+    if (rematchBox) rematchBox.style.display = isCurrentUserHost() ? "block" : "none";
+    if (rematchGuest) rematchGuest.style.display = isCurrentUserHost() ? "none" : "block";
+  }
+
+  function requestRematch() {
+    if (!isCurrentUserHost()) return;
+    requestStartGame();
+  }
+
+  function syncToActiveGameState() {
+    if (gameState.status === "reveal") {
+      startRoleRevealPhase();
+    } else if (gameState.status === "night") {
+      startNightPhaseLocally();
+    } else if (gameState.status === "day") {
+      startDayPhaseLocally();
+    } else if (gameState.status === "over") {
+      showGameOverLocally();
+    }
+  }
+
+  /* ==========================================================================
+     9. SCREEN SWITCHER & UTILITIES
+     ========================================================================== */
+  function switchScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const t = document.getElementById(id);
+    if (t) t.classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* Check room invite URL parameter */
+  window.addEventListener("DOMContentLoaded", () => {
+    const nameInput = document.getElementById("player-name-input");
+    const codeInput = document.getElementById("room-code-input");
+
+    if (nameInput) nameInput.value = "";
+
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room");
+    if (roomParam) {
+      const cleanCode = roomParam.trim().toUpperCase();
+      if (codeInput) codeInput.value = cleanCode;
+      if (nameInput) setTimeout(() => nameInput.focus(), 250);
+    }
+
+    [nameInput, codeInput].forEach(inp => {
+      if (inp) {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            const hasCode = codeInput && codeInput.value.trim();
+            if (hasCode) joinRoomByInput();
+            else createRoom();
+          }
+        });
+      }
+    });
+  });
+</script>
+</body>
+</html>
