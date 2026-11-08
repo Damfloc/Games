@@ -466,7 +466,7 @@
   .target-avatar { font-size: 2rem; margin-bottom: 4px; }
   .target-name { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Detective Result Banner */
+  /* Detective & Consigliere Result Banners */
   .investigation-banner {
     display: none;
     margin-top: 16px;
@@ -478,14 +478,100 @@
     animation: fadeIn 0.3s ease;
   }
   .investigation-banner.guilty {
-    background: rgba(255, 59, 48, 0.2);
-    border: 1px solid #FF3B30;
+    background: rgba(255, 59, 48, 0.22);
+    border: 2px solid #FF3B30;
     color: #ff453a;
+    box-shadow: 0 0 16px rgba(255, 59, 48, 0.35);
   }
   .investigation-banner.innocent {
-    background: rgba(50, 215, 75, 0.2);
-    border: 1px solid #32D74B;
+    background: rgba(50, 215, 75, 0.22);
+    border: 2px solid #32D74B;
     color: #32d74b;
+    box-shadow: 0 0 16px rgba(50, 215, 75, 0.3);
+  }
+  .investigation-banner.neutral {
+    background: rgba(191, 90, 242, 0.22);
+    border: 2px solid #BF5AF2;
+    color: #bf5af2;
+    box-shadow: 0 0 16px rgba(191, 90, 242, 0.3);
+  }
+  .investigation-banner.mafia-intel {
+    background: rgba(255, 214, 10, 0.22);
+    border: 2px solid #FFD60A;
+    color: #ffd60a;
+    box-shadow: 0 0 16px rgba(255, 214, 10, 0.3);
+  }
+
+  .target-partner-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(255, 59, 48, 0.95);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    pointer-events: none;
+    letter-spacing: 0.03em;
+  }
+  .target-card.partner-targeted {
+    border-color: #ffd60a !important;
+    box-shadow: 0 0 14px rgba(255, 214, 10, 0.45) !important;
+  }
+
+  /* Synchronized Day Verdict Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.25s ease;
+  }
+  .modal-overlay.active {
+    display: flex;
+  }
+  .modal-card {
+    background: #141622;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 24px;
+    padding: 32px 24px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  }
+  .modal-gavel-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+  }
+  .modal-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #fff;
+  }
+  .modal-body {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: #e5e5ea;
+    margin-bottom: 18px;
+  }
+  .modal-countdown {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffd60a;
   }
 
   /* =========================================================================
@@ -806,6 +892,16 @@
   </div>
 </div>
 
+<!-- Synchronized Day Verdict Modal -->
+<div id="verdict-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-gavel-icon">⚖️</div>
+    <div class="modal-title" id="verdict-modal-title">Town Hall Verdict</div>
+    <div class="modal-body" id="verdict-modal-body"></div>
+    <div class="modal-countdown" id="verdict-modal-countdown">Night falls in 4 seconds...</div>
+  </div>
+</div>
+
 <script>
   /* ==========================================================================
      1. ROLE DEFINITIONS & DYNAMIC BALANCING
@@ -816,7 +912,7 @@
       team: "mafia",
       icon: "🎩",
       badgeClass: "mafia",
-      desc: "Leader of the Mafia Syndicate. You choose who to eliminate each night. To the Detective, you appear innocent!",
+      desc: "Leader of the Mafia Syndicate. You choose who to eliminate each night with your Syndicate.",
       nightPrompt: "Select a player for the Syndicate to whack:",
       hasNightAction: true
     },
@@ -1019,6 +1115,10 @@
     winner: null      // "town" | "mafia" | "jester" | "serial_killer"
   };
 
+  let lastDoctorSelfHealNight = null;
+  let mafiaPartnerSelections = {}; // senderName -> targetId
+  let verdictTimerInterval = null;
+
   const AVATARS = ["🕵️", "🕶️", "💼", "🎩", "🧥", "🍷", "🥃", "🪓", "🚬", "🎲", "🪙", "🌹", "📜", "🎻", "🕯️", "🐺"];
   function getPlayerAvatar(name) {
     let hash = 0;
@@ -1177,12 +1277,23 @@
       startRoleRevealPhase();
     } else if (data.type === "START_NIGHT") {
       gameState = data.state;
+      if (data.roster) Object.assign(roomRoster, data.roster);
       startNightPhaseLocally();
+    } else if (data.type === "MAFIA_TARGET_PREVIEW") {
+      const me = roomRoster[clientId];
+      if (me && ROLES[me.role] && ROLES[me.role].team === "mafia") {
+        if (!mafiaPartnerSelections) mafiaPartnerSelections = {};
+        mafiaPartnerSelections[data.senderName] = data.targetId;
+        if (gameState.status === "night") renderNightTargetGrid(ROLES[me.role]);
+      }
     } else if (data.type === "NIGHT_ACTION_UPDATE") {
       if (!gameState.nightActions) gameState.nightActions = {};
       gameState.nightActions[data.playerId] = data.targetId;
       // If host, check if all night actions are submitted
       if (isCurrentUserHost()) checkAllNightActionsSubmitted();
+    } else if (data.type === "DAY_VERDICT") {
+      if (data.roster) Object.assign(roomRoster, data.roster);
+      showDayVerdictModal(data.title, data.message, data.isGameOver, data.winner);
     } else if (data.type === "START_DAY") {
       gameState = data.state;
       if (data.roster) Object.assign(roomRoster, data.roster);
@@ -1467,7 +1578,8 @@
 
     publishMessage({
       type: "START_NIGHT",
-      state: gameState
+      state: gameState,
+      roster: roomRoster
     });
 
     startNightPhaseLocally();
@@ -1478,6 +1590,8 @@
     playNightChime();
 
     selectedNightTargetId = null;
+    mafiaPartnerSelections = {};
+
     const nightNumText = document.getElementById("night-number-text");
     if (nightNumText) nightNumText.innerText = gameState.nightCount;
 
@@ -1491,12 +1605,22 @@
     const instText = document.getElementById("night-instruction-text");
     const confirmBtn = document.getElementById("confirm-night-action-btn");
     const invBanner = document.getElementById("investigation-result-banner");
-    if (invBanner) invBanner.style.display = "none";
+    
+    if (invBanner) {
+      invBanner.style.display = "none";
+      invBanner.innerHTML = "";
+      invBanner.className = "investigation-banner";
+    }
+
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerText = "Confirm Action";
+      confirmBtn.style.display = "none";
+    }
 
     if (isAlive && role && role.hasNightAction) {
       if (instText) instText.innerText = role.nightPrompt;
       renderNightTargetGrid(role);
-      if (confirmBtn) confirmBtn.style.display = "none";
     } else {
       if (instText) {
         instText.innerText = isAlive 
@@ -1504,7 +1628,6 @@
           : "You are deceased. You watch silently from above as the night unfolds.";
       }
       renderNightTargetGrid(null); // empty / disabled
-      if (confirmBtn) confirmBtn.style.display = "none";
     }
 
     // Start night countdown
@@ -1536,16 +1659,56 @@
     const livingPlayers = Object.values(roomRoster).filter(p => p.isAlive);
 
     livingPlayers.forEach(p => {
-      // Disallow targeting self for Mafia kill or Detective
       const isSelf = p.id === clientId;
       const isMafiaPartner = role.team === "mafia" && roomRoster[p.id] && ROLES[roomRoster[p.id].role] && ROLES[roomRoster[p.id].role].team === "mafia";
-      const isInvalidTarget = (role.team === "mafia" && (isSelf || isMafiaPartner)) || (role === ROLES.DETECTIVE && isSelf);
+      
+      let isInvalidTarget = false;
+      let disabledReason = "";
+
+      if (role.team === "mafia") {
+        if (isSelf || isMafiaPartner) {
+          isInvalidTarget = true;
+          disabledReason = isSelf ? "(You)" : "(Mafia Partner)";
+        }
+      } else if (role === ROLES.DETECTIVE) {
+        if (isSelf) {
+          isInvalidTarget = true;
+          disabledReason = "(You)";
+        }
+      } else if (role === ROLES.BODYGUARD) {
+        if (isSelf) {
+          isInvalidTarget = true;
+          disabledReason = "(Cannot guard self)";
+        }
+      } else if (role === ROLES.DOCTOR) {
+        if (isSelf && lastDoctorSelfHealNight === (gameState.nightCount - 1)) {
+          isInvalidTarget = true;
+          disabledReason = "(No self-heal 2 nights in a row)";
+        }
+      } else if (role === ROLES.VIGILANTE) {
+        if (isSelf) {
+          isInvalidTarget = true;
+          disabledReason = "(You)";
+        }
+      }
+
+      const isPartnerPick = role.team === "mafia" && Object.values(mafiaPartnerSelections).includes(p.id);
+      const isSelected = selectedNightTargetId === p.id;
 
       const card = document.createElement("div");
-      card.className = `target-card ${isInvalidTarget ? 'disabled' : ''} ${selectedNightTargetId === p.id ? 'selected ' + (role.team === 'mafia' ? 'mafia-target' : '') : ''}`;
+      card.className = `target-card ${isInvalidTarget ? 'disabled' : ''} ${isPartnerPick ? 'partner-targeted' : ''} ${isSelected ? 'selected ' + (role.team === 'mafia' ? 'mafia-target' : '') : ''}`;
+
+      let partnerBadge = "";
+      if (isPartnerPick) {
+        const partnerName = Object.keys(mafiaPartnerSelections).find(k => mafiaPartnerSelections[k] === p.id) || "Partner";
+        partnerBadge = `<div class="target-partner-badge">${escapeHTML(partnerName)}'s pick</div>`;
+      }
+
       card.innerHTML = `
+        ${partnerBadge}
         <div class="target-avatar">${p.avatar}</div>
         <div class="target-name">${escapeHTML(p.name)}</div>
+        ${disabledReason ? `<div style="font-size: 0.72rem; color: #8e8e93; margin-top: 2px;">${disabledReason}</div>` : ''}
       `;
 
       if (!isInvalidTarget) {
@@ -1553,6 +1716,37 @@
       }
       grid.appendChild(card);
     });
+
+    // If Vigilante, provide Hold Fire option
+    if (role === ROLES.VIGILANTE) {
+      const isHolding = selectedNightTargetId === "HOLD";
+      const holdBtn = document.createElement("button");
+      holdBtn.type = "button";
+      holdBtn.className = `btn-secondary`;
+      holdBtn.style.gridColumn = "1/-1";
+      holdBtn.style.marginTop = "10px";
+      holdBtn.style.border = isHolding ? "2px solid #32d74b" : "1px solid rgba(255,255,255,0.15)";
+      holdBtn.style.color = isHolding ? "#32d74b" : "#fff";
+      holdBtn.innerHTML = isHolding 
+        ? "<span>✓ Holding Fire Tonight (Saved Shot)</span>" 
+        : "<span>🎯 Hold Fire / Do Not Shoot Tonight</span>";
+      holdBtn.onclick = () => holdVigilanteShot();
+      grid.appendChild(holdBtn);
+    }
+  }
+
+  function holdVigilanteShot() {
+    selectedNightTargetId = "HOLD";
+    const me = roomRoster[clientId];
+    const role = me ? ROLES[me.role] : ROLES.VIGILANTE;
+    renderNightTargetGrid(role);
+
+    const confirmBtn = document.getElementById("confirm-night-action-btn");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.style.display = "inline-flex";
+      confirmBtn.innerHTML = `<span>Confirm: Hold Fire Tonight</span>`;
+    }
   }
 
   function selectNightTarget(targetId, role) {
@@ -1561,8 +1755,23 @@
 
     const confirmBtn = document.getElementById("confirm-night-action-btn");
     if (confirmBtn) {
+      confirmBtn.disabled = false;
       confirmBtn.style.display = "inline-flex";
-      confirmBtn.innerHTML = `<span>Confirm Action on ${escapeHTML(roomRoster[targetId]?.name || 'Player')}</span>`;
+      if (targetId === "HOLD") {
+        confirmBtn.innerHTML = `<span>Confirm: Hold Fire Tonight</span>`;
+      } else {
+        confirmBtn.innerHTML = `<span>Confirm Action on ${escapeHTML(roomRoster[targetId]?.name || 'Player')}</span>`;
+      }
+    }
+
+    // If Mafia, broadcast preview of pick to fellow Mafia members
+    if (role && role.team === "mafia" && targetId !== "HOLD") {
+      const me = roomRoster[clientId];
+      publishMessage({
+        type: "MAFIA_TARGET_PREVIEW",
+        senderName: me ? me.name : "Mafia",
+        targetId: targetId
+      });
     }
   }
 
@@ -1574,20 +1783,45 @@
     if (!gameState.nightActions) gameState.nightActions = {};
     gameState.nightActions[clientId] = selectedNightTargetId;
 
-    // If Detective, immediately show local investigation result
-    if (role === ROLES.DETECTIVE) {
+    // If Detective: Check good vs bad alignment accurately
+    if (role === ROLES.DETECTIVE && selectedNightTargetId !== "HOLD") {
       const target = roomRoster[selectedNightTargetId];
       const targetRole = target ? ROLES[target.role] : null;
-      // Godfather investigates as innocent!
-      const isGuilty = targetRole && targetRole.team === "mafia" && target.role !== "GODFATHER";
       const banner = document.getElementById("investigation-result-banner");
-      if (banner) {
+      if (banner && target) {
         banner.style.display = "block";
-        banner.className = `investigation-banner ${isGuilty ? 'guilty' : 'innocent'}`;
-        banner.innerHTML = isGuilty 
-          ? `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>SUSPICIOUS (MAFIA)!</strong>`
-          : `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>NOT SUSPICIOUS (TOWN / GODFATHER).</strong>`;
+        if (targetRole && (targetRole.team === "mafia" || targetRole.team === "serial_killer")) {
+          // Bad Guys -> GUILTY (RED)
+          banner.className = "investigation-banner guilty";
+          const threat = targetRole.team === "mafia" ? "MAFIA SYNDICATE" : "SERIAL KILLER";
+          banner.innerHTML = `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>SUSPICIOUS / GUILTY (${threat})!</strong>`;
+        } else if (target.role === "JESTER") {
+          // Neutral -> NEUTRAL (PURPLE)
+          banner.className = "investigation-banner neutral";
+          banner.innerHTML = `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>NEUTRAL (JESTER)!</strong>`;
+        } else {
+          // Good Guys (Town) -> INNOCENT (GREEN)
+          banner.className = "investigation-banner innocent";
+          banner.innerHTML = `🔍 Result: <strong>${escapeHTML(target.name)}</strong> is <strong>INNOCENT (TOWN CITIZEN)!</strong>`;
+        }
       }
+    }
+
+    // If Consigliere: Provide exact role reveal in syndicate gold banner
+    if (me && me.role === "CONSIGLIERE" && selectedNightTargetId !== "HOLD") {
+      const target = roomRoster[selectedNightTargetId];
+      const targetRole = target ? ROLES[target.role] : null;
+      const banner = document.getElementById("investigation-result-banner");
+      if (banner && target) {
+        banner.style.display = "block";
+        banner.className = "investigation-banner mafia-intel";
+        banner.innerHTML = `💼 Syndicate Intel: <strong>${escapeHTML(target.name)}</strong>'s true role is <strong>${escapeHTML(targetRole ? targetRole.name : 'Unknown')}</strong> (${escapeHTML(targetRole ? targetRole.team.toUpperCase() : 'TOWN')})!`;
+      }
+    }
+
+    // If Doctor heals self: track consecutive round rule
+    if (me && me.role === "DOCTOR" && selectedNightTargetId === clientId) {
+      lastDoctorSelfHealNight = gameState.nightCount;
     }
 
     const confirmBtn = document.getElementById("confirm-night-action-btn");
@@ -1626,67 +1860,114 @@
 
     const actions = gameState.nightActions || {};
     let mafiaTargetId = null;
+    let mafiaKillerId = null;
     let doctorTargetId = null;
     let skTargetId = null;
+    let skActorId = null;
     let vigiTargetId = null;
+    let vigiActorId = null;
+    let bgTargetId = null;
+    let bgActorId = null;
 
-    // Identify targets
+    // Separate Mafia members: prioritize Godfather, then Mafioso. Consigliere does NOT kill.
+    const livingMafia = Object.values(roomRoster).filter(p => p.isAlive && ROLES[p.role]?.team === "mafia");
+    const godfather = livingMafia.find(p => p.role === "GODFATHER");
+    const mafiosos = livingMafia.filter(p => p.role === "MAFIOSO");
+
+    if (godfather && actions[godfather.id] && actions[godfather.id] !== "HOLD") {
+      mafiaTargetId = actions[godfather.id];
+      mafiaKillerId = godfather.id;
+    } else {
+      for (const m of mafiosos) {
+        if (actions[m.id] && actions[m.id] !== "HOLD") {
+          mafiaTargetId = actions[m.id];
+          mafiaKillerId = m.id;
+          break;
+        }
+      }
+    }
+
+    // Identify targets of other active roles
     Object.keys(actions).forEach(actorId => {
       const actor = roomRoster[actorId];
       if (!actor || !actor.isAlive) return;
       const targetId = actions[actorId];
+      if (!targetId || targetId === "HOLD") return;
 
-      if (ROLES[actor.role]?.team === "mafia") {
-        mafiaTargetId = targetId; // mafia consensus or leader
-      } else if (actor.role === "DOCTOR") {
+      if (actor.role === "DOCTOR") {
         doctorTargetId = targetId;
       } else if (actor.role === "SERIAL_KILLER") {
         skTargetId = targetId;
+        skActorId = actor.id;
       } else if (actor.role === "VIGILANTE") {
         vigiTargetId = targetId;
+        vigiActorId = actor.id;
+      } else if (actor.role === "BODYGUARD") {
+        bgTargetId = targetId;
+        bgActorId = actor.id;
       }
     });
 
     const deadThisNight = [];
     let doctorSavedSomeone = false;
+    let bodyguardHeroicFight = false;
 
-    // Resolve Mafia attack
+    // 1. Resolve Bodyguard Protection against Mafia and Serial Killer
+    if (bgTargetId && bgActorId) {
+      if (mafiaTargetId === bgTargetId) {
+        bodyguardHeroicFight = true;
+        if (!deadThisNight.includes(bgActorId)) deadThisNight.push(bgActorId);
+        if (mafiaKillerId && !deadThisNight.includes(mafiaKillerId)) deadThisNight.push(mafiaKillerId);
+        mafiaTargetId = null; // Guarded target is saved!
+      }
+      if (skTargetId === bgTargetId) {
+        bodyguardHeroicFight = true;
+        if (!deadThisNight.includes(bgActorId)) deadThisNight.push(bgActorId);
+        if (skActorId && !deadThisNight.includes(skActorId)) deadThisNight.push(skActorId);
+        skTargetId = null; // Guarded target is saved!
+      }
+    }
+
+    // 2. Resolve Mafia attack
     if (mafiaTargetId) {
       if (mafiaTargetId === doctorTargetId) {
         doctorSavedSomeone = true;
       } else {
-        deadThisNight.push(mafiaTargetId);
+        if (!deadThisNight.includes(mafiaTargetId)) deadThisNight.push(mafiaTargetId);
       }
     }
 
-    // Resolve Serial Killer attack
-    if (skTargetId && !deadThisNight.includes(skTargetId)) {
+    // 3. Resolve Serial Killer attack
+    if (skTargetId) {
       if (skTargetId === doctorTargetId) {
         doctorSavedSomeone = true;
       } else {
-        deadThisNight.push(skTargetId);
+        if (!deadThisNight.includes(skTargetId)) deadThisNight.push(skTargetId);
       }
     }
 
-    // Resolve Vigilante shot
-    if (vigiTargetId && !deadThisNight.includes(vigiTargetId)) {
+    // 4. Resolve Vigilante shot
+    if (vigiTargetId) {
       if (vigiTargetId === doctorTargetId) {
         doctorSavedSomeone = true;
       } else {
-        deadThisNight.push(vigiTargetId);
+        if (!deadThisNight.includes(vigiTargetId)) deadThisNight.push(vigiTargetId);
       }
     }
 
-    // Apply deaths
+    // Apply deaths to room roster
     deadThisNight.forEach(pid => {
       if (roomRoster[pid]) roomRoster[pid].isAlive = false;
     });
 
-    // Generate morning news headline
+    // Generate morning news headline and body
     let headline = "Peaceful Sunrise in Town";
     let body = "The sun rises over the city. Miraculously, nobody was killed last night!";
     if (doctorSavedSomeone && deadThisNight.length === 0) {
-      body += " The Town Medic successfully saved a citizen's life!";
+      body += " The Town Medic successfully saved a citizen's life from mortal injury!";
+    }
+    if (bodyguardHeroicFight) {
+      body += " A heroic Bodyguard engaged an assassin in the shadows and sacrificed themselves to protect their target!";
     }
 
     if (deadThisNight.length > 0) {
@@ -1694,8 +1975,11 @@
         const p = roomRoster[id];
         return p ? `<strong>${escapeHTML(p.name)}</strong> (${ROLES[p.role]?.name || 'Citizen'})` : 'A Citizen';
       });
-      headline = deadThisNight.length === 1 ? "Tragedy in the Night!" : "Double Homicide Shakes the Town!";
+      headline = deadThisNight.length === 1 ? "Tragedy in the Night!" : "Deadly Night Shakes the Town!";
       body = `As morning broke, the town discovered the body of ${deadNames.join(" and ")}!`;
+      if (doctorSavedSomeone) {
+        body += " The Town Medic managed to save another victim from death!";
+      }
     }
 
     gameState.lastNightReport = {
@@ -1942,12 +2226,17 @@
         if (eliminatedPlayer.role === "JESTER") {
           gameState.status = "over";
           gameState.winner = "jester";
+          const modalTitle = "🃏 The Jester Has Tricked the Town!";
+          eliminationMessage += "<br><br><span style='color: #bf5af2; font-weight: 800;'>The Jester wanted to be voted out and has WON THE GAME!</span>";
           publishMessage({
-            type: "GAME_OVER",
-            state: gameState,
-            roster: roomRoster
+            type: "DAY_VERDICT",
+            title: modalTitle,
+            message: eliminationMessage,
+            roster: roomRoster,
+            isGameOver: true,
+            winner: "jester"
           });
-          showGameOverLocally();
+          showDayVerdictModal(modalTitle, eliminationMessage, true, "jester");
           return;
         }
       }
@@ -1955,23 +2244,64 @@
 
     // Check Win Condition
     const win = checkWinCondition();
-    if (win) {
+    const isGameOver = !!win;
+    const modalTitle = eliminatedPlayer ? "⚖️ Town Execution Verdict" : "🕊️ No Execution Today";
+
+    if (isGameOver) {
       gameState.status = "over";
       gameState.winner = win;
-      publishMessage({
-        type: "GAME_OVER",
-        state: gameState,
-        roster: roomRoster
-      });
-      showGameOverLocally();
-      return;
     }
 
-    // Advance to Next Night
-    gameState.roundNumber++;
-    gameState.nightCount++;
-    alert(eliminationMessage.replace(/<[^>]+>/g, ''));
-    advanceToNightPhase();
+    publishMessage({
+      type: "DAY_VERDICT",
+      title: modalTitle,
+      message: eliminationMessage,
+      roster: roomRoster,
+      isGameOver: isGameOver,
+      winner: win
+    });
+
+    showDayVerdictModal(modalTitle, eliminationMessage, isGameOver, win);
+  }
+
+  function showDayVerdictModal(title, message, isGameOver, win) {
+    playGavel();
+    const modal = document.getElementById("verdict-modal");
+    const titleEl = document.getElementById("verdict-modal-title");
+    const bodyEl = document.getElementById("verdict-modal-body");
+    const countdownEl = document.getElementById("verdict-modal-countdown");
+    if (!modal) return;
+
+    if (titleEl) titleEl.innerText = title;
+    if (bodyEl) bodyEl.innerHTML = message;
+
+    modal.classList.add("active");
+
+    let seconds = 5;
+    if (countdownEl) {
+      countdownEl.innerText = isGameOver ? "Concluding game..." : `Night falls in ${seconds}s...`;
+    }
+
+    if (verdictTimerInterval) clearInterval(verdictTimerInterval);
+    verdictTimerInterval = setInterval(() => {
+      seconds--;
+      if (countdownEl) {
+        countdownEl.innerText = isGameOver ? "Concluding game..." : `Night falls in ${seconds}s...`;
+      }
+      if (seconds <= 0) {
+        clearInterval(verdictTimerInterval);
+        modal.classList.remove("active");
+        if (isGameOver) {
+          gameState.status = "over";
+          gameState.winner = win;
+          showGameOverLocally();
+        } else if (isCurrentUserHost()) {
+          gameState.roundNumber++;
+          gameState.nightCount++;
+          advanceToNightPhase();
+        }
+      }
+    }, 1000);
   }
 
   function checkWinCondition() {
