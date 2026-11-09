@@ -924,6 +924,54 @@
     margin: 16px 0;
   }
 
+  /* Discard Selection Modal Cards */
+  .discard-choice-card {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    user-select: none;
+  }
+  .discard-choice-card:hover {
+    transform: translateY(-4px);
+  }
+  .discard-choice-card.is-marked-discard {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.75) !important;
+    transform: translateY(-6px) scale(0.96);
+    filter: brightness(0.9);
+  }
+  .discard-badge-overlay {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    z-index: 5;
+  }
+  .barrel-banner {
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    animation: fadeIn 0.2s ease;
+  }
+  .barrel-banner.success {
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid #22c55e;
+    color: #86efac;
+  }
+  .barrel-banner.fail {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+  }
+
   /* Role Badges */
   .role-badge {
     padding: 3px 10px;
@@ -1232,6 +1280,7 @@
     <div class="modal-header-icon" id="modal-icon">💥</div>
     <div class="modal-title" id="modal-title">You Are Under Attack!</div>
     <div class="modal-message" id="modal-message">Bart Cassidy shot a BANG! at you. Play a Missed! card or lose 1 Life Point.</div>
+    <div id="barrel-result-banner" class="barrel-banner" style="display: none;"></div>
     <div class="draft-cards-row" id="modal-draft-row" style="display: none;"></div>
     <div class="modal-actions" id="modal-actions"></div>
   </div>
@@ -1254,6 +1303,24 @@
     <div class="modal-title">General Store Draft</div>
     <div class="modal-message" id="gs-modal-message">Cards are turned over on the counter. Click on 1 card to take into your hand:</div>
     <div class="cards-horizontal-scroll" id="gs-draft-cards-row" style="justify-content: center; padding: 10px 0;"></div>
+  </div>
+</div>
+
+<!-- Discard Selection Modal (Choose which cards to discard) -->
+<div id="discard-select-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 680px;">
+    <div class="modal-header-icon">🗑️</div>
+    <div class="modal-title" id="discard-modal-title">Discard Excess Cards</div>
+    <div class="modal-message" id="discard-modal-message">Select which card(s) you want to discard:</div>
+    <div class="draft-cards-row" id="discard-cards-container" style="justify-content: center; padding: 10px 0; min-height: 120px;"></div>
+    <div class="modal-actions" id="discard-modal-actions" style="margin-top: 14px;">
+      <button class="btn-gold" id="confirm-discard-btn" disabled onclick="confirmSelectedDiscards()">
+        <span>Confirm Discard (0/0)</span>
+      </button>
+      <button class="btn-secondary" id="cancel-discard-btn" style="display: none;" onclick="cancelDiscardSelection()">
+        <span>Cancel</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2936,29 +3003,56 @@
     const defender = roomPlayers[defenderId];
     if (!defender || !defender.isAlive) return;
 
-    // Apache Kid ability: immune to Diamond suit cards
-    // Check Barrel first
-    const hasBarrel = defender.inPlay.some(c => c.sub === "barrel") || (defender.charKey === "JOURDONNAIS");
-    if (hasBarrel) {
-      const flip = drawCardForCheck(defender);
-      addActivityLog(`🛢️ Barrel check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value}.`);
-      if (flip.suit === "H" || (gameState.activeHighNoonCard?.effect === "hearts_suit")) {
-        addActivityLog(`🛡️ ${defender.name}'s Barrel successfully deflected the shot!`);
-        missesRequired--;
-        if (missesRequired <= 0) return;
-      }
-    }
-
     // Check if Defender is AI Bot
     if (defender.isBot) {
-      const missedIdx = defender.hand.findIndex(c => c.name === "Missed!" || (defender.charKey === "ELENA_FUENTE"));
-      if (missedIdx !== -1 && missesRequired === 1) {
-        const discarded = defender.hand.splice(missedIdx, 1)[0];
-        gameState.discardPile.push(discarded);
+      // 1. Jourdonnais ability check for Bot
+      if (defender.charKey === "JOURDONNAIS" && missesRequired > 0) {
+        const flip = drawCardForCheck(defender);
+        addActivityLog(`🤠 Jourdonnais check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}). Discarded.`);
+        if (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit")) {
+          addActivityLog(`🛡️ ${defender.name}'s Jourdonnais skill deflected the shot!`);
+          missesRequired--;
+          if (missesRequired <= 0) {
+            broadcastGameState();
+            return;
+          }
+        }
+      }
+
+      // 2. Barrel card check for Bot
+      const hasBarrel = defender.inPlay.some(c => c.sub === "barrel");
+      if (hasBarrel && missesRequired > 0) {
+        const flip = drawCardForCheck(defender);
+        addActivityLog(`🛢️ Barrel check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}). Discarded.`);
+        if (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit")) {
+          addActivityLog(`🛡️ ${defender.name}'s Barrel successfully deflected the shot!`);
+          missesRequired--;
+          if (missesRequired <= 0) {
+            broadcastGameState();
+            return;
+          }
+        }
+      }
+
+      // 3. Play Missed! from hand
+      const missedIndices = [];
+      defender.hand.forEach((c, idx) => {
+        if (c.name === "Missed!" || (defender.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (defender.charKey === "ELENA_FUENTE")) {
+          missedIndices.push(idx);
+        }
+      });
+
+      if (missedIndices.length >= missesRequired) {
+        for (let i = 0; i < missesRequired; i++) {
+          const removed = defender.hand.splice(missedIndices[i] - i, 1)[0];
+          gameState.discardPile.push(removed);
+        }
+        updateDiscardPileUI();
         addActivityLog(`🛡️ ${defender.name} played Missed! to dodge the attack.`);
         broadcastGameState();
         return;
       }
+
       // AI takes damage
       damagePlayer(defenderId, 1, attackerId, attackType);
       broadcastGameState();
@@ -2987,45 +3081,138 @@
     const title = document.getElementById("modal-title");
     const msg = document.getElementById("modal-message");
     const actions = document.getElementById("modal-actions");
+    const banner = document.getElementById("barrel-result-banner");
 
-    if (!modal) return;
-    title.innerText = `Under Fire! (${attackType})`;
-    msg.innerText = `${attacker?.name || 'An enemy'} shot at you! You need ${missesRequired} Missed! card(s) to dodge.`;
-    actions.innerHTML = "";
+    if (!modal || !me) return;
 
-    const missedIndices = [];
-    me.hand.forEach((c, idx) => {
-      if (c.name === "Missed!" || (me.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (me.charKey === "ELENA_FUENTE")) {
-        missedIndices.push(idx);
-      }
-    });
-
-    if (missedIndices.length >= missesRequired) {
-      const dodgeBtn = document.createElement("button");
-      dodgeBtn.className = "btn-gold";
-      dodgeBtn.innerHTML = `<span>🛡️ Play Missed! (${missedIndices.length} available)</span>`;
-      dodgeBtn.onclick = () => {
-        modal.classList.remove("active");
-        for (let i = 0; i < missesRequired; i++) {
-          const removed = me.hand.splice(missedIndices[i] - i, 1)[0];
-          gameState.discardPile.push(removed);
-        }
-        addActivityLog(`🛡️ ${me.name} played Missed! and dodged the shot!`);
-        broadcastGameState();
-      };
-      actions.appendChild(dodgeBtn);
+    if (banner) {
+      banner.style.display = "none";
+      banner.className = "barrel-banner";
+      banner.innerHTML = "";
     }
 
-    const takeHitBtn = document.createElement("button");
-    takeHitBtn.className = "btn-danger";
-    takeHitBtn.innerHTML = `<span>🩸 Take Hit (-1 Life Point)</span>`;
-    takeHitBtn.onclick = () => {
-      modal.classList.remove("active");
-      damagePlayer(clientId, 1, attackerId, attackType);
-      broadcastGameState();
-    };
-    actions.appendChild(takeHitBtn);
+    let neededMisses = missesRequired;
+    let jourdonnaisTested = false;
+    let barrelTested = false;
 
+    title.innerText = `Under Fire! (${attackType})`;
+
+    function renderInterruptActions() {
+      if (!me.isAlive) {
+        modal.classList.remove("active");
+        gameState.pendingInterrupt = null;
+        return;
+      }
+
+      msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You need ${neededMisses} Missed! card(s) or Heart "Draw!" check to avoid damage.`;
+      actions.innerHTML = "";
+
+      const hasBarrelCard = me.inPlay.some(c => c.sub === "barrel");
+      const isJourdonnais = (me.charKey === "JOURDONNAIS");
+
+      // 1. Jourdonnais Ability Button
+      if (isJourdonnais && !jourdonnaisTested && neededMisses > 0) {
+        const jdBtn = document.createElement("button");
+        jdBtn.className = "btn-gold";
+        jdBtn.innerHTML = `<span>🤠 Jourdonnais "Draw!" (Hearts ♥️ = Dodge)</span>`;
+        jdBtn.onclick = () => {
+          jourdonnaisTested = true;
+          executeInterruptCheck("Jourdonnais Skill");
+        };
+        actions.appendChild(jdBtn);
+      }
+
+      // 2. Barrel Card Button
+      if (hasBarrelCard && !barrelTested && neededMisses > 0) {
+        const barrelBtn = document.createElement("button");
+        barrelBtn.className = "btn-gold";
+        barrelBtn.innerHTML = `<span>🛢️ Barrel "Draw!" (Hearts ♥️ = Dodge)</span>`;
+        barrelBtn.onclick = () => {
+          barrelTested = true;
+          executeInterruptCheck("Barrel Card");
+        };
+        actions.appendChild(barrelBtn);
+      }
+
+      // 3. Play Missed! Button
+      const missedIndices = [];
+      me.hand.forEach((c, idx) => {
+        if (c.name === "Missed!" || (me.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (me.charKey === "ELENA_FUENTE")) {
+          missedIndices.push(idx);
+        }
+      });
+
+      if (missedIndices.length >= neededMisses && neededMisses > 0) {
+        const dodgeBtn = document.createElement("button");
+        dodgeBtn.className = "btn-gold";
+        dodgeBtn.innerHTML = `<span>🛡️ Play Missed! (${missedIndices.length} available)</span>`;
+        dodgeBtn.onclick = () => {
+          modal.classList.remove("active");
+          gameState.pendingInterrupt = null;
+          for (let i = 0; i < neededMisses; i++) {
+            const removed = me.hand.splice(missedIndices[i] - i, 1)[0];
+            gameState.discardPile.push(removed);
+          }
+          updateDiscardPileUI();
+          addActivityLog(`🛡️ ${me.name} played Missed! and dodged the ${attackType}!`);
+          broadcastGameState();
+        };
+        actions.appendChild(dodgeBtn);
+      }
+
+      // 4. Take Hit Button
+      const takeHitBtn = document.createElement("button");
+      takeHitBtn.className = "btn-danger";
+      takeHitBtn.innerHTML = `<span>🩸 Take Hit (-1 Life Point)</span>`;
+      takeHitBtn.onclick = () => {
+        modal.classList.remove("active");
+        gameState.pendingInterrupt = null;
+        damagePlayer(clientId, 1, attackerId, attackType);
+        broadcastGameState();
+      };
+      actions.appendChild(takeHitBtn);
+    }
+
+    function executeInterruptCheck(sourceLabel) {
+      const flip = drawCardForCheck(me);
+      playCardDraw();
+      updateDiscardPileUI();
+
+      const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
+
+      if (banner) {
+        banner.style.display = "block";
+        if (isHearts) {
+          banner.className = "barrel-banner success";
+          banner.innerHTML = `🎉 <strong>SUCCESS!</strong> Flipped <strong>${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'})</strong>. Card went to Discard Pile.`;
+        } else {
+          banner.className = "barrel-banner fail";
+          banner.innerHTML = `❌ <strong>CHECK FAILED:</strong> Flipped <strong>${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'})</strong> (Not Hearts). Card went to Discard Pile.`;
+        }
+      }
+
+      if (isHearts) {
+        neededMisses--;
+        addActivityLog(`🛡️ ${me.name}'s ${sourceLabel} check flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}) -> Success! (Card placed in discard pile)`);
+        if (neededMisses <= 0) {
+          actions.innerHTML = `<div style="color: #86efac; font-weight: 800; font-size: 1.1rem; padding: 8px;">🛡️ Attack completely deflected!</div>`;
+          broadcastGameState();
+          setTimeout(() => {
+            modal.classList.remove("active");
+            gameState.pendingInterrupt = null;
+          }, 1400);
+          return;
+        } else {
+          renderInterruptActions();
+        }
+      } else {
+        addActivityLog(`❌ ${me.name}'s ${sourceLabel} check flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}) -> Failed. (Card placed in discard pile)`);
+        renderInterruptActions();
+      }
+      broadcastGameState();
+    }
+
+    renderInterruptActions();
     modal.classList.add("active");
   }
 
@@ -3186,19 +3373,46 @@
     return gameState.deck.pop();
   }
 
+  function updateDiscardPileUI() {
+    const deckCountEl = document.getElementById("deck-count-num");
+    const discardCountEl = document.getElementById("discard-count-num");
+    const discardTopName = document.getElementById("discard-top-name");
+    if (deckCountEl && gameState.deck) deckCountEl.innerText = `${gameState.deck.length} cards`;
+    if (discardCountEl && gameState.discardPile) discardCountEl.innerText = `${gameState.discardPile.length} cards`;
+    if (discardTopName && gameState.discardPile) {
+      const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
+      discardTopName.innerText = topDiscard ? (topDiscard.name || `${getSuitSymbol(topDiscard.suit)} ${topDiscard.value}`) : "Empty";
+    }
+  }
+
   function drawCardForCheck(player) {
     let card = drawFromDeck();
-    if (!card) card = { suit: "H", value: 7 };
+    if (!card) card = { suit: "H", value: 7, name: "Hearts Card" };
 
     // Lucky Duke or Horseshoe flips 2 cards and picks preferred
     if (player && (player.charKey === "LUCKY_DUKE" || player.extraDrawCheck)) {
       const secondCard = drawFromDeck();
       if (secondCard) {
         addActivityLog(`🎲 Check: flipped ${getSuitSymbol(card.suit)} ${card.value} and ${getSuitSymbol(secondCard.suit)} ${secondCard.value}.`);
-        if (secondCard.suit === "H") card = secondCard;
+        if (secondCard.suit === "H" && card.suit !== "H") {
+          gameState.discardPile.push(card);
+          card = secondCard;
+        } else {
+          gameState.discardPile.push(secondCard);
+        }
       }
     }
-    gameState.discardPile.push(card);
+
+    // John Pain (WWS): If John Pain has < 6 cards, he takes any card drawn for checks by other players.
+    const johnPain = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "JOHN_PAIN" && p.id !== (player ? player.id : null));
+    if (johnPain && johnPain.hand.length < 6) {
+      johnPain.hand.push(card);
+      addActivityLog(`🖐️ John Pain took the check card (${card.name || getSuitSymbol(card.suit) + " " + card.value})!`);
+    } else {
+      gameState.discardPile.push(card);
+    }
+
+    updateDiscardPileUI();
     return card;
   }
 
@@ -3438,6 +3652,14 @@
     // 7. General Store Modal check
     if (gameState.generalStoreCards && gameState.generalStoreCards.length > 0) {
       renderGeneralStoreModal();
+    }
+
+    // 8. Pending Attack Interrupt Modal check
+    if (gameState.pendingInterrupt && gameState.pendingInterrupt.defenderId === clientId) {
+      const modal = document.getElementById("interrupt-modal");
+      if (modal && !modal.classList.contains("active")) {
+        showAttackInterruptModal(gameState.pendingInterrupt.attackerId, gameState.pendingInterrupt.attackType, gameState.pendingInterrupt.missesRequired);
+      }
     }
   }
 
@@ -3828,12 +4050,32 @@
     } else if (card.name === "Bandidos") {
       addActivityLog(`🎭 Bandidos strike! All other living players must discard 1 card or lose 1 LP!`);
       getLivingPlayersCircle().filter(p => p.id !== player.id).forEach(v => {
-        if (v.hand.length > 0) {
-          const discarded = v.hand.pop();
-          gameState.discardPile.push(discarded);
-          addActivityLog(`${v.name} discarded ${discarded.name} to satisfy Bandidos.`);
+        if (v.id === clientId) {
+          if (v.hand.length > 0) {
+            promptDiscardSelection({
+              count: 1,
+              title: "Bandidos Strike!",
+              message: `${player.name} played Bandidos! Select 1 card to discard:`,
+              allowCancel: false,
+              onConfirm: (discardedList) => {
+                if (discardedList.length > 0) {
+                  addActivityLog(`🎭 ${v.name} discarded ${discardedList[0].name} to satisfy Bandidos.`);
+                }
+                broadcastGameState();
+              }
+            });
+          } else {
+            damagePlayer(v.id, 1, player.id, "Bandidos");
+          }
         } else {
-          damagePlayer(v.id, 1, player.id, "Bandidos");
+          if (v.hand.length > 0) {
+            const discarded = v.hand.pop();
+            gameState.discardPile.push(discarded);
+            updateDiscardPileUI();
+            addActivityLog(`${v.name} discarded ${discarded.name} to satisfy Bandidos.`);
+          } else {
+            damagePlayer(v.id, 1, player.id, "Bandidos");
+          }
         }
       });
     }
@@ -3912,15 +4154,161 @@
     playCardFromHand(clientId, selectedCardIndex, "as_general_store");
   }
 
+  /* ==========================================================================
+     INTERACTIVE DISCARD SELECTION SYSTEM
+     ========================================================================== */
+  let activeDiscardPrompt = null;
+  let selectedDiscardIndices = [];
+
+  function promptDiscardSelection({ count, title, message, allowCancel = false, onConfirm }) {
+    const me = roomPlayers[clientId];
+    if (!me || !me.hand || me.hand.length === 0) {
+      if (onConfirm) onConfirm([]);
+      return;
+    }
+
+    const targetCount = Math.min(count, me.hand.length);
+    if (targetCount <= 0) {
+      if (onConfirm) onConfirm([]);
+      return;
+    }
+
+    activeDiscardPrompt = {
+      count: targetCount,
+      title: title || "Discard Cards",
+      message: message || `Select ${targetCount} card(s) to discard:`,
+      allowCancel: !!allowCancel,
+      onConfirm: onConfirm
+    };
+    selectedDiscardIndices = [];
+
+    const modal = document.getElementById("discard-select-modal");
+    const titleEl = document.getElementById("discard-modal-title");
+    const msgEl = document.getElementById("discard-modal-message");
+    const cancelBtn = document.getElementById("cancel-discard-btn");
+
+    if (titleEl) titleEl.innerText = activeDiscardPrompt.title;
+    if (msgEl) msgEl.innerText = activeDiscardPrompt.message;
+    if (cancelBtn) cancelBtn.style.display = allowCancel ? "inline-block" : "none";
+
+    renderDiscardModalCards();
+    if (modal) modal.classList.add("active");
+  }
+
+  function renderDiscardModalCards() {
+    const container = document.getElementById("discard-cards-container");
+    const confirmBtn = document.getElementById("confirm-discard-btn");
+    const me = roomPlayers[clientId];
+    if (!container || !me || !activeDiscardPrompt) return;
+
+    container.innerHTML = "";
+    const targetCount = activeDiscardPrompt.count;
+
+    me.hand.forEach((card, idx) => {
+      const isSelected = selectedDiscardIndices.includes(idx);
+      const cardEl = document.createElement("div");
+      cardEl.className = `bang-card ${card.type || 'brown'} discard-choice-card ${isSelected ? 'is-marked-discard' : ''}`;
+      
+      const badgeHtml = isSelected ? `<div class="discard-badge-overlay">DISCARD ✕</div>` : "";
+      
+      cardEl.innerHTML = `
+        ${badgeHtml}
+        <div class="card-corner top-left">
+          <span class="card-value">${card.value || ''}</span>
+          <span class="card-suit ${card.suit === 'H' || card.suit === 'D' ? 'red' : ''}">${getSuitSymbol(card.suit)}</span>
+        </div>
+        <div class="card-center">
+          <div class="card-icon" style="font-size: 2rem;">${card.icon || '🃏'}</div>
+          <div class="card-name" style="font-size: 0.95rem; font-weight: 800; text-align: center;">${card.name}</div>
+        </div>
+        <div class="card-desc" style="font-size: 0.65rem; text-align: center; color: #cbd5e1; max-width: 90%; margin: 0 auto;">${card.desc || ''}</div>
+      `;
+
+      cardEl.onclick = () => toggleCardForDiscard(idx);
+      container.appendChild(cardEl);
+    });
+
+    if (confirmBtn) {
+      confirmBtn.disabled = (selectedDiscardIndices.length !== targetCount);
+      confirmBtn.innerHTML = `<span>🗑️ Confirm Discard (${selectedDiscardIndices.length}/${targetCount})</span>`;
+    }
+  }
+
+  function toggleCardForDiscard(idx) {
+    if (!activeDiscardPrompt) return;
+    const targetCount = activeDiscardPrompt.count;
+    const existingPos = selectedDiscardIndices.indexOf(idx);
+
+    if (existingPos !== -1) {
+      selectedDiscardIndices.splice(existingPos, 1);
+    } else {
+      if (selectedDiscardIndices.length < targetCount) {
+        selectedDiscardIndices.push(idx);
+      } else if (targetCount === 1) {
+        selectedDiscardIndices = [idx];
+      }
+    }
+    renderDiscardModalCards();
+  }
+
+  function confirmSelectedDiscards() {
+    if (!activeDiscardPrompt) return;
+    const targetCount = activeDiscardPrompt.count;
+    if (selectedDiscardIndices.length !== targetCount) return;
+
+    const me = roomPlayers[clientId];
+    if (!me) return;
+
+    const modal = document.getElementById("discard-select-modal");
+    if (modal) modal.classList.remove("active");
+
+    const sortedIndices = [...selectedDiscardIndices].sort((a, b) => b - a);
+    const discardedCards = [];
+
+    sortedIndices.forEach(idx => {
+      const removed = me.hand.splice(idx, 1)[0];
+      if (removed) {
+        gameState.discardPile.push(removed);
+        discardedCards.push(removed);
+      }
+    });
+
+    updateDiscardPileUI();
+    const callback = activeDiscardPrompt.onConfirm;
+    activeDiscardPrompt = null;
+    selectedDiscardIndices = [];
+
+    if (callback) callback(discardedCards);
+    renderPlayerCockpit();
+    broadcastGameState();
+  }
+
+  function cancelDiscardSelection() {
+    const modal = document.getElementById("discard-select-modal");
+    if (modal) modal.classList.remove("active");
+    activeDiscardPrompt = null;
+    selectedDiscardIndices = [];
+  }
+
   function useSidKetchumAbility() {
     const me = roomPlayers[clientId];
     if (!me || me.hand.length < 2 || me.currentLp >= me.maxLp) return;
-    const c1 = me.hand.pop();
-    const c2 = me.hand.pop();
-    gameState.discardPile.push(c1, c2);
-    me.currentLp = Math.min(me.maxLp, me.currentLp + 1);
-    addActivityLog(`🥩 Sid Ketchum discarded ${c1.name} and ${c2.name} to regain 1 LP!`);
-    broadcastGameState();
+
+    promptDiscardSelection({
+      count: 2,
+      title: "Sid Ketchum: Regain 1 LP",
+      message: "Select 2 cards from your hand to discard and heal 1 Life Point:",
+      allowCancel: true,
+      onConfirm: (discardedList) => {
+        if (discardedList.length === 2) {
+          me.currentLp = Math.min(me.maxLp, me.currentLp + 1);
+          const names = discardedList.map(c => c.name).join(" and ");
+          addActivityLog(`🥩 Sid Ketchum discarded ${names} to regain 1 LP! (${me.currentLp}/${me.maxLp} LP)`);
+          renderPlayerCockpit();
+          broadcastGameState();
+        }
+      }
+    });
   }
 
   function getSuitSymbol(suit) {
@@ -4033,30 +4421,43 @@
         const discarded = me.hand.pop();
         gameState.discardPile.push(discarded);
       }
-    } else if (me.charKey !== "SEAN_MALLORY") {
+      updateDiscardPileUI();
+      finishTurnEnd();
+      return;
+    }
+
+    if (me.charKey !== "SEAN_MALLORY") {
       let maxHandSize = me.currentLp;
       if (me.inPlay.some(c => c.name === "Belt")) maxHandSize += 2;
       if (me.extraHandLimit) maxHandSize += me.extraHandLimit;
 
       if (me.hand.length > maxHandSize) {
         const excess = me.hand.length - maxHandSize;
-        alert(`You must discard ${excess} excess card(s) to match your hand limit (${maxHandSize})!`);
-        const discardedList = [];
-        while (me.hand.length > maxHandSize) {
-          const discarded = me.hand.pop();
-          gameState.discardPile.push(discarded);
-          discardedList.push(discarded);
-          addActivityLog(`${me.name} discarded ${discarded.name}.`);
-        }
-        // Gary Looter (WWS): draws all excess cards discarded by other players
-        const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== me.id);
-        if (gary && discardedList.length > 0) {
-          gary.hand.push(...discardedList);
-          addActivityLog(`🧤 Gary Looter drew ${discardedList.length} discarded card(s)!`);
-        }
+        promptDiscardSelection({
+          count: excess,
+          title: "Discard Excess Cards",
+          message: `Your hand (${me.hand.length}) exceeds your life points / limit (${maxHandSize}). Select ${excess} card(s) to discard:`,
+          allowCancel: false,
+          onConfirm: (discardedList) => {
+            const names = discardedList.map(c => c.name).join(", ");
+            addActivityLog(`🗑️ ${me.name} discarded ${names} to match hand limit.`);
+            // Gary Looter (WWS): draws all excess cards discarded by other players
+            const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== me.id);
+            if (gary && discardedList.length > 0) {
+              gary.hand.push(...discardedList);
+              addActivityLog(`🧤 Gary Looter drew ${discardedList.length} discarded card(s)!`);
+            }
+            finishTurnEnd();
+          }
+        });
+        return;
       }
     }
 
+    finishTurnEnd();
+  }
+
+  function finishTurnEnd() {
     selectedCardIndex = null;
     hideAllTargetButtons();
 
