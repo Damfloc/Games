@@ -1431,6 +1431,42 @@
   </div>
 </div>
 
+<!-- Card Choice & Theft Modal (Cat Balou, Panic!, Rag Time, Conestoga) -->
+<div id="card-theft-modal" class="modal-overlay" style="z-index: 10002;">
+  <div class="modal-card" style="max-width: 660px;">
+    <div class="modal-header-icon" id="theft-modal-icon">🫳</div>
+    <div class="modal-title" id="theft-modal-title">Select Card to Take</div>
+    <div class="modal-message" id="theft-modal-subtitle">Choose which in-play equipment card to take, or draw a random card from their hand:</div>
+
+    <!-- Section 1: In-Play Cards -->
+    <div style="margin-top: 14px; text-align: left;">
+      <div style="font-size: 0.85rem; font-weight: 800; color: #ffd700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <span>Cards in Play (Equipment & Modifiers)</span>
+        <span id="theft-inplay-count-badge" style="font-size: 0.75rem; background: rgba(217, 119, 6, 0.3); padding: 2px 8px; border-radius: 999px;">0 in play</span>
+      </div>
+      <div class="cards-horizontal-scroll" id="theft-inplay-cards-row" style="justify-content: center; padding: 10px 0; min-height: 120px; gap: 10px; background: rgba(0,0,0,0.3); border-radius: 14px; border: 1px dashed rgba(217, 119, 6, 0.4);">
+        <!-- In-play cards rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Section 2: Hand Cards (Deck) -->
+    <div style="margin-top: 16px; text-align: left;">
+      <div style="font-size: 0.85rem; font-weight: 800; color: #ffd700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+        Cards in Hand
+      </div>
+      <button class="btn-gold" id="theft-hand-btn" style="width: 100%; padding: 14px; font-size: 1.05rem;" onclick="confirmCardTheftSelection('hand')">
+        <span>🎴 Draw a Random Card from Hand (<span id="theft-hand-count">0</span> cards face-down)</span>
+      </button>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 18px;">
+      <button class="btn-secondary" onclick="closeCardTheftModal()">
+        <span>Cancel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   /* ==========================================================================
      1. GLOBAL CONFIGURATION & EXPANSION TOGGLES
@@ -1504,7 +1540,7 @@
     { id: "rev_carabine_0", name: "Rev. Carabine", type: "blue", sub: "weapon", range: 4, suit: "C", value: 1, icon: "🎯", desc: "Weapon: Reach targets up to distance 4." },
     { id: "winchester_0", name: "Winchester", type: "blue", sub: "weapon", range: 5, suit: "S", value: 8, icon: "🎯", desc: "Weapon: Reach targets up to distance 5." },
     ...Array(2).fill().map((_, i) => ({ id: `mustang_${i}`, name: "Mustang", type: "blue", sub: "horse", suit: "H", value: (i === 0 ? 8 : 9), icon: "🐎", desc: "Other players see you at distance +1." })),
-    ...Array(2).fill().map((_, i) => ({ id: `barrel_${i}`, name: "Barrel", type: "blue", sub: "defense", suit: "S", value: (i === 0 ? 12 : 13), icon: "🛢️", desc: "When shot by BANG!, flip top card. Hearts = dodge!" })),
+    ...Array(2).fill().map((_, i) => ({ id: `barrel_${i}`, name: "Barrel", type: "blue", sub: "barrel", suit: "S", value: (i === 0 ? 12 : 13), icon: "🛢️", desc: "When shot by BANG!, flip top card. Hearts = dodge!" })),
     ...Array(3).fill().map((_, i) => ({ id: `jail_${i}`, name: "Jail", type: "blue", sub: "jail", suit: ["S","H"][i%2], value: (i%3)+10, icon: "🔒", desc: "Play on a player (not Sheriff). Flip Hearts at turn start or skip turn." })),
     { id: "scope_0", name: "Scope", type: "blue", sub: "scope", suit: "S", value: 1, icon: "🔭", desc: "You see all other players at distance -1." },
     { id: "dynamite_0", name: "Dynamite", type: "blue", sub: "dynamite", suit: "H", value: 2, icon: "🧨", desc: "Flip at turn start. Spades 2-9 explodes for 3 dmg! Otherwise passes left." }
@@ -1544,7 +1580,10 @@
     { id: "dc_indians_0", name: "Indians!", type: "brown", suit: "D", value: 5, icon: "🏹", desc: "All other players must discard a BANG! or lose 1 LP." },
     { id: "dc_general_store_0", name: "General Store", type: "brown", suit: "S", value: 10, icon: "🏬", desc: "Draft 1 card per player." },
     { id: "dc_silver_0", name: "Silver", type: "blue", sub: "weapon", range: 2, suit: "D", value: 13, icon: "🎯", desc: "Weapon: Reach targets up to distance 2." },
-    { id: "dc_remington_extra", name: "Remington", type: "blue", sub: "weapon", range: 3, suit: "H", value: 6, icon: "🎯", desc: "Weapon: Reach targets up to distance 3." }
+    { id: "dc_remington_extra", name: "Remington", type: "blue", sub: "weapon", range: 3, suit: "H", value: 6, icon: "🎯", desc: "Weapon: Reach targets up to distance 3." },
+    { id: "dc_barrel_extra", name: "Barrel", type: "blue", sub: "barrel", suit: "C", value: 13, icon: "🛢️", desc: "When shot by BANG!, flip top card. Hearts = dodge!" },
+    { id: "dc_hideout_0", name: "Hideout", type: "blue", sub: "horse", suit: "D", value: 13, icon: "🛖", desc: "Other players see you at distance +1 (stacks with Mustang!)." },
+    { id: "dc_binoculars_0", name: "Binoculars", type: "blue", sub: "scope", suit: "D", value: 10, icon: "🔭", desc: "You see all other players at distance -1 (stacks with Scope!)." }
   ];
 
   // High Noon Event Deck (13 Cards - High Noon must be at the bottom)
@@ -1670,6 +1709,14 @@
     SIMEON_PICOS: { name: "Simeon Picos", lp: 4, icon: "🌵", pack: "gr", desc: "Each time he loses 1 Life Point, he gains 1 Gold Nugget from the bank." },
     UNCLE_WILL: { name: "Uncle Will", lp: 4, icon: "🏬", pack: "gr", desc: "Once per turn, he may play any card from his hand as a General Store." }
   };
+
+  function playerHasAbility(player, charKey) {
+    if (!player) return false;
+    if (player.charKey === charKey) return true;
+    if (player.copiedCharKey === charKey) return true;
+    if (player.greygoryAbilities && player.greygoryAbilities.includes(charKey)) return true;
+    return false;
+  }
 
   /* ==========================================================================
      4. NETWORKING, AUDIO & GAME STATE
@@ -1933,6 +1980,10 @@
       }
     } else if (data.type === "CARD_CHECK_EVENT") {
       showCardCheckModal(data.checkData);
+    } else if (data.type === "THEFT_CARD_ACTION") {
+      if (isCurrentUserHost()) {
+        executeCardTheftAction(data.actorId, data.cardName, data.sourceCardIdx, data.targetId, data.choice, data.isGreenCard);
+      }
     }
   }
 
@@ -2585,9 +2636,30 @@
     gameState.turnPhase = "draw";
     let drawCount = 2;
 
+    // Vera Custer (Dodge City): at start of her turn, copies ability of another living player
+    if (active.charKey === "VERA_CUSTER") {
+      const otherLiving = getLivingPlayersCircle().filter(p => p.id !== active.id && p.charKey && p.charKey !== "VERA_CUSTER");
+      if (otherLiving.length > 0) {
+        const target = otherLiving[Math.floor(Math.random() * otherLiving.length)];
+        active.copiedCharKey = target.charKey;
+        const charName = CHARACTERS[target.charKey]?.name || target.charKey;
+        addActivityLog(`🪞 Vera Custer copied <strong>${escapeHTML(target.name)}'s</strong> ability (${charName}) for the turn!`);
+      }
+    }
+
+    // Greygory Deck (Wild West Show): at turn start, gains abilities of 2 random basic characters for the turn
+    if (active.charKey === "GREYGORY_DECK") {
+      const basicKeys = ["BART_CASSIDY", "BLACK_JACK", "CALAMITY_JANET", "EL_GRINGO", "JESSE_JONES", "JOURDONNAIS", "KIT_CARLSON", "LUCKY_DUKE", "PAUL_REGRET", "PEDRO_RAMIREZ", "ROSE_DOOLAN", "SID_KETCHUM", "SLAB_THE_KILLER", "SUZY_LAFAYETTE", "VULTURE_SAM", "WILLY_THE_KID"];
+      const shuffled = [...basicKeys].sort(() => Math.random() - 0.5);
+      active.greygoryAbilities = [shuffled[0], shuffled[1]];
+      const n1 = CHARACTERS[shuffled[0]]?.name || shuffled[0];
+      const n2 = CHARACTERS[shuffled[1]]?.name || shuffled[1];
+      addActivityLog(`🔀 Greygory Deck gained the abilities of <strong>${n1}</strong> and <strong>${n2}</strong> for the turn!`);
+    }
+
     // Character drawing overrides
-    if (active.charKey === "PIXIE_PETE") drawCount = 3;
-    if (active.charKey === "BILL_NOFACE") drawCount = 1 + (active.maxLp - active.currentLp);
+    if (playerHasAbility(active, "PIXIE_PETE")) drawCount = 3;
+    if (playerHasAbility(active, "BILL_NOFACE")) drawCount = 1 + (active.maxLp - active.currentLp);
 
     // High Noon event drawing overrides
     if (gameState.activeHighNoonCard?.effect === "draw_extra") drawCount++;
@@ -2603,7 +2675,7 @@
     }
 
     // Youl Grinner (WWS): before drawing, each player with more cards gives him 1 card
-    if (active.charKey === "YOUL_GRINNER") {
+    if (playerHasAbility(active, "YOUL_GRINNER")) {
       getLivingPlayersCircle().forEach(p => {
         if (p.id !== active.id && p.hand.length > active.hand.length) {
           const cardGiven = p.hand.pop();
@@ -2616,7 +2688,7 @@
     }
 
     // Jesse Jones ability: draws 1st card from an opponent's hand if available
-    if (active.charKey === "JESSE_JONES") {
+    if (playerHasAbility(active, "JESSE_JONES")) {
       const candidates = getLivingPlayersCircle().filter(p => p.id !== active.id && p.hand.length > 0);
       if (candidates.length > 0) {
         const victim = candidates[Math.floor(Math.random() * candidates.length)];
@@ -2630,7 +2702,7 @@
     }
 
     // Pedro Ramirez ability: may draw 1st card from discard pile if available
-    if (active.charKey === "PEDRO_RAMIREZ" && gameState.discardPile.length > 0) {
+    if (playerHasAbility(active, "PEDRO_RAMIREZ") && gameState.discardPile.length > 0) {
       const topDiscard = gameState.discardPile.pop();
       active.hand.push(topDiscard);
       addActivityLog(`⛏️ Pedro Ramirez drew his 1st card (${topDiscard.name}) from the Discard Pile!`);
@@ -2639,7 +2711,7 @@
     }
 
     // Kit Carlson ability: looks at top 3 cards, chooses 2, returns 1
-    if (active.charKey === "KIT_CARLSON") {
+    if (playerHasAbility(active, "KIT_CARLSON")) {
       const c1 = drawFromDeck();
       const c2 = drawFromDeck();
       const c3 = drawFromDeck();
@@ -2654,7 +2726,7 @@
     }
 
     // Pat Brennan ability: may draw 1 in-play card from any player instead of 2 from deck
-    if (active.charKey === "PAT_BRENNAN") {
+    if (playerHasAbility(active, "PAT_BRENNAN")) {
       const oppWithInPlay = getLivingPlayersCircle().filter(p => p.id !== active.id && p.inPlay.length > 0);
       if (oppWithInPlay.length > 0) {
         const victim = oppWithInPlay[0];
@@ -2666,7 +2738,7 @@
     }
 
     // Dutch Will ability: draws 2 cards, must discard 1, gains 1 Gold Nugget
-    if (active.charKey === "DUTCH_WILL") {
+    if (playerHasAbility(active, "DUTCH_WILL")) {
       const dw1 = drawFromDeck();
       const dw2 = drawFromDeck();
       if (dw1) active.hand.push(dw1);
@@ -2684,7 +2756,7 @@
     }
 
     // Black Jack ability: reveal 2nd card; if Hearts or Diamonds, draw a 3rd
-    if (active.charKey === "BLACK_JACK" && active.hand.length >= 2) {
+    if (playerHasAbility(active, "BLACK_JACK") && active.hand.length >= 2) {
       const secondCard = active.hand[active.hand.length - 1];
       if (secondCard.suit === "H" || secondCard.suit === "D" || gameState.activeHighNoonCard?.effect === "hearts_suit") {
         const bonus = drawFromDeck();
@@ -2748,6 +2820,8 @@
       currentActive.immuneToDiamonds = false;
       currentActive.usedDocHolyday = false;
       currentActive.usedJoseCount = 0;
+      currentActive.copiedCharKey = null;
+      currentActive.greygoryAbilities = null;
     }
 
     // Check Win Condition
@@ -2808,15 +2882,37 @@
 
     let dist = baseDist;
 
-    // Attacker Scope modifiers (sees others at -1)
-    const hasScope = attacker.inPlay.some(c => c.sub === "scope") || (attacker.charKey === "ROSE_DOOLAN");
-    if (hasScope) dist -= 1;
+    // 1. Attacker Sight Modifiers (seeing others closer / distance reduction)
+    // Rose Doolan built-in Scope: -1 distance (stacks with in-play cards!)
+    if (playerHasAbility(attacker, "ROSE_DOOLAN")) {
+      dist -= 1;
+    }
+    // In-play Scope and Binoculars cards in front of attacker: -1 each!
+    attacker.inPlay.forEach(c => {
+      if (c.sub === "scope" || c.name === "Scope" || c.name === "Binoculars") {
+        dist -= 1;
+      }
+    });
 
-    // Defender Mustang modifiers (others see defender at +1)
-    const hasMustang = defender.inPlay.some(c => c.sub === "horse") || (defender.charKey === "PAUL_REGRET");
-    // Belle Star ability: on her turn, others' in-play cards have no effect
-    const belleStarActive = (attacker.charKey === "BELLE_STAR" && gameState.activePlayerId === attacker.id);
-    if (hasMustang && !belleStarActive) dist += 1;
+    // 2. Defender Distance Modifiers (others see defender further away / distance increase)
+    // Paul Regret built-in Mustang: +1 distance (Innate character ability - stacks with in-play cards!)
+    if (playerHasAbility(defender, "PAUL_REGRET")) {
+      dist += 1;
+    }
+
+    // In-play Mustang, Hideout, and Talisman cards in front of defender:
+    // Belle Star ability: during her turn, cards in play in front of other players have no effect!
+    const belleStarActive = (playerHasAbility(attacker, "BELLE_STAR") && gameState.activePlayerId === attacker.id);
+    if (!belleStarActive) {
+      defender.inPlay.forEach(c => {
+        if (c.sub === "horse" || c.name === "Mustang" || c.name === "Hideout") {
+          dist += 1;
+        }
+        if (c.name === "Talisman" && baseDist === 1) {
+          dist += 1;
+        }
+      });
+    }
 
     return Math.max(1, dist);
   }
@@ -2896,7 +2992,7 @@
     // Target immunity checks (Apache Kid & Calumet Diamond immunity)
     if (targetId && roomPlayers[targetId]) {
       const tgt = roomPlayers[targetId];
-      if (tgt.charKey === "APACHE_KID" && card.suit === "D") {
+      if (playerHasAbility(tgt, "APACHE_KID") && card.suit === "D") {
         if (playerId === clientId) alert("Apache Kid is immune to cards of the Diamond suit!");
         return;
       }
@@ -2909,7 +3005,7 @@
     // 2. Action Cards (Brown)
     if (card.name === "BANG!") {
       // Check BANG! limit per turn (unlimited if Volcanic, Willy the Kid, or Shootout event)
-      const hasVolcanic = player.inPlay.some(c => c.unlimitedBang) || (player.charKey === "WILLY_THE_KID");
+      const hasVolcanic = player.inPlay.some(c => c.unlimitedBang) || playerHasAbility(player, "WILLY_THE_KID");
       const isShootout = (gameState.activeHighNoonCard?.effect === "extra_bang" && gameState.turnBangCount < 2);
       if (!hasVolcanic && !isShootout && gameState.turnBangCount >= 1) {
         if (playerId === clientId) alert("You can only play 1 BANG! card per turn!");
@@ -2925,13 +3021,13 @@
       gameState.turnBangCount++;
       addActivityLog(`🔫 ${player.name} shot a BANG! at ${roomPlayers[targetId].name}!`);
 
-      initiateAttackInterrupt(playerId, targetId, "BANG!", (player.charKey === "SLAB_THE_KILLER" ? 2 : 1));
+      initiateAttackInterrupt(playerId, targetId, "BANG!", (playerHasAbility(player, "SLAB_THE_KILLER") ? 2 : 1));
       return;
     }
 
     if (card.name === "Missed!") {
       // Calamity Janet can play Missed! as BANG!
-      if (player.charKey === "CALAMITY_JANET") {
+      if (playerHasAbility(player, "CALAMITY_JANET")) {
         if (!targetId || !canPlayerShootTarget(playerId, targetId)) {
           if (playerId === clientId) alert("Target is out of range!");
           return;
@@ -2961,7 +3057,7 @@
       gameState.discardPile.push(card);
 
       if (!player.isShadow) {
-        const healAmount = (player.charKey === "TEQUILA_JOE") ? 2 : 1;
+        const healAmount = playerHasAbility(player, "TEQUILA_JOE") ? 2 : 1;
         player.currentLp = Math.min(player.maxLp, player.currentLp + healAmount);
         addActivityLog(`🍺 ${player.name} drank a cold Beer (+${healAmount} LP).`);
       } else {
@@ -2976,7 +3072,7 @@
 
       // Madam Yto: draws 1 card whenever a Beer is played
       Object.values(roomPlayers).forEach(p => {
-        if (p.isAlive && p.charKey === "MADAM_YTO") {
+        if (p.isAlive && playerHasAbility(p, "MADAM_YTO")) {
           const bonus = drawFromDeck();
           if (bonus) {
             p.hand.push(bonus);
@@ -2995,23 +3091,29 @@
         return;
       }
       const tgt = roomPlayers[targetId];
-      if (tgt.hand.length === 0 && tgt.inPlay.length === 0) {
+      if (!tgt || (tgt.hand.length === 0 && tgt.inPlay.length === 0)) {
         if (playerId === clientId) alert("Target has no cards to steal!");
         return;
       }
-      player.hand.splice(cardIndex, 1);
-      gameState.discardPile.push(card);
 
-      // Steal card (in-play preferred or random hand)
-      let stolen = null;
-      if (tgt.inPlay.length > 0) {
-        stolen = tgt.inPlay.pop();
-      } else {
-        stolen = tgt.hand.pop();
+      if (playerId === clientId) {
+        promptCardTheftSelection("Panic!", cardIndex, targetId, "steal", false);
+        return;
       }
-      if (stolen) player.hand.push(stolen);
-      addActivityLog(`🫳 ${player.name} played Panic! and swiped a card from ${tgt.name}!`);
-      broadcastGameState();
+
+      // Bot execution: prefer high-threat in-play equipment or draw from hand
+      let choice = { type: "hand" };
+      if (tgt.inPlay.length > 0) {
+        const prioIdx = tgt.inPlay.findIndex(c => 
+          c.name === "Volcanic" || c.name === "Barrel" || c.name === "Mustang" || c.name === "Hideout" || c.sub === "weapon" || c.sub === "jail"
+        );
+        if (prioIdx !== -1) {
+          choice = { type: "inPlay", index: prioIdx };
+        } else if (tgt.hand.length === 0) {
+          choice = { type: "inPlay", index: 0 };
+        }
+      }
+      executeCardTheftAction(playerId, "Panic!", cardIndex, targetId, choice, false);
       return;
     }
 
@@ -3021,20 +3123,29 @@
         return;
       }
       const tgt = roomPlayers[targetId];
-      if (tgt.hand.length === 0 && tgt.inPlay.length === 0) {
+      if (!tgt || (tgt.hand.length === 0 && tgt.inPlay.length === 0)) {
         if (playerId === clientId) alert("Target has no cards to discard!");
         return;
       }
-      player.hand.splice(cardIndex, 1);
-      gameState.discardPile.push(card);
 
-      let discarded = null;
-      if (tgt.inPlay.length > 0) discarded = tgt.inPlay.pop();
-      else discarded = tgt.hand.pop();
-      if (discarded) gameState.discardPile.push(discarded);
+      if (playerId === clientId) {
+        promptCardTheftSelection("Cat Balou", cardIndex, targetId, "discard", false);
+        return;
+      }
 
-      addActivityLog(`💥 ${player.name} played Cat Balou: forced ${tgt.name} to discard ${discarded?.name || 'a card'}!`);
-      broadcastGameState();
+      // Bot execution: prefer high-threat in-play equipment or discard from hand
+      let choice = { type: "hand" };
+      if (tgt.inPlay.length > 0) {
+        const prioIdx = tgt.inPlay.findIndex(c => 
+          c.name === "Volcanic" || c.name === "Barrel" || c.name === "Mustang" || c.name === "Hideout" || c.sub === "weapon" || c.sub === "jail"
+        );
+        if (prioIdx !== -1) {
+          choice = { type: "inPlay", index: prioIdx };
+        } else if (tgt.hand.length === 0) {
+          choice = { type: "inPlay", index: 0 };
+        }
+      }
+      executeCardTheftAction(playerId, "Cat Balou", cardIndex, targetId, choice, false);
       return;
     }
 
@@ -3181,11 +3292,22 @@
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
       const executeRagTime = () => {
-        let stolen = tgt.inPlay.length > 0 ? tgt.inPlay.pop() : tgt.hand.pop();
-        if (stolen) player.hand.push(stolen);
-        addActivityLog(`🪕 ${player.name} played Rag Time and swiped a card from ${tgt.name}!`);
-        updateDiscardPileUI();
-        broadcastGameState();
+        if (playerId === clientId) {
+          promptCardTheftSelection("Rag Time", null, targetId, "steal", false);
+        } else {
+          let choice = { type: "hand" };
+          if (tgt.inPlay.length > 0) {
+            const prioIdx = tgt.inPlay.findIndex(c => 
+              c.name === "Volcanic" || c.name === "Barrel" || c.name === "Mustang" || c.name === "Hideout" || c.sub === "weapon" || c.sub === "jail"
+            );
+            if (prioIdx !== -1) {
+              choice = { type: "inPlay", index: prioIdx };
+            } else if (tgt.hand.length === 0) {
+              choice = { type: "inPlay", index: 0 };
+            }
+          }
+          executeCardTheftAction(playerId, "Rag Time", null, targetId, choice, false);
+        }
       };
       if (playerId === clientId) {
         promptDiscardSelection({
@@ -3253,6 +3375,13 @@
           const removed = v.hand.splice(bangIdx, 1)[0];
           gameState.discardPile.push(removed);
           addActivityLog(`${v.name} fended off Indians with a BANG!`);
+          if (v.charKey === "MOLLY_STARK" || v.copiedCharKey === "MOLLY_STARK") {
+            const mollyBonus = drawFromDeck();
+            if (mollyBonus) {
+              v.hand.push(mollyBonus);
+              addActivityLog(`🛡️ Molly Stark drew 1 card for discarding a BANG! out of turn!`);
+            }
+          }
         } else {
           damagePlayer(v.id, 1, playerId, "Indians!");
         }
@@ -3443,8 +3572,11 @@
 
     // Check if Defender is AI Bot
     if (defender.isBot) {
+      const isJourdonnais = playerHasAbility(defender, "JOURDONNAIS");
+      const hasBarrel = defender.inPlay.some(c => c.name === "Barrel" || c.sub === "barrel");
+
       // 1. Jourdonnais ability check for Bot
-      if (defender.charKey === "JOURDONNAIS" && missesRequired > 0) {
+      if (isJourdonnais && missesRequired > 0) {
         const flip = drawCardForCheck(defender);
         const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
         addActivityLog(`🤠 Jourdonnais check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}). Discarded.`);
@@ -3452,7 +3584,7 @@
         triggerCheckCardDisplay({
           actionType: "jourdonnais",
           icon: "🤠",
-          title: 'Jourdonnais "Draw!" Check',
+          title: 'Jourdonnais "Draw!" Check' + (hasBarrel ? ' [Chance 1 of 2]' : ''),
           subtitle: `${defender.name} checked Jourdonnais ability! (Hearts ♥️ = Dodge)`,
           card: flip,
           isSafe: isHearts,
@@ -3472,8 +3604,7 @@
         }
       }
 
-      // 2. Barrel card check for Bot
-      const hasBarrel = defender.inPlay.some(c => c.sub === "barrel");
+      // 2. Barrel card check for Bot (stacks with Jourdonnais!)
       if (hasBarrel && missesRequired > 0) {
         const flip = drawCardForCheck(defender);
         const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
@@ -3482,8 +3613,8 @@
         triggerCheckCardDisplay({
           actionType: "barrel",
           icon: "🛢️",
-          title: 'Barrel "Draw!" Check',
-          subtitle: `${defender.name} checked Barrel! (Hearts ♥️ = Dodge)`,
+          title: 'Barrel "Draw!" Check' + (isJourdonnais ? ' [Chance 2 of 2]' : ''),
+          subtitle: `${defender.name} checked Barrel card! (Hearts ♥️ = Dodge)`,
           card: flip,
           isSafe: isHearts,
           statusText: isHearts ? "🛡️ DEFLECTED! (SAFE)" : "💥 FAILED! (UNSAFE)",
@@ -3503,10 +3634,11 @@
       }
 
       // 3. Ready green defense cards for Bot
-      const botGreenIdx = defender.inPlay.findIndex(c => c.type === "green" && c.isReady && (
-        c.name === "Iron Plate" || c.name === "Sombrero" || c.name === "Ten Gallon Hat" || c.name === "Dodge" || c.name === "Bible"
-      ));
-      if (botGreenIdx !== -1 && missesRequired > 0) {
+      while (missesRequired > 0) {
+        const botGreenIdx = defender.inPlay.findIndex(c => c.type === "green" && c.isReady && (
+          c.name === "Iron Plate" || c.name === "Sombrero" || c.name === "Ten Gallon Hat" || c.name === "Dodge" || c.name === "Bible"
+        ));
+        if (botGreenIdx === -1) break;
         const gc = defender.inPlay.splice(botGreenIdx, 1)[0];
         gameState.discardPile.push(gc);
         updateDiscardPileUI();
@@ -3516,29 +3648,46 @@
           const extra = drawFromDeck();
           if (extra) defender.hand.push(extra);
         }
-        if (missesRequired <= 0) {
-          broadcastGameState();
-          return;
+        if (playerHasAbility(defender, "MOLLY_STARK")) {
+          const mollyExtra = drawFromDeck();
+          if (mollyExtra) {
+            defender.hand.push(mollyExtra);
+            addActivityLog(`🛡️ Molly Stark drew 1 card for using a defense card out of turn!`);
+          }
         }
       }
 
-      // 4. Play Missed! from hand
-      const missedIndices = [];
-      defender.hand.forEach((c, idx) => {
-        if (c.name === "Missed!" || (defender.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (defender.charKey === "ELENA_FUENTE")) {
-          missedIndices.push(idx);
-        }
-      });
-
-      if (missedIndices.length >= missesRequired) {
-        for (let i = 0; i < missesRequired; i++) {
-          const removed = defender.hand.splice(missedIndices[i] - i, 1)[0];
-          gameState.discardPile.push(removed);
-        }
-        updateDiscardPileUI();
-        addActivityLog(`🛡️ ${defender.name} played Missed! to dodge the attack.`);
+      if (missesRequired <= 0) {
         broadcastGameState();
         return;
+      }
+
+      // 4. Play Missed! from hand
+      if (!playerHasAbility(defender, "BIG_SPENCER")) {
+        const missedIndices = [];
+        defender.hand.forEach((c, idx) => {
+          if (c.name === "Missed!" || (playerHasAbility(defender, "CALAMITY_JANET") && c.name === "BANG!") || playerHasAbility(defender, "ELENA_FUENTE")) {
+            missedIndices.push(idx);
+          }
+        });
+
+        if (missedIndices.length >= missesRequired) {
+          for (let i = 0; i < missesRequired; i++) {
+            const removed = defender.hand.splice(missedIndices[i] - i, 1)[0];
+            gameState.discardPile.push(removed);
+            if (playerHasAbility(defender, "MOLLY_STARK")) {
+              const mollyExtra = drawFromDeck();
+              if (mollyExtra) {
+                defender.hand.push(mollyExtra);
+                addActivityLog(`🛡️ Molly Stark drew 1 card for playing Missed! out of turn!`);
+              }
+            }
+          }
+          updateDiscardPileUI();
+          addActivityLog(`🛡️ ${defender.name} played Missed! to dodge the attack.`);
+          broadcastGameState();
+          return;
+        }
       }
 
       // AI takes damage
@@ -3594,17 +3743,22 @@
         return;
       }
 
-      msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You need ${neededMisses} Missed! card(s) or Heart "Draw!" check to avoid damage.`;
-      actions.innerHTML = "";
+      const hasBarrelCard = me.inPlay.some(c => c.name === "Barrel" || c.sub === "barrel");
+      const isJourdonnais = playerHasAbility(me, "JOURDONNAIS");
 
-      const hasBarrelCard = me.inPlay.some(c => c.sub === "barrel");
-      const isJourdonnais = (me.charKey === "JOURDONNAIS");
+      if (isJourdonnais && hasBarrelCard && neededMisses > 0 && (!jourdonnaisTested || !barrelTested)) {
+        msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You have BOTH Jourdonnais ability AND an equipped Barrel card (2 "Draw!" chances) to dodge!`;
+      } else {
+        msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You need ${neededMisses} Missed! card(s) or Heart "Draw!" check to avoid damage.`;
+      }
+      actions.innerHTML = "";
 
       // 1. Jourdonnais Ability Button
       if (isJourdonnais && !jourdonnaisTested && neededMisses > 0) {
         const jdBtn = document.createElement("button");
         jdBtn.className = "btn-gold";
-        jdBtn.innerHTML = `<span>🤠 Jourdonnais "Draw!" (Hearts ♥️ = Dodge)</span>`;
+        const chanceTag = hasBarrelCard ? " [Chance 1 of 2]" : "";
+        jdBtn.innerHTML = `<span>🤠 Jourdonnais Skill "Draw!" (Hearts ♥️ = Dodge)${chanceTag}</span>`;
         jdBtn.onclick = () => {
           jourdonnaisTested = true;
           executeInterruptCheck("Jourdonnais Skill");
@@ -3612,11 +3766,12 @@
         actions.appendChild(jdBtn);
       }
 
-      // 2. Barrel Card Button
+      // 2. Barrel Card Button (stacks with Jourdonnais!)
       if (hasBarrelCard && !barrelTested && neededMisses > 0) {
         const barrelBtn = document.createElement("button");
         barrelBtn.className = "btn-gold";
-        barrelBtn.innerHTML = `<span>🛢️ Barrel "Draw!" (Hearts ♥️ = Dodge)</span>`;
+        const chanceTag = isJourdonnais ? " [Chance 2 of 2]" : "";
+        barrelBtn.innerHTML = `<span>🛢️ Barrel Card "Draw!" (Hearts ♥️ = Dodge)${chanceTag}</span>`;
         barrelBtn.onclick = () => {
           barrelTested = true;
           executeInterruptCheck("Barrel Card");
@@ -3627,25 +3782,44 @@
       // 3. Play Missed! Button
       const missedIndices = [];
       me.hand.forEach((c, idx) => {
-        if (c.name === "Missed!" || (me.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (me.charKey === "ELENA_FUENTE")) {
+        if (c.name === "Missed!" || (playerHasAbility(me, "CALAMITY_JANET") && c.name === "BANG!") || playerHasAbility(me, "ELENA_FUENTE")) {
           missedIndices.push(idx);
         }
       });
 
-      if (missedIndices.length >= neededMisses && neededMisses > 0) {
+      if (missedIndices.length > 0 && neededMisses > 0 && !playerHasAbility(me, "BIG_SPENCER")) {
+        const canCoverAll = (missedIndices.length >= neededMisses);
+        const actualCount = canCoverAll ? neededMisses : 1;
         const dodgeBtn = document.createElement("button");
         dodgeBtn.className = "btn-gold";
-        dodgeBtn.innerHTML = `<span>🛡️ Play Missed! (${missedIndices.length} available)</span>`;
+        const label = canCoverAll 
+          ? (neededMisses === 1 ? `🛡️ Play Missed!` : `🛡️ Play 2 Missed! Cards (${missedIndices.length} available)`)
+          : `🛡️ Play 1 Missed! Card (1 of ${neededMisses} needed)`;
+        dodgeBtn.innerHTML = `<span>${label}</span>`;
         dodgeBtn.onclick = () => {
-          modal.classList.remove("active");
-          gameState.pendingInterrupt = null;
-          for (let i = 0; i < neededMisses; i++) {
+          for (let i = 0; i < actualCount; i++) {
             const removed = me.hand.splice(missedIndices[i] - i, 1)[0];
             gameState.discardPile.push(removed);
+            if (playerHasAbility(me, "MOLLY_STARK")) {
+              const mollyBonus = drawFromDeck();
+              if (mollyBonus) {
+                me.hand.push(mollyBonus);
+                addActivityLog(`🛡️ Molly Stark drew 1 card for playing Missed! out of turn!`);
+              }
+            }
           }
           updateDiscardPileUI();
-          addActivityLog(`🛡️ ${me.name} played Missed! and dodged the ${attackType}!`);
-          broadcastGameState();
+          neededMisses -= actualCount;
+          if (neededMisses <= 0) {
+            modal.classList.remove("active");
+            gameState.pendingInterrupt = null;
+            addActivityLog(`🛡️ ${me.name} played Missed! and dodged the ${attackType}!`);
+            broadcastGameState();
+          } else {
+            addActivityLog(`🛡️ ${me.name} played 1 Missed! card (${neededMisses} more needed to dodge ${attackType})!`);
+            renderInterruptActions();
+            broadcastGameState();
+          }
         };
         actions.appendChild(dodgeBtn);
       }
@@ -3668,6 +3842,13 @@
           if (gc.name === "Dodge" || gc.name === "Bible") {
             const extra = drawFromDeck();
             if (extra) me.hand.push(extra);
+          }
+          if (playerHasAbility(me, "MOLLY_STARK")) {
+            const mollyBonus = drawFromDeck();
+            if (mollyBonus) {
+              me.hand.push(mollyBonus);
+              addActivityLog(`🛡️ Molly Stark drew 1 card for using a defense card out of turn!`);
+            }
           }
           if (neededMisses <= 0) {
             modal.classList.remove("active");
@@ -3783,6 +3964,13 @@
           const removed = responder.hand.splice(bangIdx, 1)[0];
           gameState.discardPile.push(removed);
           updateDiscardPileUI();
+          if ((responder.charKey === "MOLLY_STARK" || responder.copiedCharKey === "MOLLY_STARK") && currentTurn !== gameState.activePlayerId) {
+            const mollyBonus = drawFromDeck();
+            if (mollyBonus) {
+              responder.hand.push(mollyBonus);
+              addActivityLog(`🛡️ Molly Stark drew 1 card for playing a card out of turn in a duel!`);
+            }
+          }
           addActivityLog(`⚔️ <strong>${escapeHTML(responder.name)}</strong> returned fire with a BANG! in the duel!`);
           playGunshot();
           broadcastGameState("bang");
@@ -3846,6 +4034,13 @@
           const removed = me.hand.splice(bangIndices[0], 1)[0];
           gameState.discardPile.push(removed);
           updateDiscardPileUI();
+          if ((me.charKey === "MOLLY_STARK" || me.copiedCharKey === "MOLLY_STARK") && clientId !== gameState.activePlayerId) {
+            const mollyBonus = drawFromDeck();
+            if (mollyBonus) {
+              me.hand.push(mollyBonus);
+              addActivityLog(`🛡️ Molly Stark drew 1 card for playing a card out of turn in a duel!`);
+            }
+          }
           addActivityLog(`⚔️ <strong>${escapeHTML(me.name)}</strong> fired back with a BANG! in the duel!`);
           playGunshot();
           broadcastGameState("bang");
@@ -3900,6 +4095,13 @@
         const removed = responder.hand.splice(bangIdx, 1)[0];
         gameState.discardPile.push(removed);
         updateDiscardPileUI();
+        if ((responder.charKey === "MOLLY_STARK" || responder.copiedCharKey === "MOLLY_STARK") && responderId !== gameState.activePlayerId) {
+          const mollyBonus = drawFromDeck();
+          if (mollyBonus) {
+            responder.hand.push(mollyBonus);
+            addActivityLog(`🛡️ Molly Stark drew 1 card for playing a card out of turn in a duel!`);
+          }
+        }
       }
       addActivityLog(`⚔️ <strong>${escapeHTML(responder.name)}</strong> returned fire with a BANG! in the duel!`);
       playGunshot();
@@ -3930,7 +4132,7 @@
         addActivityLog(`🪙 ${roomPlayers[attackerId].name} earned ${amount} Gold Nugget(s) for dealing damage!`);
       }
       // Simeon Picos: gains 1 Gold Nugget whenever damaged
-      if (victim.charKey === "SIMEON_PICOS") {
+      if (playerHasAbility(victim, "SIMEON_PICOS")) {
         victim.gold = (victim.gold || 0) + amount;
         addActivityLog(`🪙 Simeon Picos gained ${amount} Gold Nugget(s) from taking a hit!`);
       }
@@ -3956,7 +4158,7 @@
     }
 
     // Bart Cassidy ability: draws 1 card per damage
-    if (victim.charKey === "BART_CASSIDY" && victim.currentLp > 0) {
+    if (playerHasAbility(victim, "BART_CASSIDY") && victim.currentLp > 0) {
       for (let i = 0; i < amount; i++) {
         const c = drawFromDeck();
         if (c) victim.hand.push(c);
@@ -3965,12 +4167,13 @@
     }
 
     // El Gringo ability: draws 1 random card from attacker
-    if (victim.charKey === "EL_GRINGO" && attackerId && victim.currentLp > 0) {
+    if (playerHasAbility(victim, "EL_GRINGO") && attackerId && victim.currentLp > 0) {
       const atk = roomPlayers[attackerId];
       if (atk && atk.hand.length > 0) {
         const stolen = atk.hand.pop();
         victim.hand.push(stolen);
         addActivityLog(`🌵 El Gringo swiped a card from his attacker ${atk.name}!`);
+        checkSuzyLafayette(atk);
       }
     }
 
@@ -3984,12 +4187,19 @@
           gameState.discardPile.push(beer);
           victim.currentLp = 1;
           addActivityLog(`🍺 ${victim.name} drank an emergency Beer and survived at 1 LP!`);
+          if (playerHasAbility(victim, "MOLLY_STARK")) {
+            const mollyBonus = drawFromDeck();
+            if (mollyBonus) {
+              victim.hand.push(mollyBonus);
+              addActivityLog(`🛡️ Molly Stark drew 1 card for drinking an emergency Beer out of turn!`);
+            }
+          }
           return;
         }
       }
 
       // Teren Kill check (WWS)
-      if (victim.charKey === "TEREN_KILL") {
+      if (playerHasAbility(victim, "TEREN_KILL")) {
         const checkCard = drawCardForCheck(victim);
         const cheatsDeath = (checkCard.suit !== "S");
         addActivityLog(`🩸 Teren Kill lethal check: ${getSuitSymbol(checkCard.suit)} ${checkCard.value} (${checkCard.name || 'Card'})!`);
@@ -4023,11 +4233,11 @@
 
       // Character-Specific & Equipment Abilities upon any elimination
       Object.values(roomPlayers).forEach(p => {
-        if (p.isAlive && p.charKey === "GREG_DIGGER") {
+        if (p.isAlive && playerHasAbility(p, "GREG_DIGGER")) {
           p.currentLp = Math.min(p.maxLp, p.currentLp + 2);
           addActivityLog(`⚰️ Greg Digger regains 2 LP from a death!`);
         }
-        if (p.isAlive && p.charKey === "HERB_HUNTER") {
+        if (p.isAlive && playerHasAbility(p, "HERB_HUNTER")) {
           const c1 = drawFromDeck();
           const c2 = drawFromDeck();
           if (c1) p.hand.push(c1);
@@ -4060,7 +4270,7 @@
       }
 
       // Vulture Sam takes all cards of deceased player (both in hand and in play)
-      const vulture = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "VULTURE_SAM");
+      const vulture = Object.values(roomPlayers).find(p => p.isAlive && playerHasAbility(p, "VULTURE_SAM"));
       if (vulture) {
         vulture.hand.push(...victim.hand, ...victim.inPlay);
         addActivityLog(`🦅 Vulture Sam scavenged all ${victim.hand.length + victim.inPlay.length} cards from ${victim.name}.`);
@@ -4104,34 +4314,53 @@
   }
 
   function drawCardForCheck(player) {
-    let card = drawFromDeck();
-    if (!card) card = { suit: "H", value: 7, name: "Hearts Card" };
+    let checkCount = 1;
+    if (player) {
+      if (playerHasAbility(player, "LUCKY_DUKE")) checkCount++;
+      if (player.inPlay.some(c => c.name === "Horseshoe")) checkCount++;
+      if (player.extraDrawCheck) checkCount++;
+    }
 
-    // Lucky Duke or Horseshoe flips 2 cards and picks preferred
-    if (player && (player.charKey === "LUCKY_DUKE" || player.extraDrawCheck)) {
-      const secondCard = drawFromDeck();
-      if (secondCard) {
-        addActivityLog(`🎲 Check: flipped ${getSuitSymbol(card.suit)} ${card.value} and ${getSuitSymbol(secondCard.suit)} ${secondCard.value}.`);
-        if (secondCard.suit === "H" && card.suit !== "H") {
-          gameState.discardPile.push(card);
-          card = secondCard;
-        } else {
-          gameState.discardPile.push(secondCard);
-        }
+    const cards = [];
+    for (let i = 0; i < checkCount; i++) {
+      const c = drawFromDeck();
+      if (c) cards.push(c);
+    }
+    if (cards.length === 0) cards.push({ suit: "H", value: 7, name: "Hearts Card" });
+
+    let chosenCard = cards[0];
+    if (cards.length > 1) {
+      // Prioritize Hearts (safe for Barrel, Jail, Don Bell)
+      const heartCard = cards.find(c => c.suit === "H" || (gameState.activeHighNoonCard?.effect === "hearts_suit"));
+      if (heartCard) {
+        chosenCard = heartCard;
+      } else {
+        // Otherwise avoid Spades 2-9 (Dynamite danger)
+        const safeDynamite = cards.find(c => !(c.suit === "S" && c.value >= 2 && c.value <= 9));
+        if (safeDynamite) chosenCard = safeDynamite;
+        else chosenCard = cards[0];
       }
+
+      // Discard unchosen cards
+      cards.forEach(c => {
+        if (c !== chosenCard) gameState.discardPile.push(c);
+      });
+
+      const cardsFlippedStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+      addActivityLog(`🎲 Check: flipped ${cardsFlippedStr} -> Selected ${getSuitSymbol(chosenCard.suit)} ${chosenCard.value}!`);
     }
 
     // John Pain (WWS): If John Pain has < 6 cards, he takes any card drawn for checks by other players.
-    const johnPain = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "JOHN_PAIN" && p.id !== (player ? player.id : null));
+    const johnPain = Object.values(roomPlayers).find(p => p.isAlive && playerHasAbility(p, "JOHN_PAIN") && p.id !== (player ? player.id : null));
     if (johnPain && johnPain.hand.length < 6) {
-      johnPain.hand.push(card);
-      addActivityLog(`🖐️ John Pain took the check card (${card.name || getSuitSymbol(card.suit) + " " + card.value})!`);
+      johnPain.hand.push(chosenCard);
+      addActivityLog(`🖐️ John Pain took the check card (${chosenCard.name || getSuitSymbol(chosenCard.suit) + " " + chosenCard.value})!`);
     } else {
-      gameState.discardPile.push(card);
+      gameState.discardPile.push(chosenCard);
     }
 
     updateDiscardPileUI();
-    return card;
+    return chosenCard;
   }
 
   let activeCheckCallback = null;
@@ -4479,7 +4708,7 @@
     if (bot.isShadow) {
       addActivityLog(`👻 Shadow Gunslinger ${bot.name} discards remaining hand at end of turn.`);
       bot.hand = [];
-    } else if (bot.charKey !== "SEAN_MALLORY") {
+    } else if (!playerHasAbility(bot, "SEAN_MALLORY")) {
       let maxHand = bot.currentLp;
       if (bot.inPlay.some(c => c.name === "Belt")) maxHand += 2;
       const discardedList = [];
@@ -4489,7 +4718,7 @@
         discardedList.push(discarded);
         addActivityLog(`${bot.name} discarded ${discarded.name} to match Life Points.`);
       }
-      const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== bot.id);
+      const gary = Object.values(roomPlayers).find(p => p.isAlive && playerHasAbility(p, "GARY_LOOTER") && p.id !== bot.id);
       if (gary && discardedList.length > 0) {
         gary.hand.push(...discardedList);
         addActivityLog(`🧤 Gary Looter drew ${discardedList.length} card(s) discarded by ${bot.name}!`);
@@ -4732,7 +4961,7 @@
     if (specialActions) {
       specialActions.innerHTML = "";
       if (isMyTurn && gameState.turnPhase === "play") {
-        if (me.charKey === "JACKY_MURIETA") {
+        if (playerHasAbility(me, "JACKY_MURIETA")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4742,7 +4971,7 @@
           btn.onclick = () => useJackyMurietaAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "JOSH_MCCLOUD") {
+        if (playerHasAbility(me, "JOSH_MCCLOUD")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4752,7 +4981,7 @@
           btn.onclick = () => useJoshMcCloudAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "UNCLE_WILL") {
+        if (playerHasAbility(me, "UNCLE_WILL")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4762,7 +4991,7 @@
           btn.onclick = () => useUncleWillAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "SID_KETCHUM") {
+        if (playerHasAbility(me, "SID_KETCHUM")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4772,7 +5001,7 @@
           btn.onclick = () => useSidKetchumAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "CHUCK_WENGAM") {
+        if (playerHasAbility(me, "CHUCK_WENGAM")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4782,7 +5011,7 @@
           btn.onclick = () => useChuckWengamAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "DOC_HOLYDAY") {
+        if (playerHasAbility(me, "DOC_HOLYDAY")) {
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
           btn.style.fontSize = "0.78rem";
@@ -4792,7 +5021,7 @@
           btn.onclick = () => useDocHolydayAbility();
           specialActions.appendChild(btn);
         }
-        if (me.charKey === "JOSE_DELGADO") {
+        if (playerHasAbility(me, "JOSE_DELGADO")) {
           const blueInHand = me.hand.some(c => c.type === "blue");
           const btn = document.createElement("button");
           btn.className = "btn btn-secondary";
@@ -4814,7 +5043,7 @@
     if (endBtn) endBtn.disabled = !isMyTurn;
 
     if (bangNotice) {
-      const hasVolcanic = me.inPlay.some(c => c.unlimitedBang) || (me.charKey === "WILLY_THE_KID");
+      const hasVolcanic = me.inPlay.some(c => c.unlimitedBang) || playerHasAbility(me, "WILLY_THE_KID");
       bangNotice.innerText = hasVolcanic ? "BANG! Limit: Unlimited" : `BANG! Limit: ${gameState.turnBangCount}/1`;
     }
   }
@@ -4933,8 +5162,18 @@
   function executeBrownEquipmentEffect(player, card) {
     if (card.name === "Bottle") {
       if (player.currentLp < player.maxLp && !player.isShadow && getLivingPlayersCircle().length > 2) {
-        player.currentLp = Math.min(player.maxLp, player.currentLp + 1);
-        addActivityLog(`🍾 ${player.name} used Bottle as a refreshing Beer (+1 LP)!`);
+        const healAmt = (player.charKey === "TEQUILA_JOE" || player.copiedCharKey === "TEQUILA_JOE") ? 2 : 1;
+        player.currentLp = Math.min(player.maxLp, player.currentLp + healAmt);
+        addActivityLog(`🍾 ${player.name} used Bottle as a refreshing Beer (+${healAmt} LP)!`);
+        Object.values(roomPlayers).forEach(p => {
+          if (p.isAlive && (p.charKey === "MADAM_YTO" || p.copiedCharKey === "MADAM_YTO")) {
+            const ytoBonus = drawFromDeck();
+            if (ytoBonus) {
+              p.hand.push(ytoBonus);
+              addActivityLog(`💃 Madam Yto drew 1 card because Bottle was drunk as Beer!`);
+            }
+          }
+        });
       } else {
         const opponents = getLivingPlayersCircle().filter(p => p.id !== player.id && canPlayerShootTarget(player.id, p.id));
         if (opponents.length > 0) {
@@ -5234,6 +5473,209 @@
     selectedDiscardIndices = [];
   }
 
+  /* ==========================================================================
+     CARD THEFT & DISCARD CHOICE SELECTION (Panic!, Cat Balou, Rag Time, Conestoga)
+     ========================================================================== */
+  let activeTheftState = null;
+
+  function promptCardTheftSelection(cardName, sourceCardIdx, targetId, actionType, isGreenCard = false) {
+    const me = roomPlayers[clientId];
+    const tgt = roomPlayers[targetId];
+    if (!me || !tgt) return;
+
+    if (tgt.inPlay.length === 0 && tgt.hand.length === 0) {
+      alert(`${tgt.name} has no cards to take or discard!`);
+      return;
+    }
+
+    activeTheftState = {
+      cardName,
+      sourceCardIdx,
+      targetId,
+      actionType,
+      isGreenCard
+    };
+
+    const modal = document.getElementById("card-theft-modal");
+    const icon = document.getElementById("theft-modal-icon");
+    const title = document.getElementById("theft-modal-title");
+    const subtitle = document.getElementById("theft-modal-subtitle");
+    const inplayRow = document.getElementById("theft-inplay-cards-row");
+    const inplayBadge = document.getElementById("theft-inplay-count-badge");
+    const handBtn = document.getElementById("theft-hand-btn");
+    const handCount = document.getElementById("theft-hand-count");
+
+    if (icon) icon.innerText = (actionType === "discard") ? "💥" : "🫳";
+    if (title) title.innerText = (actionType === "discard") ? `Cat Balou: Discard from ${tgt.name}` : `${cardName}: Steal from ${tgt.name}`;
+    if (subtitle) {
+      subtitle.innerText = (actionType === "discard")
+        ? `Choose any equipment card in play to discard, or discard a random card from ${tgt.name}'s hand:`
+        : `Choose any equipment card in play to steal into your hand, or draw a random card from ${tgt.name}'s hand:`;
+    }
+
+    if (inplayBadge) inplayBadge.innerText = `${tgt.inPlay.length} in play`;
+    if (handCount) handCount.innerText = tgt.hand.length;
+
+    // Render in-play cards
+    if (inplayRow) {
+      inplayRow.innerHTML = "";
+      if (tgt.inPlay.length === 0) {
+        inplayRow.innerHTML = `<div style="color: #94a3b8; font-style: italic; padding: 14px; font-size: 0.95rem;">${escapeHTML(tgt.name)} has no equipment or cards in play.</div>`;
+      } else {
+        tgt.inPlay.forEach((c, idx) => {
+          const cardEl = document.createElement("div");
+          const isRed = c.suit === "H" || c.suit === "D";
+          cardEl.className = `bang-card ${c.type || 'blue'}`;
+          cardEl.style.cursor = "pointer";
+          cardEl.style.transform = "scale(0.95)";
+          cardEl.style.transition = "transform 0.2s ease, box-shadow 0.2s ease";
+          cardEl.title = `Click to ${actionType} ${c.name}`;
+          cardEl.onmouseenter = () => {
+            cardEl.style.transform = "scale(1.05)";
+            cardEl.style.boxShadow = "0 0 16px rgba(251, 191, 36, 0.85)";
+          };
+          cardEl.onmouseleave = () => {
+            cardEl.style.transform = "scale(0.95)";
+            cardEl.style.boxShadow = "none";
+          };
+          cardEl.innerHTML = `
+            <div>
+              <div class="card-top-icon">${c.icon || '🎴'}</div>
+              <div class="card-name-title">${escapeHTML(c.name)}</div>
+              <div class="card-effect-text">${escapeHTML(c.desc || '')}</div>
+            </div>
+            <div class="card-suit-value ${isRed ? 'red' : 'black'}">
+              <span>${c.value || ''}</span>
+              <span>${getSuitSymbol(c.suit)}</span>
+            </div>
+          `;
+          cardEl.onclick = () => confirmCardTheftSelection('inPlay', idx);
+          inplayRow.appendChild(cardEl);
+        });
+      }
+    }
+
+    if (handBtn) {
+      if (tgt.hand.length === 0) {
+        handBtn.disabled = true;
+        handBtn.style.opacity = "0.5";
+        handBtn.style.cursor = "not-allowed";
+        handBtn.innerHTML = `<span>🎴 Hand is Empty (0 cards)</span>`;
+      } else {
+        handBtn.disabled = false;
+        handBtn.style.opacity = "1";
+        handBtn.style.cursor = "pointer";
+        const verb = (actionType === "discard") ? "Discard" : "Draw";
+        handBtn.innerHTML = `<span>🎴 ${verb} a Random Card from Hand (${tgt.hand.length} card(s) face-down)</span>`;
+      }
+    }
+
+    if (modal) modal.classList.add("active");
+  }
+
+  function closeCardTheftModal() {
+    activeTheftState = null;
+    const modal = document.getElementById("card-theft-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  function confirmCardTheftSelection(type, inPlayIndex = null) {
+    if (!activeTheftState) return;
+    const { cardName, sourceCardIdx, targetId, actionType, isGreenCard } = activeTheftState;
+    closeCardTheftModal();
+
+    const choice = {
+      type: type,
+      index: inPlayIndex
+    };
+
+    if (isSoloMode || isCurrentUserHost()) {
+      executeCardTheftAction(clientId, cardName, sourceCardIdx, targetId, choice, isGreenCard);
+    } else {
+      publishMessage({
+        type: "THEFT_CARD_ACTION",
+        actorId: clientId,
+        cardName,
+        sourceCardIdx,
+        targetId,
+        choice,
+        isGreenCard
+      });
+    }
+
+    selectedCardIndex = null;
+    selectedGreenCardIndex = null;
+    hideAllTargetButtons();
+    renderPlayerCockpit();
+  }
+
+  function executeCardTheftAction(actorId, cardName, sourceCardIdx, targetId, choice, isGreenCard = false) {
+    const actor = roomPlayers[actorId];
+    const tgt = roomPlayers[targetId];
+    if (!actor || !tgt) return;
+
+    let targetCard = null;
+
+    if (choice.type === "inPlay") {
+      if (choice.index !== null && tgt.inPlay[choice.index]) {
+        targetCard = tgt.inPlay.splice(choice.index, 1)[0];
+      } else if (tgt.inPlay.length > 0) {
+        targetCard = tgt.inPlay.pop();
+      }
+    } else {
+      if (tgt.hand.length > 0) {
+        const randIdx = Math.floor(Math.random() * tgt.hand.length);
+        targetCard = tgt.hand.splice(randIdx, 1)[0];
+      } else if (tgt.inPlay.length > 0) {
+        targetCard = tgt.inPlay.pop();
+      }
+    }
+
+    if (!targetCard) return;
+
+    // Discard the played card (Panic!, Cat Balou, Rag Time, Conestoga)
+    if (sourceCardIdx !== null) {
+      if (isGreenCard) {
+        let idx = (actor.inPlay[sourceCardIdx]?.name === cardName) 
+          ? sourceCardIdx 
+          : actor.inPlay.findIndex(c => c.name === cardName);
+        if (idx !== -1) {
+          const removed = actor.inPlay.splice(idx, 1)[0];
+          gameState.discardPile.push(removed);
+        }
+      } else {
+        let idx = (actor.hand[sourceCardIdx]?.name === cardName)
+          ? sourceCardIdx
+          : actor.hand.findIndex(c => c.name === cardName);
+        if (idx !== -1) {
+          const removed = actor.hand.splice(idx, 1)[0];
+          gameState.discardPile.push(removed);
+        }
+      }
+    }
+
+    // Resolve Steal vs Discard
+    const isDiscard = (cardName === "Cat Balou");
+    if (isDiscard) {
+      gameState.discardPile.push(targetCard);
+      const locStr = (choice.type === "inPlay") ? `in-play ${targetCard.name}` : `a card from hand (${targetCard.name})`;
+      addActivityLog(`💥 <strong>${escapeHTML(actor.name)}</strong> played Cat Balou: forced <strong>${escapeHTML(tgt.name)}</strong> to discard ${locStr}!`);
+      playGunshot();
+    } else {
+      actor.hand.push(targetCard);
+      const locStr = (choice.type === "inPlay") ? `in-play ${targetCard.name}` : `a card from hand`;
+      addActivityLog(`🫳 <strong>${escapeHTML(actor.name)}</strong> played ${cardName} and swiped ${locStr} from <strong>${escapeHTML(tgt.name)}</strong>!`);
+      playCardDraw();
+    }
+
+    checkSuzyLafayette(actor);
+    checkSuzyLafayette(tgt);
+
+    updateDiscardPileUI();
+    broadcastGameState();
+    renderPlayerCockpit();
+  }
+
   function useSidKetchumAbility() {
     const me = roomPlayers[clientId];
     if (!me || me.hand.length < 2 || me.currentLp >= me.maxLp) return;
@@ -5331,7 +5773,7 @@
 
   function checkSuzyLafayette(player) {
     if (!player || !player.isAlive) return;
-    if (player.charKey === "SUZY_LAFAYETTE" && player.hand.length === 0) {
+    if (playerHasAbility(player, "SUZY_LAFAYETTE") && player.hand.length === 0) {
       const drawn = drawFromDeck();
       if (drawn) {
         player.hand.push(drawn);
@@ -5419,6 +5861,10 @@
         label = `🔒 Jail ${escapeHTML(p.name)}`;
       }
 
+      if (card.suit === "D" && (playerHasAbility(p, "APACHE_KID") || p.immuneToDiamonds)) {
+        canTarget = false;
+      }
+
       if (canTarget) {
         btn.style.display = "block";
         btn.classList.add("active-target");
@@ -5459,6 +5905,10 @@
         label = `🛒 Commandeer from ${escapeHTML(p.name)}`;
       }
 
+      if (card.suit === "D" && (playerHasAbility(p, "APACHE_KID") || p.immuneToDiamonds)) {
+        canTarget = false;
+      }
+
       if (canTarget) {
         btn.style.display = "block";
         btn.classList.add("active-target");
@@ -5479,7 +5929,18 @@
   }
 
   function selectTargetPlayer(targetId) {
+    const tgt = roomPlayers[targetId];
     if (selectedGreenCardIndex !== null) {
+      const me = roomPlayers[clientId];
+      const gc = me && me.inPlay[selectedGreenCardIndex];
+      if (gc && gc.suit === "D" && (playerHasAbility(tgt, "APACHE_KID") || tgt?.immuneToDiamonds)) {
+        alert(`${tgt ? tgt.name : 'Target'} is immune to Diamond cards!`);
+        return;
+      }
+      if (gc && gc.name === "Conestoga") {
+        promptCardTheftSelection("Conestoga", selectedGreenCardIndex, targetId, "steal", true);
+        return;
+      }
       executeGreenCardTarget(selectedGreenCardIndex, targetId);
       selectedGreenCardIndex = null;
       hideAllTargetButtons();
@@ -5487,6 +5948,17 @@
       return;
     }
     if (selectedCardIndex === null) return;
+    const me = roomPlayers[clientId];
+    const card = me && me.hand[selectedCardIndex];
+    if (card && card.suit === "D" && (playerHasAbility(tgt, "APACHE_KID") || tgt?.immuneToDiamonds)) {
+      alert(`${tgt ? tgt.name : 'Target'} is immune to Diamond cards!`);
+      return;
+    }
+    if (card && (card.name === "Panic!" || card.name === "Cat Balou")) {
+      const actionType = (card.name === "Cat Balou") ? "discard" : "steal";
+      promptCardTheftSelection(card.name, selectedCardIndex, targetId, actionType, false);
+      return;
+    }
     playCardFromHand(clientId, selectedCardIndex, targetId);
     selectedCardIndex = null;
     hideAllTargetButtons();
@@ -5610,7 +6082,7 @@
       return;
     }
 
-    if (me.charKey !== "SEAN_MALLORY") {
+    if (!playerHasAbility(me, "SEAN_MALLORY")) {
       let maxHandSize = me.currentLp;
       if (me.inPlay.some(c => c.name === "Belt")) maxHandSize += 2;
       if (me.extraHandLimit) maxHandSize += me.extraHandLimit;
@@ -5626,7 +6098,7 @@
             const names = discardedList.map(c => c.name).join(", ");
             addActivityLog(`🗑️ ${me.name} discarded ${names} to match hand limit.`);
             // Gary Looter (WWS): draws all excess cards discarded by other players
-            const gary = Object.values(roomPlayers).find(p => p.isAlive && p.charKey === "GARY_LOOTER" && p.id !== me.id);
+            const gary = Object.values(roomPlayers).find(p => p.isAlive && playerHasAbility(p, "GARY_LOOTER") && p.id !== me.id);
             if (gary && discardedList.length > 0) {
               gary.hand.push(...discardedList);
               addActivityLog(`🧤 Gary Looter drew ${discardedList.length} discarded card(s)!`);
@@ -5686,7 +6158,7 @@
     playVictoryFanfare();
 
     // Close any dangling modal dialogs
-    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal"].forEach(id => {
+    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal", "card-theft-modal", "check-card-modal"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove("active");
     });
