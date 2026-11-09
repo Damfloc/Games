@@ -491,6 +491,17 @@
     background: #ef4444;
     color: #fff;
   }
+  .opponent-action-btn.active-target {
+    display: block !important;
+    background: rgba(220, 38, 38, 0.35);
+    border: 1px solid rgba(239, 68, 68, 0.85);
+    color: #fef08a;
+    animation: targetPulse 1.4s infinite ease-in-out;
+  }
+  @keyframes targetPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+    50% { transform: scale(1.02); box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.8); }
+  }
 
   /* Center Table Area (Deck, Discard & Action Feed) */
   .center-table-box {
@@ -864,6 +875,11 @@
   .in-play-slot.green-ready {
     border-color: #22c55e;
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  }
+  .in-play-slot.selected-green {
+    border-color: #facc15 !important;
+    background: rgba(250, 204, 21, 0.25) !important;
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.75) !important;
   }
   .in-play-slot.black-equip {
     border-color: #71717a;
@@ -1599,6 +1615,7 @@
 
   let roomPlayers = {}; // id -> { id, name, avatar, isHost, isBot, role, charKey, maxLp, currentLp, hand: [], inPlay: [] }
   let selectedCardIndex = null;
+  let selectedGreenCardIndex = null;
   let targetedPlayerId = null;
 
   // Audio Synthesizer
@@ -1641,6 +1658,12 @@
   function playDynamite() {
     playTone(90, 0.4, 'sawtooth', 0.45);
     setTimeout(() => playTone(45, 0.8, 'triangle', 0.4), 100);
+  }
+  function playVictoryFanfare() {
+    playTone(523.25, 0.18, 'triangle', 0.25); // C5
+    setTimeout(() => playTone(659.25, 0.18, 'triangle', 0.25), 150); // E5
+    setTimeout(() => playTone(783.99, 0.22, 'triangle', 0.25), 300); // G5
+    setTimeout(() => playTone(1046.50, 0.55, 'triangle', 0.35), 480); // C6
   }
 
   function isCurrentUserHost() {
@@ -1809,6 +1832,14 @@
       gameState = data.state;
       if (data.players) Object.assign(roomPlayers, data.players);
       showGameOverScreen();
+    } else if (data.type === "PLAYER_END_TURN") {
+      if (isCurrentUserHost()) {
+        advanceToNextTurn();
+      }
+    } else if (data.type === "DUEL_ACTION") {
+      if (isCurrentUserHost()) {
+        handleRemoteDuelAction(data.responderId, data.action);
+      }
     }
   }
 
@@ -2413,6 +2444,69 @@
       addActivityLog(`🪙 ${active.name}'s Gold Mine yielded 1 Gold Nugget!`);
     }
 
+    // Youl Grinner (WWS): before drawing, each player with more cards gives him 1 card
+    if (active.charKey === "YOUL_GRINNER") {
+      getLivingPlayersCircle().forEach(p => {
+        if (p.id !== active.id && p.hand.length > active.hand.length) {
+          const cardGiven = p.hand.pop();
+          if (cardGiven) {
+            active.hand.push(cardGiven);
+            addActivityLog(`😈 Youl Grinner took 1 card from ${p.name} (had more cards than him)!`);
+          }
+        }
+      });
+    }
+
+    // Jesse Jones ability: draws 1st card from an opponent's hand if available
+    if (active.charKey === "JESSE_JONES") {
+      const candidates = getLivingPlayersCircle().filter(p => p.id !== active.id && p.hand.length > 0);
+      if (candidates.length > 0) {
+        const victim = candidates[Math.floor(Math.random() * candidates.length)];
+        const stolen = victim.hand.pop();
+        if (stolen) {
+          active.hand.push(stolen);
+          addActivityLog(`🕶️ Jesse Jones drew his 1st card from ${victim.name}'s hand!`);
+          drawCount = Math.max(0, drawCount - 1);
+        }
+      }
+    }
+
+    // Pedro Ramirez ability: may draw 1st card from discard pile if available
+    if (active.charKey === "PEDRO_RAMIREZ" && gameState.discardPile.length > 0) {
+      const topDiscard = gameState.discardPile.pop();
+      active.hand.push(topDiscard);
+      addActivityLog(`⛏️ Pedro Ramirez drew his 1st card (${topDiscard.name}) from the Discard Pile!`);
+      drawCount = Math.max(0, drawCount - 1);
+      updateDiscardPileUI();
+    }
+
+    // Kit Carlson ability: looks at top 3 cards, chooses 2, returns 1
+    if (active.charKey === "KIT_CARLSON") {
+      const c1 = drawFromDeck();
+      const c2 = drawFromDeck();
+      const c3 = drawFromDeck();
+      const drawn = [c1, c2, c3].filter(Boolean);
+      if (drawn.length >= 3) {
+        const returned = drawn.pop();
+        gameState.deck.push(returned);
+        active.hand.push(...drawn);
+        addActivityLog(`📜 Kit Carlson viewed top 3 cards, kept 2 (${drawn.map(c=>c.name).join(", ")}), and placed 1 back on top!`);
+        drawCount = 0;
+      }
+    }
+
+    // Pat Brennan ability: may draw 1 in-play card from any player instead of 2 from deck
+    if (active.charKey === "PAT_BRENNAN") {
+      const oppWithInPlay = getLivingPlayersCircle().filter(p => p.id !== active.id && p.inPlay.length > 0);
+      if (oppWithInPlay.length > 0) {
+        const victim = oppWithInPlay[0];
+        const snatched = victim.inPlay.pop();
+        active.hand.push(snatched);
+        addActivityLog(`🐴 Pat Brennan snatched in-play ${snatched.name} from ${victim.name} instead of drawing from deck!`);
+        drawCount = 0;
+      }
+    }
+
     // Dutch Will ability: draws 2 cards, must discard 1, gains 1 Gold Nugget
     if (active.charKey === "DUTCH_WILL") {
       const dw1 = drawFromDeck();
@@ -2479,21 +2573,12 @@
       currentActive.extraDrawCheck = false;
       currentActive.extraHandLimit = 0;
       currentActive.immuneToDiamonds = false;
+      currentActive.usedDocHolyday = false;
+      currentActive.usedJoseCount = 0;
     }
 
     // Check Win Condition
-    const win = checkWinCondition();
-    if (win) {
-      gameState.status = "over";
-      gameState.winner = win;
-      publishMessage({
-        type: "GAME_OVER",
-        state: gameState,
-        players: roomPlayers
-      });
-      showGameOverScreen();
-      return;
-    }
+    if (evaluateWinConditionAndTrigger()) return;
 
     // Calculate next player (living or Shadow gunslinger)
     const direction = (gameState.activeHighNoonCard?.effect === "reverse_order") ? -1 : 1;
@@ -2630,8 +2715,22 @@
       if (card.type === "green") card.isReady = false; // Green card must wait 1 turn to activate
       player.inPlay.push(card);
       addActivityLog(`🛡️ ${player.name} equipped ${card.name} (${card.type.toUpperCase()}).`);
+      checkSuzyLafayette(player);
       broadcastGameState();
       return;
+    }
+
+    // Target immunity checks (Apache Kid & Calumet Diamond immunity)
+    if (targetId && roomPlayers[targetId]) {
+      const tgt = roomPlayers[targetId];
+      if (tgt.charKey === "APACHE_KID" && card.suit === "D") {
+        if (playerId === clientId) alert("Apache Kid is immune to cards of the Diamond suit!");
+        return;
+      }
+      if (tgt.immuneToDiamonds && card.suit === "D") {
+        if (playerId === clientId) alert("Target is protected by Calumet against Diamond cards!");
+        return;
+      }
     }
 
     // 2. Action Cards (Brown)
@@ -2764,6 +2863,172 @@
       addActivityLog(`💥 ${player.name} played Cat Balou: forced ${tgt.name} to discard ${discarded?.name || 'a card'}!`);
       broadcastGameState();
       return;
+    }
+
+    if (card.name === "Duel") {
+      if (!targetId || targetId === playerId || !roomPlayers[targetId]?.isAlive) {
+        if (playerId === clientId) alert("Please choose an opponent to challenge to a Duel!");
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      updateDiscardPileUI();
+      addActivityLog(`⚔️ <strong>${escapeHTML(player.name)}</strong> challenged <strong>${escapeHTML(roomPlayers[targetId].name)}</strong> to a DUEL!`);
+      broadcastGameState();
+      initiateDuel(playerId, targetId);
+      return;
+    }
+
+    if (card.name === "Punch") {
+      if (!targetId || calculateEffectiveDistance(playerId, targetId) > 1) {
+        if (playerId === clientId) alert("Punch can only target players at distance 1!");
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      updateDiscardPileUI();
+      addActivityLog(`🥊 ${player.name} threw a Punch at ${roomPlayers[targetId].name}!`);
+      initiateAttackInterrupt(playerId, targetId, "Punch", 1);
+      return;
+    }
+
+    if (card.name === "Springfield") {
+      if (!targetId || targetId === playerId || !roomPlayers[targetId]?.isAlive) {
+        if (playerId === clientId) alert("Select a target for Springfield!");
+        return;
+      }
+      if (player.hand.length < 2) {
+        if (playerId === clientId) alert("Springfield requires discarding 1 extra card from your hand!");
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      if (playerId === clientId) {
+        promptDiscardSelection({
+          count: 1,
+          title: "Springfield Extra Discard",
+          message: "Select 1 extra card to discard to fire Springfield:",
+          allowCancel: false,
+          onConfirm: (discarded) => {
+            addActivityLog(`🎯 ${player.name} fired a Springfield rifle at ${roomPlayers[targetId].name}!`);
+            initiateAttackInterrupt(playerId, targetId, "Springfield", 1);
+          }
+        });
+        return;
+      } else {
+        const extra = player.hand.pop();
+        gameState.discardPile.push(extra);
+        updateDiscardPileUI();
+        addActivityLog(`🎯 ${player.name} fired a Springfield rifle at ${roomPlayers[targetId].name}!`);
+        initiateAttackInterrupt(playerId, targetId, "Springfield", 1);
+        return;
+      }
+    }
+
+    if (card.name === "Tequila" || card.name === "Whiskey") {
+      const healAmt = (card.name === "Whiskey") ? 2 : 1;
+      if (player.hand.length < 2) {
+        if (playerId === clientId) alert(`${card.name} requires discarding 1 extra card from hand!`);
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      if (playerId === clientId) {
+        promptDiscardSelection({
+          count: 1,
+          title: `${card.name}: Discard 1 Card`,
+          message: `Select 1 extra card to discard to drink ${card.name} (+${healAmt} LP):`,
+          allowCancel: false,
+          onConfirm: (discarded) => {
+            player.currentLp = Math.min(player.maxLp, player.currentLp + healAmt);
+            addActivityLog(`🍾 ${player.name} drank ${card.name} (+${healAmt} LP)!`);
+            renderPlayerCockpit();
+            broadcastGameState();
+          }
+        });
+        return;
+      } else {
+        const extra = player.hand.pop();
+        gameState.discardPile.push(extra);
+        updateDiscardPileUI();
+        player.currentLp = Math.min(player.maxLp, player.currentLp + healAmt);
+        addActivityLog(`🍾 ${player.name} drank ${card.name} (+${healAmt} LP)!`);
+        broadcastGameState();
+        return;
+      }
+    }
+
+    if (card.name === "Brawl") {
+      if (player.hand.length < 2) {
+        if (playerId === clientId) alert("Brawl requires discarding 1 extra card from hand!");
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      const executeBrawl = () => {
+        addActivityLog(`💥 ${player.name} started a BRAWL! All other players must discard 1 card!`);
+        getLivingPlayersCircle().filter(p => p.id !== playerId).forEach(v => {
+          if (v.inPlay.length > 0) gameState.discardPile.push(v.inPlay.pop());
+          else if (v.hand.length > 0) gameState.discardPile.push(v.hand.pop());
+        });
+        updateDiscardPileUI();
+        broadcastGameState();
+      };
+      if (playerId === clientId) {
+        promptDiscardSelection({
+          count: 1,
+          title: "Brawl: Discard 1 Card",
+          message: "Select 1 extra card to discard to trigger a Brawl:",
+          allowCancel: false,
+          onConfirm: () => executeBrawl()
+        });
+        return;
+      } else {
+        gameState.discardPile.push(player.hand.pop());
+        updateDiscardPileUI();
+        executeBrawl();
+        return;
+      }
+    }
+
+    if (card.name === "Rag Time") {
+      if (!targetId || targetId === playerId) {
+        if (playerId === clientId) alert("Select an opponent to steal from!");
+        return;
+      }
+      if (player.hand.length < 2) {
+        if (playerId === clientId) alert("Rag Time requires discarding 1 extra card from hand!");
+        return;
+      }
+      const tgt = roomPlayers[targetId];
+      if (!tgt || (tgt.hand.length === 0 && tgt.inPlay.length === 0)) {
+        if (playerId === clientId) alert("Target has no cards to steal!");
+        return;
+      }
+      player.hand.splice(cardIndex, 1);
+      gameState.discardPile.push(card);
+      const executeRagTime = () => {
+        let stolen = tgt.inPlay.length > 0 ? tgt.inPlay.pop() : tgt.hand.pop();
+        if (stolen) player.hand.push(stolen);
+        addActivityLog(`🪕 ${player.name} played Rag Time and swiped a card from ${tgt.name}!`);
+        updateDiscardPileUI();
+        broadcastGameState();
+      };
+      if (playerId === clientId) {
+        promptDiscardSelection({
+          count: 1,
+          title: "Rag Time: Discard 1 Card",
+          message: "Select 1 extra card to discard to play Rag Time:",
+          allowCancel: false,
+          onConfirm: () => executeRagTime()
+        });
+        return;
+      } else {
+        gameState.discardPile.push(player.hand.pop());
+        updateDiscardPileUI();
+        executeRagTime();
+        return;
+      }
     }
 
     if (card.name === "Stagecoach") {
@@ -3034,7 +3299,27 @@
         }
       }
 
-      // 3. Play Missed! from hand
+      // 3. Ready green defense cards for Bot
+      const botGreenIdx = defender.inPlay.findIndex(c => c.type === "green" && c.isReady && (
+        c.name === "Iron Plate" || c.name === "Sombrero" || c.name === "Ten Gallon Hat" || c.name === "Dodge" || c.name === "Bible"
+      ));
+      if (botGreenIdx !== -1 && missesRequired > 0) {
+        const gc = defender.inPlay.splice(botGreenIdx, 1)[0];
+        gameState.discardPile.push(gc);
+        updateDiscardPileUI();
+        missesRequired--;
+        addActivityLog(`🛡️ ${defender.name} used in-play green card ${gc.name} to dodge!`);
+        if (gc.name === "Dodge" || gc.name === "Bible") {
+          const extra = drawFromDeck();
+          if (extra) defender.hand.push(extra);
+        }
+        if (missesRequired <= 0) {
+          broadcastGameState();
+          return;
+        }
+      }
+
+      // 4. Play Missed! from hand
       const missedIndices = [];
       defender.hand.forEach((c, idx) => {
         if (c.name === "Missed!" || (defender.charKey === "CALAMITY_JANET" && c.name === "BANG!") || (defender.charKey === "ELENA_FUENTE")) {
@@ -3078,6 +3363,7 @@
     const me = roomPlayers[clientId];
     const attacker = roomPlayers[attackerId];
     const modal = document.getElementById("interrupt-modal");
+    const icon = document.getElementById("modal-icon");
     const title = document.getElementById("modal-title");
     const msg = document.getElementById("modal-message");
     const actions = document.getElementById("modal-actions");
@@ -3085,6 +3371,7 @@
 
     if (!modal || !me) return;
 
+    if (icon) icon.innerText = "💥";
     if (banner) {
       banner.style.display = "none";
       banner.className = "barrel-banner";
@@ -3160,6 +3447,36 @@
         actions.appendChild(dodgeBtn);
       }
 
+      // 3b. Ready Green Defense Card (In Play)
+      const greenDefIdx = me.inPlay.findIndex(c => c.type === "green" && c.isReady && (
+        c.name === "Iron Plate" || c.name === "Sombrero" || c.name === "Ten Gallon Hat" || c.name === "Dodge" || c.name === "Bible"
+      ));
+      if (greenDefIdx !== -1 && neededMisses > 0) {
+        const gc = me.inPlay[greenDefIdx];
+        const greenDefBtn = document.createElement("button");
+        greenDefBtn.className = "btn-gold";
+        greenDefBtn.innerHTML = `<span>🛡️ Use ${gc.name} (In Play)</span>`;
+        greenDefBtn.onclick = () => {
+          me.inPlay.splice(greenDefIdx, 1);
+          gameState.discardPile.push(gc);
+          updateDiscardPileUI();
+          neededMisses--;
+          addActivityLog(`🛡️ ${me.name} used in-play green card ${gc.name} to dodge!`);
+          if (gc.name === "Dodge" || gc.name === "Bible") {
+            const extra = drawFromDeck();
+            if (extra) me.hand.push(extra);
+          }
+          if (neededMisses <= 0) {
+            modal.classList.remove("active");
+            gameState.pendingInterrupt = null;
+            broadcastGameState();
+          } else {
+            renderInterruptActions();
+          }
+        };
+        actions.appendChild(greenDefBtn);
+      }
+
       // 4. Take Hit Button
       const takeHitBtn = document.createElement("button");
       takeHitBtn.className = "btn-danger";
@@ -3214,6 +3531,171 @@
 
     renderInterruptActions();
     modal.classList.add("active");
+  }
+
+  /* ==========================================================================
+     DUEL RESOLUTION ENGINE
+     ========================================================================== */
+  function initiateDuel(challengerId, targetId) {
+    gameState.activeDuel = {
+      challengerId,
+      targetId,
+      currentTurn: targetId, // target responds first!
+      round: 1
+    };
+    promptDuelTurn();
+  }
+
+  function promptDuelTurn() {
+    if (!gameState.activeDuel) return;
+    const { challengerId, targetId, currentTurn } = gameState.activeDuel;
+    const responder = roomPlayers[currentTurn];
+    const opponentId = (currentTurn === challengerId) ? targetId : challengerId;
+    const opponent = roomPlayers[opponentId];
+
+    if (!responder || !responder.isAlive || !opponent || !opponent.isAlive) {
+      gameState.activeDuel = null;
+      return;
+    }
+
+    if (responder.isBot) {
+      setTimeout(() => {
+        const bangIdx = responder.hand.findIndex(c => c.name === "BANG!" || (responder.charKey === "CALAMITY_JANET" && c.name === "Missed!"));
+        if (bangIdx !== -1) {
+          const removed = responder.hand.splice(bangIdx, 1)[0];
+          gameState.discardPile.push(removed);
+          updateDiscardPileUI();
+          addActivityLog(`⚔️ <strong>${escapeHTML(responder.name)}</strong> returned fire with a BANG! in the duel!`);
+          playGunshot();
+          broadcastGameState("bang");
+          gameState.activeDuel.currentTurn = opponentId;
+          gameState.activeDuel.round++;
+          promptDuelTurn();
+        } else {
+          addActivityLog(`🩸 <strong>${escapeHTML(responder.name)}</strong> had no BANG! cards and lost the duel!`);
+          gameState.activeDuel = null;
+          damagePlayer(responder.id, 1, opponentId, "Duel");
+          broadcastGameState();
+        }
+      }, 1000);
+      return;
+    }
+
+    if (currentTurn === clientId) {
+      showDuelModal(opponentId);
+    } else {
+      gameState.pendingInterrupt = {
+        type: "duel",
+        responderId: currentTurn,
+        opponentId: opponentId
+      };
+      broadcastGameState();
+    }
+  }
+
+  function showDuelModal(opponentId) {
+    const me = roomPlayers[clientId];
+    const opponent = roomPlayers[opponentId];
+    const modal = document.getElementById("interrupt-modal");
+    const icon = document.getElementById("modal-icon");
+    const title = document.getElementById("modal-title");
+    const msg = document.getElementById("modal-message");
+    const actions = document.getElementById("modal-actions");
+    const banner = document.getElementById("barrel-result-banner");
+
+    if (!modal || !me || !opponent) return;
+
+    if (banner) banner.style.display = "none";
+    if (icon) icon.innerText = "⚔️";
+    if (title) title.innerText = "DUEL IN PROGRESS!";
+    msg.innerText = `${opponent.name} challenged you! You must discard a BANG! card to return fire, or take 1 Life Point of damage (Barrels do not work in a Duel).`;
+    actions.innerHTML = "";
+
+    const bangIndices = [];
+    me.hand.forEach((c, idx) => {
+      if (c.name === "BANG!" || (me.charKey === "CALAMITY_JANET" && c.name === "Missed!")) {
+        bangIndices.push(idx);
+      }
+    });
+
+    if (bangIndices.length > 0) {
+      const bangBtn = document.createElement("button");
+      bangBtn.className = "btn-gold";
+      bangBtn.innerHTML = `<span>🔫 Return Fire with BANG! (${bangIndices.length} available)</span>`;
+      bangBtn.onclick = () => {
+        modal.classList.remove("active");
+        if (isCurrentUserHost()) {
+          const removed = me.hand.splice(bangIndices[0], 1)[0];
+          gameState.discardPile.push(removed);
+          updateDiscardPileUI();
+          addActivityLog(`⚔️ <strong>${escapeHTML(me.name)}</strong> fired back with a BANG! in the duel!`);
+          playGunshot();
+          broadcastGameState("bang");
+          gameState.activeDuel.currentTurn = opponentId;
+          gameState.activeDuel.round++;
+          promptDuelTurn();
+        } else {
+          publishMessage({
+            type: "DUEL_ACTION",
+            responderId: clientId,
+            action: "counter"
+          });
+        }
+      };
+      actions.appendChild(bangBtn);
+    }
+
+    const concedeBtn = document.createElement("button");
+    concedeBtn.className = "btn-danger";
+    concedeBtn.innerHTML = `<span>🩸 Concede / Take Hit (-1 Life Point)</span>`;
+    concedeBtn.onclick = () => {
+      modal.classList.remove("active");
+      if (isCurrentUserHost()) {
+        gameState.activeDuel = null;
+        gameState.pendingInterrupt = null;
+        addActivityLog(`🩸 <strong>${escapeHTML(me.name)}</strong> could not return fire and lost the duel!`);
+        damagePlayer(clientId, 1, opponentId, "Duel");
+        broadcastGameState();
+      } else {
+        publishMessage({
+          type: "DUEL_ACTION",
+          responderId: clientId,
+          action: "concede"
+        });
+      }
+    };
+    actions.appendChild(concedeBtn);
+
+    modal.classList.add("active");
+  }
+
+  function handleRemoteDuelAction(responderId, action) {
+    if (!gameState.activeDuel) return;
+    const { challengerId, targetId } = gameState.activeDuel;
+    const opponentId = (responderId === challengerId) ? targetId : challengerId;
+    const responder = roomPlayers[responderId];
+    if (!responder) return;
+
+    if (action === "counter") {
+      const bangIdx = responder.hand.findIndex(c => c.name === "BANG!" || (responder.charKey === "CALAMITY_JANET" && c.name === "Missed!"));
+      if (bangIdx !== -1) {
+        const removed = responder.hand.splice(bangIdx, 1)[0];
+        gameState.discardPile.push(removed);
+        updateDiscardPileUI();
+      }
+      addActivityLog(`⚔️ <strong>${escapeHTML(responder.name)}</strong> returned fire with a BANG! in the duel!`);
+      playGunshot();
+      broadcastGameState("bang");
+      gameState.activeDuel.currentTurn = opponentId;
+      gameState.activeDuel.round++;
+      promptDuelTurn();
+    } else {
+      gameState.activeDuel = null;
+      gameState.pendingInterrupt = null;
+      addActivityLog(`🩸 <strong>${escapeHTML(responder.name)}</strong> conceded the duel and took 1 damage!`);
+      damagePlayer(responderId, 1, opponentId, "Duel");
+      broadcastGameState();
+    }
   }
 
   function damagePlayer(victimId, amount, attackerId = null, reason = "shot") {
@@ -3360,6 +3842,9 @@
         victim.isShadow = true;
         addActivityLog(`👻 ${victim.name} rises as a Shadow Gunslinger! They keep their Gold and will take turns with 0 LP.`);
       }
+
+      // Immediate win condition check upon elimination!
+      if (evaluateWinConditionAndTrigger()) return;
     }
   }
 
@@ -3437,6 +3922,12 @@
 
     // 3-Player Dodge City Win Conditions
     if (players.length === 3) {
+      const livingDep = living.find(p => p.role === "deputy");
+      const livingOut = living.find(p => p.role === "outlaw");
+      const livingRen = living.find(p => p.role === "renegade");
+      if (!livingRen && livingDep) return "deputy";
+      if (!livingOut && livingRen) return "renegade";
+      if (!livingDep && livingOut) return "outlaw";
       if (living.length === 1) return living[0].role;
       return null;
     }
@@ -3459,7 +3950,9 @@
         if (deadOutlaws > deadLawmen && livingRenegades.length > 0) {
           return null; // Renegade allied with Outlaws continues fight against Sheriff
         }
-        return "sheriff";
+        if (livingRenegades.length === 0) {
+          return "sheriff";
+        }
       }
 
       return null;
@@ -3482,6 +3975,25 @@
     return null; // Battle continues
   }
 
+  function evaluateWinConditionAndTrigger() {
+    const win = checkWinCondition();
+    if (!win) return false;
+
+    gameState.status = "over";
+    gameState.winner = win;
+
+    if (isCurrentUserHost()) {
+      publishMessage({
+        type: "GAME_OVER",
+        state: gameState,
+        players: roomPlayers
+      });
+    }
+
+    showGameOverScreen();
+    return true;
+  }
+
   /* ==========================================================================
      12. AI BOT LOGIC FOR SOLO & MULTIPLAYER
      ========================================================================== */
@@ -3496,7 +4008,7 @@
   }
 
   function runBotTurn(bot) {
-    if (!isCurrentUserHost() || gameState.status !== "playing") return;
+    if (!isCurrentUserHost() || gameState.status !== "playing" || !bot.isAlive) return;
 
     // 1. Equip any Blue or Green cards in hand
     for (let i = bot.hand.length - 1; i >= 0; i--) {
@@ -3506,7 +4018,45 @@
       }
     }
 
-    // 2. Play Stagecoach or Wells Fargo
+    // 2. Activate ready in-play Green cards
+    for (let i = bot.inPlay.length - 1; i >= 0; i--) {
+      const gc = bot.inPlay[i];
+      if (gc && gc.type === "green" && gc.isReady) {
+        if (gc.name === "Canteen" && bot.currentLp < bot.maxLp) {
+          bot.inPlay.splice(i, 1);
+          gameState.discardPile.push(gc);
+          bot.currentLp++;
+          addActivityLog(`🍶 ${bot.name} used Canteen (+1 LP).`);
+        } else if (gc.name === "Pony Express") {
+          bot.inPlay.splice(i, 1);
+          gameState.discardPile.push(gc);
+          bot.hand.push(drawFromDeck(), drawFromDeck(), drawFromDeck());
+          addActivityLog(`🐎 ${bot.name} activated Pony Express and drew 3 cards.`);
+        } else if (gc.name === "Howitzer") {
+          bot.inPlay.splice(i, 1);
+          gameState.discardPile.push(gc);
+          addActivityLog(`💣 ${bot.name} fired Howitzer! Gatling on all other players.`);
+          getLivingPlayersCircle().filter(p => p.id !== bot.id).forEach(v => {
+            initiateAttackInterrupt(bot.id, v.id, "Howitzer", 1);
+          });
+        } else if (["Pepperbox", "Buffalo Rifle", "Knife", "Derringer"].includes(gc.name)) {
+          const ignoreRange = (gc.name === "Buffalo Rifle");
+          const targetId = chooseBotAttackTarget(bot, ignoreRange);
+          if (targetId) {
+            bot.inPlay.splice(i, 1);
+            gameState.discardPile.push(gc);
+            addActivityLog(`⚡ ${bot.name} activated ${gc.name} on ${roomPlayers[targetId].name}!`);
+            if (gc.name === "Derringer" && roomPlayers[targetId].hand.length > 0) {
+              const stolen = roomPlayers[targetId].hand.pop();
+              bot.hand.push(stolen);
+            }
+            initiateAttackInterrupt(bot.id, targetId, gc.name, 1);
+          }
+        }
+      }
+    }
+
+    // 3. Play Stagecoach, Wells Fargo, Saloon
     for (let i = bot.hand.length - 1; i >= 0; i--) {
       const c = bot.hand[i];
       if (c && (c.name === "Stagecoach" || c.name === "Wells Fargo" || c.name === "Saloon")) {
@@ -3514,22 +4064,36 @@
       }
     }
 
-    // 3. Heal with Beer if missing LP
+    // 4. Heal with Beer if missing LP
     if (bot.currentLp < bot.maxLp) {
       const beerIdx = bot.hand.findIndex(c => c.name === "Beer");
       if (beerIdx !== -1) playCardFromHand(bot.id, beerIdx);
     }
 
-    // 4. Attack target with BANG!
-    const bangIdx = bot.hand.findIndex(c => c.name === "BANG!");
-    if (bangIdx !== -1) {
-      const targetId = chooseBotAttackTarget(bot);
+    // 5. Attack target with Duel or BANG!
+    const duelIdx = bot.hand.findIndex(c => c.name === "Duel");
+    if (duelIdx !== -1) {
+      const targetId = chooseBotAttackTarget(bot, true); // Duels can challenge any distance!
       if (targetId) {
-        playCardFromHand(bot.id, bangIdx, targetId);
+        playCardFromHand(bot.id, duelIdx, targetId);
+      }
+    } else {
+      const bangIdx = bot.hand.findIndex(c => c.name === "BANG!");
+      if (bangIdx !== -1) {
+        const targetId = chooseBotAttackTarget(bot, false);
+        if (targetId) {
+          playCardFromHand(bot.id, bangIdx, targetId);
+        }
       }
     }
 
-    // 5. Saloon Shop purchase (Gold Rush)
+    // Play utility action cards for bot
+    const utilIdx = bot.hand.findIndex(c => ["Gatling", "Indians!"].includes(c.name));
+    if (utilIdx !== -1) {
+      playCardFromHand(bot.id, utilIdx);
+    }
+
+    // 6. Saloon Shop purchase (Gold Rush)
     if (config.enableGoldRush && gameState.shopCards && (bot.gold || 0) >= 2) {
       const affordIdx = gameState.shopCards.findIndex(sc => sc && (bot.gold || 0) >= sc.cost && !(sc.type === 'gold_black' && bot.inPlay.some(ip => ip.name === sc.name)));
       if (affordIdx !== -1) {
@@ -3537,22 +4101,22 @@
       }
     }
 
-    // 6. Phase 3: Discard excess cards down to LP
+    // 7. Phase 3: Discard excess cards down to LP
     setTimeout(() => {
       botDiscardPhase(bot);
-    }, 1000);
+    }, 1200);
   }
 
-  function chooseBotAttackTarget(bot) {
+  function chooseBotAttackTarget(bot, ignoreRange = false) {
     const living = getLivingPlayersCircle().filter(p => p.id !== bot.id);
-    const validTargets = living.filter(p => canPlayerShootTarget(bot.id, p.id));
+    const validTargets = ignoreRange ? living : living.filter(p => canPlayerShootTarget(bot.id, p.id));
     if (validTargets.length === 0) return null;
 
     const sheriff = living.find(p => p.role === "sheriff");
 
     // Outlaw AI: shoot the Sheriff!
     if (bot.role === "outlaw") {
-      if (sheriff && canPlayerShootTarget(bot.id, sheriff.id)) return sheriff.id;
+      if (sheriff && (ignoreRange || canPlayerShootTarget(bot.id, sheriff.id))) return sheriff.id;
       return validTargets[0].id;
     }
 
@@ -3573,6 +4137,12 @@
   }
 
   function botDiscardPhase(bot) {
+    if (gameState.status !== "playing") return;
+    if (gameState.pendingInterrupt || gameState.activeDuel) {
+      setTimeout(() => botDiscardPhase(bot), 1000);
+      return;
+    }
+
     if (bot.isShadow) {
       addActivityLog(`👻 Shadow Gunslinger ${bot.name} discards remaining hand at end of turn.`);
       bot.hand = [];
@@ -3600,6 +4170,10 @@
      13. UI SYNCHRONIZATION & RENDERING
      ========================================================================== */
   function syncActiveShootoutUI() {
+    if (gameState.status === "over") {
+      showGameOverScreen();
+      return;
+    }
     switchScreen("gameplay-screen");
 
     // 1. Deck & Discard Counts
@@ -3659,6 +4233,11 @@
       const modal = document.getElementById("interrupt-modal");
       if (modal && !modal.classList.contains("active")) {
         showAttackInterruptModal(gameState.pendingInterrupt.attackerId, gameState.pendingInterrupt.attackType, gameState.pendingInterrupt.missesRequired);
+      }
+    } else if (gameState.pendingInterrupt && gameState.pendingInterrupt.type === "duel" && gameState.pendingInterrupt.responderId === clientId) {
+      const modal = document.getElementById("interrupt-modal");
+      if (modal && !modal.classList.contains("active")) {
+        showDuelModal(gameState.pendingInterrupt.opponentId);
       }
     }
   }
@@ -3771,11 +4350,12 @@
           const item = document.createElement("div");
           const isGreenReady = c.type === "green" && c.isReady;
           const isBlack = c.type === "gold_black";
-          item.className = `in-play-slot ${isGreenReady ? 'green-ready' : ''} ${isBlack ? 'gold_black' : ''}`;
+          const isGreenSelected = selectedGreenCardIndex === idx;
+          item.className = `in-play-slot ${isGreenReady ? 'green-ready' : ''} ${isBlack ? 'gold_black' : ''} ${isGreenSelected ? 'selected-green' : ''}`;
           item.innerHTML = `
             <span>${c.icon || '🛡️'}</span>
             <span>${c.name} ${c.range ? `[Range ${c.range}]` : ''}</span>
-            ${c.type === 'green' ? `<span style="font-size: 0.7rem; color: ${isGreenReady ? '#22c55e' : '#eab308'};">(${isGreenReady ? 'Ready' : 'Activating next turn'})</span>` : ''}
+            ${c.type === 'green' ? `<span style="font-size: 0.7rem; color: ${isGreenSelected ? '#facc15' : (isGreenReady ? '#22c55e' : '#eab308')};">(${isGreenSelected ? 'Targeting...' : (isGreenReady ? 'Ready - Click to use' : 'Activating next turn')})</span>` : ''}
             ${isBlack ? `<span style="font-size: 0.7rem; color: #a1a1aa;">[Black Equip]</span>` : ''}
           `;
           if (isGreenReady && isMyTurn) {
@@ -3857,6 +4437,37 @@
           btn.disabled = me.hand.length < 2 || me.currentLp >= me.maxLp;
           btn.innerText = "🥩 Discard 2 for +1 LP";
           btn.onclick = () => useSidKetchumAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "CHUCK_WENGAM") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = me.currentLp <= 1;
+          btn.innerText = "🍺 Lose 1 LP for 2 Cards";
+          btn.onclick = () => useChuckWengamAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "DOC_HOLYDAY") {
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = me.hand.length < 2 || me.usedDocHolyday;
+          btn.innerText = "🩺 Discard 2 for Free Shot";
+          btn.onclick = () => useDocHolydayAbility();
+          specialActions.appendChild(btn);
+        }
+        if (me.charKey === "JOSE_DELGADO") {
+          const blueInHand = me.hand.some(c => c.type === "blue");
+          const btn = document.createElement("button");
+          btn.className = "btn btn-secondary";
+          btn.style.fontSize = "0.78rem";
+          btn.style.padding = "4px 8px";
+          btn.disabled = !blueInHand || (me.usedJoseCount || 0) >= 2;
+          btn.innerText = `📘 Discard Blue for 2 Cards (${2 - (me.usedJoseCount || 0)} left)`;
+          btn.onclick = () => useJoseDelgadoAbility();
           specialActions.appendChild(btn);
         }
       }
@@ -4311,6 +4922,92 @@
     });
   }
 
+  function useChuckWengamAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || me.currentLp <= 1) return;
+    me.currentLp--;
+    const c1 = drawFromDeck();
+    const c2 = drawFromDeck();
+    if (c1) me.hand.push(c1);
+    if (c2) me.hand.push(c2);
+    addActivityLog(`🍺 Chuck Wengam sacrificed 1 LP to draw 2 cards! (${me.currentLp}/${me.maxLp} LP)`);
+    renderPlayerCockpit();
+    broadcastGameState();
+  }
+
+  function useDocHolydayAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || me.hand.length < 2 || me.usedDocHolyday) return;
+    promptDiscardSelection({
+      count: 2,
+      title: "Doc Holyday: Free BANG!",
+      message: "Select 2 cards to discard to fire a free BANG! at any target in range:",
+      allowCancel: true,
+      onConfirm: (discardedList) => {
+        me.usedDocHolyday = true;
+        const livingTargets = getLivingPlayersCircle().filter(p => p.id !== clientId && canPlayerShootTarget(clientId, p.id));
+        if (livingTargets.length === 0) {
+          alert("No players currently in range for Doc Holyday's shot!");
+          return;
+        }
+        livingTargets.forEach(p => {
+          const btn = document.getElementById(`target-btn-${p.id}`);
+          if (btn) {
+            btn.style.display = "block";
+            btn.classList.add("active-target");
+            btn.innerText = `🩺 Shoot ${escapeHTML(p.name)} (Doc Holyday)`;
+            btn.onclick = () => {
+              hideAllTargetButtons();
+              addActivityLog(`🩺 Doc Holyday discarded 2 cards and fired a free shot at ${p.name}!`);
+              initiateAttackInterrupt(clientId, p.id, "BANG!", 1);
+            };
+          }
+        });
+      }
+    });
+  }
+
+  function useJoseDelgadoAbility() {
+    const me = roomPlayers[clientId];
+    if (!me || (me.usedJoseCount || 0) >= 2) return;
+    const blueIndices = [];
+    me.hand.forEach((c, idx) => { if (c.type === "blue") blueIndices.push(idx); });
+    if (blueIndices.length === 0) {
+      alert("You need a blue card in your hand to use Jose Delgado's ability!");
+      return;
+    }
+    promptDiscardSelection({
+      count: 1,
+      title: "Jose Delgado: Discard Blue Card",
+      message: "Select 1 blue equipment card to discard from your hand to draw 2 cards:",
+      allowCancel: true,
+      onConfirm: (discardedList) => {
+        if (discardedList.length === 1 && discardedList[0].type === "blue") {
+          me.usedJoseCount = (me.usedJoseCount || 0) + 1;
+          const c1 = drawFromDeck();
+          const c2 = drawFromDeck();
+          if (c1) me.hand.push(c1);
+          if (c2) me.hand.push(c2);
+          addActivityLog(`📘 Jose Delgado discarded ${discardedList[0].name} to draw 2 cards!`);
+          renderPlayerCockpit();
+          broadcastGameState();
+        }
+      }
+    });
+  }
+
+  function checkSuzyLafayette(player) {
+    if (!player || !player.isAlive) return;
+    if (player.charKey === "SUZY_LAFAYETTE" && player.hand.length === 0) {
+      const drawn = drawFromDeck();
+      if (drawn) {
+        player.hand.push(drawn);
+        addActivityLog(`👒 Suzy Lafayette's hand was empty! She immediately drew a card (${drawn.name}).`);
+        updateDiscardPileUI();
+      }
+    }
+  }
+
   function getSuitSymbol(suit) {
     if (suit === "H") return "♥️";
     if (suit === "D") return "♦️";
@@ -4319,10 +5016,22 @@
     return "";
   }
 
+  const TARGETED_HAND_CARDS = ["BANG!", "Panic!", "Cat Balou", "Duel", "Punch", "Springfield", "Rag Time"];
+  const TARGETED_GREEN_CARDS = ["Pepperbox", "Buffalo Rifle", "Knife", "Derringer", "Conestoga"];
+
+  function isTargetedHandCard(card, player = null) {
+    if (!card) return false;
+    if (TARGETED_HAND_CARDS.includes(card.name) || card.sub === "jail") return true;
+    if (player && player.charKey === "CALAMITY_JANET" && card.name === "Missed!") return true;
+    return false;
+  }
+
   function selectCardToPlay(index) {
     if (gameState.activePlayerId !== clientId || gameState.status !== "playing") return;
     const me = roomPlayers[clientId];
     if (!me || !me.hand[index]) return;
+
+    selectedGreenCardIndex = null;
 
     if (selectedCardIndex === index) {
       selectedCardIndex = null;
@@ -4330,7 +5039,7 @@
     } else {
       selectedCardIndex = index;
       const card = me.hand[index];
-      if (card.name === "BANG!" || card.name === "Panic!" || card.name === "Cat Balou" || card.sub === "jail") {
+      if (isTargetedHandCard(card, me)) {
         showTargetButtonsForCard(card);
       } else {
         hideAllTargetButtons();
@@ -4341,28 +5050,109 @@
 
   function showTargetButtonsForCard(card) {
     const me = roomPlayers[clientId];
+    if (!me) return;
+
     getLivingPlayersCircle().forEach(p => {
       if (p.id === clientId) return;
       const btn = document.getElementById(`target-btn-${p.id}`);
       if (!btn) return;
 
-      if (card.name === "BANG!") {
-        btn.style.display = canPlayerShootTarget(clientId, p.id) ? "block" : "none";
+      let canTarget = false;
+      let label = `🎯 Target with ${card.name}`;
+
+      if (card.name === "BANG!" || (me.charKey === "CALAMITY_JANET" && card.name === "Missed!")) {
+        canTarget = canPlayerShootTarget(clientId, p.id);
+        label = `🎯 Shoot ${escapeHTML(p.name)}`;
       } else if (card.name === "Panic!") {
-        btn.style.display = calculateEffectiveDistance(clientId, p.id) <= 1 ? "block" : "none";
+        canTarget = calculateEffectiveDistance(clientId, p.id) <= 1 && (p.hand.length > 0 || p.inPlay.length > 0);
+        label = `🫳 Steal from ${escapeHTML(p.name)}`;
+      } else if (card.name === "Punch") {
+        canTarget = calculateEffectiveDistance(clientId, p.id) <= 1;
+        label = `🥊 Punch ${escapeHTML(p.name)}`;
       } else if (card.name === "Cat Balou") {
-        btn.style.display = "block";
+        canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+        label = `💥 Discard from ${escapeHTML(p.name)}`;
+      } else if (card.name === "Duel") {
+        canTarget = true; // Duels can challenge any living player regardless of distance!
+        label = `⚔️ DUEL ${escapeHTML(p.name)}!`;
+      } else if (card.name === "Springfield") {
+        canTarget = true; // Springfield snipes at any distance
+        label = `🎯 Snipe ${escapeHTML(p.name)}`;
+      } else if (card.name === "Rag Time") {
+        canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+        label = `🪕 Swipe from ${escapeHTML(p.name)}`;
       } else if (card.sub === "jail") {
-        btn.style.display = (p.role !== "sheriff") ? "block" : "none";
+        canTarget = (p.role !== "sheriff") && !p.inPlay.some(c => c.sub === "jail");
+        label = `🔒 Jail ${escapeHTML(p.name)}`;
+      }
+
+      if (canTarget) {
+        btn.style.display = "block";
+        btn.classList.add("active-target");
+        btn.innerText = label;
+      } else {
+        btn.style.display = "none";
+        btn.classList.remove("active-target");
+      }
+    });
+  }
+
+  function showTargetButtonsForGreenCard(card) {
+    const me = roomPlayers[clientId];
+    if (!me) return;
+
+    getLivingPlayersCircle().forEach(p => {
+      if (p.id === clientId) return;
+      const btn = document.getElementById(`target-btn-${p.id}`);
+      if (!btn) return;
+
+      let canTarget = false;
+      let label = `⚡ Use ${card.name}`;
+
+      if (card.name === "Pepperbox") {
+        canTarget = canPlayerShootTarget(clientId, p.id);
+        label = `🔫 Pepperbox ${escapeHTML(p.name)}`;
+      } else if (card.name === "Buffalo Rifle") {
+        canTarget = true; // Buffalo Rifle reaches any living player regardless of distance!
+        label = `🎯 Snipe ${escapeHTML(p.name)}`;
+      } else if (card.name === "Knife") {
+        canTarget = calculateEffectiveDistance(clientId, p.id) <= 1;
+        label = `🗡️ Knife ${escapeHTML(p.name)}`;
+      } else if (card.name === "Derringer") {
+        canTarget = calculateEffectiveDistance(clientId, p.id) <= 1;
+        label = `🔫 Derringer ${escapeHTML(p.name)}`;
+      } else if (card.name === "Conestoga") {
+        canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+        label = `🛒 Commandeer from ${escapeHTML(p.name)}`;
+      }
+
+      if (canTarget) {
+        btn.style.display = "block";
+        btn.classList.add("active-target");
+        btn.innerText = label;
+      } else {
+        btn.style.display = "none";
+        btn.classList.remove("active-target");
       }
     });
   }
 
   function hideAllTargetButtons() {
-    document.querySelectorAll(".opponent-action-btn").forEach(btn => btn.style.display = "none");
+    document.querySelectorAll(".opponent-action-btn").forEach(btn => {
+      btn.style.display = "none";
+      btn.classList.remove("active-target");
+      btn.innerText = "🎯 Target with BANG!";
+    });
   }
 
   function selectTargetPlayer(targetId) {
+    if (selectedGreenCardIndex !== null) {
+      executeGreenCardTarget(selectedGreenCardIndex, targetId);
+      selectedGreenCardIndex = null;
+      hideAllTargetButtons();
+      renderPlayerCockpit();
+      return;
+    }
     if (selectedCardIndex === null) return;
     playCardFromHand(clientId, selectedCardIndex, targetId);
     selectedCardIndex = null;
@@ -4374,23 +5164,40 @@
     if (selectedCardIndex === null) return;
     const me = roomPlayers[clientId];
     const card = me.hand[selectedCardIndex];
-    if (card.name === "BANG!" || card.name === "Panic!" || card.name === "Cat Balou" || card.sub === "jail") {
-      alert("Please click the 'Target' button on an opponent's card to choose your target!");
+    if (isTargetedHandCard(card, me)) {
+      alert(`Please choose an opponent by clicking the 'Target' button on their card to use ${card.name}!`);
       return;
     }
     playCardFromHand(clientId, selectedCardIndex);
     selectedCardIndex = null;
+    hideAllTargetButtons();
     renderPlayerCockpit();
   }
 
   function activateGreenCard(inPlayIndex) {
+    if (gameState.activePlayerId !== clientId || gameState.status !== "playing") return;
     const me = roomPlayers[clientId];
     if (!me || !me.inPlay[inPlayIndex]) return;
     const card = me.inPlay[inPlayIndex];
     if (card.type !== "green" || !card.isReady) return;
 
+    if (TARGETED_GREEN_CARDS.includes(card.name)) {
+      if (selectedGreenCardIndex === inPlayIndex) {
+        selectedGreenCardIndex = null;
+        hideAllTargetButtons();
+      } else {
+        selectedGreenCardIndex = inPlayIndex;
+        selectedCardIndex = null;
+        showTargetButtonsForGreenCard(card);
+      }
+      renderPlayerCockpit();
+      return;
+    }
+
+    // Self / all-player activating green cards
     me.inPlay.splice(inPlayIndex, 1);
     gameState.discardPile.push(card);
+    updateDiscardPileUI();
 
     if (card.name === "Canteen") {
       if (me.currentLp < me.maxLp) me.currentLp++;
@@ -4399,7 +5206,7 @@
       me.hand.push(drawFromDeck(), drawFromDeck(), drawFromDeck());
       addActivityLog(`🐎 ${me.name} activated Pony Express and drew 3 cards.`);
     } else if (card.name === "Howitzer") {
-      addActivityLog(`💣 ${me.name} fired a Howitzer! Gatling attack on all players.`);
+      addActivityLog(`💣 ${me.name} fired a Howitzer! Gatling attack on all other players.`);
       getLivingPlayersCircle().filter(p => p.id !== clientId).forEach(v => {
         initiateAttackInterrupt(clientId, v.id, "Howitzer", 1);
       });
@@ -4407,10 +5214,54 @@
       addActivityLog(`⚡ ${me.name} discarded green card ${card.name} for its delayed action.`);
     }
 
+    renderPlayerCockpit();
     broadcastGameState();
   }
 
+  function executeGreenCardTarget(inPlayIndex, targetId) {
+    const me = roomPlayers[clientId];
+    if (!me || !me.inPlay[inPlayIndex]) return;
+    const card = me.inPlay[inPlayIndex];
+    if (card.type !== "green" || !card.isReady) return;
+    const tgt = roomPlayers[targetId];
+    if (!tgt || !tgt.isAlive) return;
+
+    me.inPlay.splice(inPlayIndex, 1);
+    gameState.discardPile.push(card);
+    updateDiscardPileUI();
+
+    if (card.name === "Pepperbox") {
+      addActivityLog(`🔫 ${me.name} fired a Pepperbox at ${tgt.name}!`);
+      initiateAttackInterrupt(clientId, targetId, "Pepperbox", 1);
+    } else if (card.name === "Buffalo Rifle") {
+      addActivityLog(`🎯 ${me.name} fired a Buffalo Rifle from afar at ${tgt.name}!`);
+      initiateAttackInterrupt(clientId, targetId, "Buffalo Rifle", 1);
+    } else if (card.name === "Knife") {
+      addActivityLog(`🗡️ ${me.name} lunged with a Knife at ${tgt.name}!`);
+      initiateAttackInterrupt(clientId, targetId, "Knife", 1);
+    } else if (card.name === "Derringer") {
+      addActivityLog(`🔫 ${me.name} fired a Derringer point-blank at ${tgt.name}!`);
+      if (tgt.hand.length > 0) {
+        const stolen = tgt.hand.pop();
+        me.hand.push(stolen);
+        addActivityLog(`🫳 Derringer swiped a card from ${tgt.name}'s hand!`);
+      }
+      initiateAttackInterrupt(clientId, targetId, "Derringer", 1);
+    } else if (card.name === "Conestoga") {
+      let stolen = tgt.inPlay.length > 0 ? tgt.inPlay.pop() : tgt.hand.pop();
+      if (stolen) {
+        me.hand.push(stolen);
+        addActivityLog(`🛒 ${me.name} used Conestoga to commandeer ${stolen.name} from ${tgt.name}!`);
+      }
+      broadcastGameState();
+    }
+  }
+
   function endMyTurn() {
+    if (gameState.pendingInterrupt || gameState.activeDuel) {
+      alert("Cannot end turn while an attack, duel, or interrupt is resolving!");
+      return;
+    }
     const me = roomPlayers[clientId];
     if (!me) return;
 
@@ -4499,12 +5350,20 @@
      ========================================================================== */
   function showGameOverScreen() {
     switchScreen("game-over-screen");
+    playVictoryFanfare();
+
+    // Close any dangling modal dialogs
+    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove("active");
+    });
+
     const win = gameState.winner || "outlaws";
     const title = document.getElementById("winner-title");
     const desc = document.getElementById("winner-desc");
     const list = document.getElementById("final-players-list");
 
-    if (win === "sheriff") {
+    if (win === "sheriff" || win === "deputy") {
       title.innerText = "⭐ The Law Wins!";
       title.style.color = "#ffd700";
       desc.innerText = "The Sheriff and Deputies have eliminated all Outlaws and Renegades. Order is restored to the frontier!";
