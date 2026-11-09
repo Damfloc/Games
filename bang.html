@@ -1724,7 +1724,17 @@
   let client = null;
   let isConnected = false;
   let currentRoom = "";
-  const clientId = "usr_" + Math.random().toString(36).substring(2, 9);
+  let savedClientId = null;
+  try {
+    savedClientId = localStorage.getItem("party_games_client_id");
+  } catch(e) {}
+  if (!savedClientId) {
+    savedClientId = "usr_" + Math.random().toString(36).substring(2, 9);
+    try {
+      localStorage.setItem("party_games_client_id", savedClientId);
+    } catch(e) {}
+  }
+  const clientId = savedClientId;
   let playerName = "";
   let isSoloMode = false;
 
@@ -1810,12 +1820,19 @@
   }
 
   /* Network broker connection */
+  let reconnectTimer = null;
   function connectToRoom(code) {
     initAudio();
     currentRoom = code.toUpperCase().trim();
     gameState.room = currentRoom;
 
-    document.getElementById("lobby-code-display").innerText = currentRoom;
+    try {
+      sessionStorage.setItem("party_bang_room", currentRoom);
+      if (playerName) localStorage.setItem("party_games_player_name", playerName);
+    } catch(e) {}
+
+    const codeDisplay = document.getElementById("lobby-code-display");
+    if (codeDisplay) codeDisplay.innerText = currentRoom;
     updateNetworkStatus("connecting");
 
     const host = "broker.emqx.io";
@@ -1824,6 +1841,14 @@
 
     try {
       if (typeof Paho !== "undefined" && Paho.MQTT) {
+        try {
+          if (client) {
+            client.onConnectionLost = null;
+            client.onMessageArrived = null;
+            try { client.disconnect(); } catch(e) {}
+          }
+        } catch(e) {}
+
         client = new Paho.MQTT.Client(host, port, path, clientId);
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
@@ -1832,17 +1857,19 @@
           useSSL: true,
           timeout: 5,
           keepAliveInterval: 30,
-          cleanSession: true,
+          cleanSession: false,
           onSuccess: () => {
             isConnected = true;
             updateNetworkStatus("connected");
             const topic = `partygames/bang/${currentRoom}`;
             client.subscribe(topic, { qos: 1 });
 
-            publishMessage({
-              type: "PLAYER_JOIN",
-              player: roomPlayers[clientId]
-            });
+            if (roomPlayers[clientId]) {
+              publishMessage({
+                type: "PLAYER_JOIN",
+                player: roomPlayers[clientId]
+              });
+            }
 
             if (!isCurrentUserHost()) {
               publishMessage({ type: "REQUEST_SYNC" });
@@ -1851,6 +1878,10 @@
           onFailure: () => {
             isConnected = false;
             updateNetworkStatus("offline");
+            if (!isSoloMode && currentRoom) {
+              if (reconnectTimer) clearTimeout(reconnectTimer);
+              reconnectTimer = setTimeout(() => connectToRoom(currentRoom), 2500);
+            }
           }
         });
       }
@@ -1859,10 +1890,39 @@
     }
   }
 
-  function onConnectionLost() {
+  function onConnectionLost(responseObject) {
     isConnected = false;
     updateNetworkStatus("offline");
+    if (!isSoloMode && currentRoom) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        connectToRoom(currentRoom);
+      }, 1200);
+    }
   }
+
+  function checkAndRestoreConnection() {
+    if (isSoloMode || !currentRoom) return;
+    if (!client || !isConnected) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        connectToRoom(currentRoom);
+      }, 300);
+    } else {
+      try {
+        if (!isCurrentUserHost()) {
+          publishMessage({ type: "REQUEST_SYNC" });
+        }
+      } catch(e) {}
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      checkAndRestoreConnection();
+    }
+  });
+  window.addEventListener("focus", checkAndRestoreConnection);
+  window.addEventListener("pageshow", checkAndRestoreConnection);
 
   const seenMsgIds = new Set();
   function publishMessage(payload) {
@@ -1899,9 +1959,26 @@
   function handleNetworkMessage(data) {
     if (data.type === "PLAYER_JOIN") {
       if (data.player && data.player.id) {
-        roomPlayers[data.player.id] = data.player;
+        if (roomPlayers[data.player.id]) {
+          const existing = roomPlayers[data.player.id];
+          roomPlayers[data.player.id] = {
+            ...data.player,
+            ...existing,
+            name: data.player.name || existing.name,
+            avatar: data.player.avatar || existing.avatar,
+            hand: (existing.hand && existing.hand.length > 0) ? existing.hand : (data.player.hand || []),
+            inPlay: (existing.inPlay && existing.inPlay.length > 0) ? existing.inPlay : (data.player.inPlay || []),
+            role: existing.role || data.player.role,
+            charKey: existing.charKey || data.player.charKey,
+            currentLp: existing.currentLp !== undefined ? existing.currentLp : data.player.currentLp,
+            maxLp: existing.maxLp !== undefined ? existing.maxLp : data.player.maxLp,
+            goldNuggets: existing.goldNuggets !== undefined ? existing.goldNuggets : data.player.goldNuggets
+          };
+        } else {
+          roomPlayers[data.player.id] = data.player;
+        }
         if (!gameState.hostId) gameState.hostId = Object.keys(roomPlayers)[0];
-        renderLobbyRoster();
+        if (gameState.status === "lobby") renderLobbyRoster();
         if (isCurrentUserHost()) {
           publishMessage({
             type: "ROOM_SYNC",
@@ -1911,17 +1988,36 @@
           });
         }
       }
+    } else if (data.type === "REQUEST_SYNC") {
+      if (isCurrentUserHost()) {
+        publishMessage({
+          type: "ROOM_SYNC",
+          players: roomPlayers,
+          state: gameState,
+          config: config
+        });
+      }
     } else if (data.type === "CONFIG_UPDATE") {
       Object.assign(config, data.config);
-      renderLobbyRoster();
+      if (gameState.status === "lobby") renderLobbyRoster();
     } else if (data.type === "ROOM_SYNC") {
       if (data.players) Object.assign(roomPlayers, data.players);
       if (data.config) Object.assign(config, data.config);
       if (data.state) {
         gameState = data.state;
-        if (gameState.status === "playing") syncActiveShootoutUI();
+        if (gameState.status === "playing") {
+          syncActiveShootoutUI();
+        } else if (gameState.status === "char_select") {
+          switchScreen("gameplay-screen");
+          const myPlayer = roomPlayers[clientId];
+          if (myPlayer && myPlayer.characterChoices && myPlayer.characterChoices.length > 0 && !myPlayer.charKey) {
+            showCharacterSelectModal(myPlayer.characterChoices);
+          }
+        } else if (gameState.status === "over") {
+          showGameOverScreen();
+        }
       }
-      renderLobbyRoster();
+      if (gameState.status === "lobby") renderLobbyRoster();
     } else if (data.type === "START_CHAR_SELECT") {
       gameState = data.state;
       Object.assign(roomPlayers, data.players);
@@ -2011,14 +2107,21 @@
     playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : "Doc " + Math.floor(10 + Math.random() * 90);
     const code = "BANG-" + Math.floor(100 + Math.random() * 900);
 
+    try {
+      localStorage.setItem("party_games_player_name", playerName);
+      sessionStorage.setItem("party_bang_room", code);
+    } catch(e) {}
+
+    const existing = roomPlayers[clientId] || {};
     roomPlayers[clientId] = {
+      ...existing,
       id: clientId,
       name: playerName,
-      avatar: getPlayerAvatar(playerName),
+      avatar: existing.avatar || getPlayerAvatar(playerName),
       isHost: true,
       isBot: false,
-      hand: [],
-      inPlay: []
+      hand: existing.hand || [],
+      inPlay: existing.inPlay || []
     };
     gameState.hostId = clientId;
 
@@ -2040,18 +2143,31 @@
       return;
     }
 
+    try {
+      localStorage.setItem("party_games_player_name", playerName);
+      sessionStorage.setItem("party_bang_room", code);
+    } catch(e) {}
+
+    const existing = roomPlayers[clientId] || {};
     roomPlayers[clientId] = {
+      ...existing,
       id: clientId,
-      name: playerName,
-      avatar: getPlayerAvatar(playerName),
-      isHost: false,
+      name: playerName || existing.name || "Cowboy",
+      avatar: existing.avatar || getPlayerAvatar(playerName),
+      isHost: existing.isHost !== undefined ? existing.isHost : false,
       isBot: false,
-      hand: [],
-      inPlay: []
+      hand: existing.hand || [],
+      inPlay: existing.inPlay || []
     };
 
-    switchScreen("lobby-screen");
-    renderLobbyRoster();
+    if (gameState.status === "playing") {
+      syncActiveShootoutUI();
+    } else if (gameState.status === "char_select") {
+      switchScreen("gameplay-screen");
+    } else {
+      switchScreen("lobby-screen");
+      renderLobbyRoster();
+    }
     connectToRoom(code);
   }
 
@@ -6230,6 +6346,17 @@
     const roomParam = params.get("room");
     const codeInput = document.getElementById("room-code-input");
     const nameInput = document.getElementById("player-name-input");
+
+    try {
+      const savedName = localStorage.getItem("party_games_player_name") || sessionStorage.getItem("party_bang_name");
+      const savedRoom = sessionStorage.getItem("party_bang_room");
+      if (nameInput && savedName && !nameInput.value) {
+        nameInput.value = savedName;
+      }
+      if (codeInput && savedRoom && !codeInput.value && !roomParam) {
+        codeInput.value = savedRoom;
+      }
+    } catch(e) {}
 
     if (roomParam && codeInput) {
       codeInput.value = roomParam.trim().toUpperCase();

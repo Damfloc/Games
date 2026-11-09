@@ -1097,8 +1097,19 @@
   let client = null;
   let isConnected = false;
   let currentRoom = "";
-  const clientId = "usr_" + Math.random().toString(36).substring(2, 9);
+  let savedClientId = null;
+  try {
+    savedClientId = localStorage.getItem("party_games_client_id");
+  } catch(e) {}
+  if (!savedClientId) {
+    savedClientId = "usr_" + Math.random().toString(36).substring(2, 9);
+    try {
+      localStorage.setItem("party_games_client_id", savedClientId);
+    } catch(e) {}
+  }
+  const clientId = savedClientId;
   let playerName = "";
+  try { playerName = localStorage.getItem("party_games_player_name") || ""; } catch(e) {}
   let roomRoster = {}; // id -> { id, name, avatar, isHost, isAlive, role }
 
   let gameState = {
@@ -1133,12 +1144,19 @@
     return false;
   }
 
+  let reconnectTimer = null;
   function connectToRoom(code) {
     initAudio();
     currentRoom = code.toUpperCase().trim();
     gameState.room = currentRoom;
 
-    document.getElementById("lobby-code-display").innerText = currentRoom;
+    try {
+      sessionStorage.setItem("party_mafia_room", currentRoom);
+      if (playerName) localStorage.setItem("party_games_player_name", playerName);
+    } catch(e) {}
+
+    const codeDisplay = document.getElementById("lobby-code-display");
+    if (codeDisplay) codeDisplay.innerText = currentRoom;
     updateNetworkStatus("connecting");
 
     const host = "broker.emqx.io";
@@ -1147,6 +1165,14 @@
 
     try {
       if (typeof Paho !== "undefined" && Paho.MQTT) {
+        try {
+          if (client) {
+            client.onConnectionLost = null;
+            client.onMessageArrived = null;
+            try { client.disconnect(); } catch(e) {}
+          }
+        } catch(e) {}
+
         client = new Paho.MQTT.Client(host, port, path, clientId);
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
@@ -1155,7 +1181,7 @@
           useSSL: true,
           timeout: 5,
           keepAliveInterval: 30,
-          cleanSession: true,
+          cleanSession: false,
           onSuccess: onConnectSuccess,
           onFailure: onConnectFailure
         });
@@ -1172,7 +1198,7 @@
     const topic = `games/mafia/${currentRoom}`;
     client.subscribe(topic, { qos: 1 });
 
-    // Announce presence
+    const me = roomRoster[clientId] || {};
     publishMessage({
       type: "PLAYER_JOIN",
       player: {
@@ -1180,29 +1206,54 @@
         name: playerName,
         avatar: getPlayerAvatar(playerName),
         isHost: isCurrentUserHost(),
-        isAlive: true
+        isAlive: me.isAlive !== undefined ? me.isAlive : true,
+        role: me.role
       }
     });
 
-    // Request state sync from room
     publishMessage({ type: "REQUEST_SYNC" });
+
+    if (gameState.status && gameState.status !== "lobby") {
+      syncToActiveGameState();
+    }
   }
 
   function onConnectFailure(err) {
     isConnected = false;
     updateNetworkStatus("disconnected");
-    setTimeout(() => {
-      if (!isConnected && currentRoom) connectToRoom(currentRoom);
-    }, 2500);
+    if (currentRoom) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => connectToRoom(currentRoom), 2500);
+    }
   }
 
   function onConnectionLost(response) {
     isConnected = false;
     updateNetworkStatus("disconnected");
-    setTimeout(() => {
-      if (currentRoom) connectToRoom(currentRoom);
-    }, 2000);
+    if (currentRoom) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => connectToRoom(currentRoom), 1200);
+    }
   }
+
+  function checkAndRestoreConnection() {
+    if (!currentRoom) return;
+    if (!client || !isConnected) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => connectToRoom(currentRoom), 300);
+    } else {
+      try {
+        publishMessage({ type: "REQUEST_SYNC" });
+      } catch(e) {}
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      checkAndRestoreConnection();
+    }
+  });
+  window.addEventListener("focus", checkAndRestoreConnection);
+  window.addEventListener("pageshow", checkAndRestoreConnection);
 
   const seenMessageIds = new Set();
   function publishMessage(payload) {
@@ -1248,21 +1299,35 @@
     } else if (data.type === "ROOM_SYNC") {
       if (data.roster) {
         Object.assign(roomRoster, data.roster);
-        renderLobbyRoster();
+        if (gameState.status === "lobby") renderLobbyRoster();
       }
       if (data.state) {
         gameState = data.state;
-        syncToActiveGameState();
+        if (gameState.status && gameState.status !== "lobby") {
+          syncToActiveGameState();
+        }
       }
     } else if (data.type === "PLAYER_JOIN") {
       if (data.player && data.player.id) {
-        roomRoster[data.player.id] = data.player;
+        if (roomRoster[data.player.id]) {
+          const existing = roomRoster[data.player.id];
+          roomRoster[data.player.id] = {
+            ...data.player,
+            ...existing,
+            name: data.player.name || existing.name,
+            avatar: data.player.avatar || existing.avatar,
+            role: existing.role || data.player.role,
+            isAlive: existing.isAlive !== undefined ? existing.isAlive : data.player.isAlive
+          };
+        } else {
+          roomRoster[data.player.id] = data.player;
+        }
         const pids = Object.keys(roomRoster);
         if (!gameState.hostId || !roomRoster[gameState.hostId]) {
           gameState.hostId = pids[0];
           if (roomRoster[pids[0]]) roomRoster[pids[0]].isHost = true;
         }
-        renderLobbyRoster();
+        if (gameState.status === "lobby") renderLobbyRoster();
         if (isCurrentUserHost()) {
           publishMessage({
             type: "ROOM_SYNC",
@@ -1336,12 +1401,20 @@
 
     const code = "MAF-" + Math.floor(100 + Math.random() * 900);
 
+    try {
+      localStorage.setItem("party_games_player_name", playerName);
+      sessionStorage.setItem("party_mafia_room", code);
+    } catch(e) {}
+
+    const existingHost = roomRoster[clientId] || {};
     roomRoster[clientId] = {
+      ...existingHost,
       id: clientId,
       name: playerName,
-      avatar: getPlayerAvatar(playerName),
+      avatar: existingHost.avatar || getPlayerAvatar(playerName),
       isHost: true,
-      isAlive: true
+      isAlive: existingHost.isAlive !== undefined ? existingHost.isAlive : true,
+      role: existingHost.role
     };
     gameState.hostId = clientId;
 
@@ -1367,16 +1440,28 @@
       return;
     }
 
+    try {
+      localStorage.setItem("party_games_player_name", playerName);
+      sessionStorage.setItem("party_mafia_room", code);
+    } catch(e) {}
+
+    const existing = roomRoster[clientId] || {};
     roomRoster[clientId] = {
+      ...existing,
       id: clientId,
-      name: playerName,
-      avatar: getPlayerAvatar(playerName),
-      isHost: false,
-      isAlive: true
+      name: playerName || existing.name || "Agent",
+      avatar: existing.avatar || getPlayerAvatar(playerName),
+      isHost: existing.isHost !== undefined ? existing.isHost : false,
+      isAlive: existing.isAlive !== undefined ? existing.isAlive : true,
+      role: existing.role
     };
 
-    switchScreen("lobby-screen");
-    renderLobbyRoster();
+    if (gameState.status && gameState.status !== "lobby") {
+      syncToActiveGameState();
+    } else {
+      switchScreen("lobby-screen");
+      renderLobbyRoster();
+    }
     connectToRoom(code);
   }
 
@@ -2415,7 +2500,16 @@
     const nameInput = document.getElementById("player-name-input");
     const codeInput = document.getElementById("room-code-input");
 
-    if (nameInput) nameInput.value = "";
+    try {
+      const savedName = localStorage.getItem("party_games_player_name");
+      const savedRoom = sessionStorage.getItem("party_mafia_room");
+      if (nameInput && savedName && !nameInput.value) {
+        nameInput.value = savedName;
+      }
+      if (codeInput && savedRoom && !codeInput.value) {
+        codeInput.value = savedRoom;
+      }
+    } catch(e) {}
 
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get("room");

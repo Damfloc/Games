@@ -542,13 +542,23 @@
     font-weight: 800;
     text-transform: uppercase;
     text-align: center;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.15;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
+    -webkit-hyphens: none;
+    line-height: 1.1;
     z-index: 2;
     color: #e5e5ea;
     width: 100%;
-    padding: 0 2px;
+    max-width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+    display: inline-block;
+  }
+  .card-word.multi-word {
+    white-space: normal;
+    word-break: normal;
   }
   .word-lg { font-size: clamp(0.74rem, 2.7vw, 1.15rem); letter-spacing: 0.03em; }
   .word-md { font-size: clamp(0.64rem, 2.3vw, 0.98rem); letter-spacing: 0.01em; }
@@ -1269,7 +1279,16 @@
   let client = null;
   let currentRoom = null;
   let isConnected = false;
-  let clientId = "client_" + Math.random().toString(36).substring(2, 9);
+  let clientId;
+  try {
+    clientId = localStorage.getItem("party_games_client_id");
+    if (!clientId) {
+      clientId = "client_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4);
+      localStorage.setItem("party_games_client_id", clientId);
+    }
+  } catch (e) {
+    clientId = "client_" + Math.random().toString(36).substring(2, 9);
+  }
   let playerName = "";
   try { playerName = localStorage.getItem("codenames_player_name") || ""; } catch (e) {}
 
@@ -1323,7 +1342,7 @@
           useSSL: true,
           timeout: 5,
           keepAliveInterval: 30,
-          cleanSession: true,
+          cleanSession: false,
           onSuccess: onConnectSuccess,
           onFailure: onConnectFailure
         });
@@ -1338,20 +1357,26 @@
   function onConnectSuccess() {
     isConnected = true;
     const statusDot = document.getElementById("hud-status-dot");
-    statusDot.className = "status-dot";
+    if (statusDot) statusDot.className = "status-dot";
 
     const topic = `damfloc/codenames/${currentRoom}`;
     client.subscribe(topic, { qos: 1 });
 
-    // Register myself in roster
-    roomRoster[clientId] = {
-      id: clientId,
-      name: playerName,
-      team: myTeam,
-      role: myRole
-    };
+    // Register myself in roster (preserve team/role if already set)
+    if (!roomRoster[clientId]) {
+      roomRoster[clientId] = {
+        id: clientId,
+        name: playerName,
+        team: myTeam,
+        role: myRole
+      };
+    } else {
+      roomRoster[clientId].name = playerName;
+      myTeam = roomRoster[clientId].team || myTeam;
+      myRole = roomRoster[clientId].role || myRole;
+    }
 
-    // Broadcast that I joined
+    // Broadcast that I joined/reconnected
     publishMessage({
       type: "PLAYER_JOIN",
       player: roomRoster[clientId]
@@ -1360,28 +1385,56 @@
     // Request full state & presence from room
     publishMessage({ type: "REQUEST_SYNC", sender: clientId });
 
-    // Switch to Lobby Waiting Room
-    switchScreen("lobby-screen");
-    renderRosterUI();
+    // Maintain current screen if already in a game!
+    if (gameState && gameState.status === "playing") {
+      switchScreen("game-screen");
+      renderBoard();
+      renderHUD();
+      updateRoleView();
+    } else if (gameState && gameState.status === "over") {
+      switchScreen("game-over-screen");
+    } else {
+      switchScreen("lobby-screen");
+      renderRosterUI();
+    }
   }
 
   function onConnectFailure(err) {
     isConnected = false;
     const statusDot = document.getElementById("hud-status-dot");
-    statusDot.className = "status-dot disconnected";
+    if (statusDot) statusDot.className = "status-dot disconnected";
     setTimeout(() => {
       if (!isConnected && currentRoom) connectToRoom(currentRoom);
-    }, 3000);
+    }, 2000);
   }
 
   function onConnectionLost(response) {
     isConnected = false;
     const statusDot = document.getElementById("hud-status-dot");
-    statusDot.className = "status-dot disconnected";
+    if (statusDot) statusDot.className = "status-dot disconnected";
     setTimeout(() => {
       if (currentRoom) connectToRoom(currentRoom);
-    }, 2000);
+    }, 1200);
   }
+
+  function checkAndRestoreConnection() {
+    if (!currentRoom) return;
+    if (!isConnected || !client || (typeof client.isConnected === "function" && !client.isConnected())) {
+      connectToRoom(currentRoom);
+    } else {
+      publishMessage({
+        type: "PLAYER_JOIN",
+        player: roomRoster[clientId] || { id: clientId, name: playerName, team: myTeam, role: myRole }
+      });
+      publishMessage({ type: "REQUEST_SYNC", sender: clientId });
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkAndRestoreConnection();
+  });
+  window.addEventListener("focus", checkAndRestoreConnection);
+  window.addEventListener("pageshow", checkAndRestoreConnection);
 
   const seenMessageIds = new Set();
 
@@ -1712,6 +1765,35 @@
     }
   }
 
+  function autoAdjustCardWords() {
+    requestAnimationFrame(() => {
+      const cards = document.querySelectorAll("#board-grid .code-card");
+      cards.forEach(card => {
+        const span = card.querySelector(".card-word");
+        if (!span) return;
+        const maxW = card.clientWidth - 8;
+        const maxH = card.clientHeight - 8;
+        if (maxW <= 0 || maxH <= 0) return;
+
+        // Reset to initial font size based on card dimensions
+        let size = Math.min(18, Math.floor(card.clientHeight * 0.28));
+        span.style.fontSize = size + "px";
+
+        // Iteratively downscale until it fits cleanly inside card without overflow or weird wrapping
+        while (size > 7.5 && (span.scrollWidth > maxW || span.scrollHeight > maxH)) {
+          size -= 0.5;
+          span.style.fontSize = size + "px";
+        }
+      });
+    });
+  }
+
+  window.addEventListener("resize", autoAdjustCardWords);
+  window.addEventListener("orientationchange", autoAdjustCardWords);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(autoAdjustCardWords);
+  }
+
   function renderBoard() {
     const grid = document.getElementById("board-grid");
     grid.innerHTML = "";
@@ -1719,16 +1801,7 @@
     gameState.cards.forEach(card => {
       const cardEl = document.createElement("div");
       const word = card.word;
-
-      // Adaptive typography scale based on word length
-      let wordClass = "word-lg";
-      if (word.length >= 11) {
-        wordClass = "word-xs";
-      } else if (word.length >= 8) {
-        wordClass = "word-sm";
-      } else if (word.length >= 6 || word.includes(" ")) {
-        wordClass = "word-md";
-      }
+      const isMultiWord = word.includes(" ");
 
       cardEl.className = `code-card type-${card.type} ${card.revealed ? 'revealed' : ''}`;
       cardEl.id = `card-${card.id}`;
@@ -1738,7 +1811,7 @@
 
       cardEl.innerHTML = `
         ${assassinIcon}
-        <span class="card-word ${wordClass}">${word}</span>
+        <span class="card-word ${isMultiWord ? 'multi-word' : ''}">${escapeHTML(word)}</span>
       `;
 
       cardEl.onclick = () => onCardClicked(card.id);
@@ -1746,6 +1819,7 @@
     });
 
     updateRoleView();
+    autoAdjustCardWords();
   }
 
   function escapeHTML(str) {
