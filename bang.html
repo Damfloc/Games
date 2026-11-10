@@ -1057,6 +1057,279 @@
   .role-badge.outlaw { background: #ef4444; color: #fff; }
   .role-badge.renegade { background: #a855f7; color: #fff; }
 
+  /* =========================================================================
+     TARGET PICKER BOTTOM SHEET (MOBILE-FIRST)
+     ========================================================================= */
+  .target-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10005;
+    padding: 0;
+  }
+  .target-picker-overlay.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+  .target-picker-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .target-picker-sheet {
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(180deg, #2b1810 0%, #170d09 100%);
+    border: 2px solid var(--wood-border);
+    border-bottom: none;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    padding: 16px 20px max(24px, env(safe-area-inset-bottom, 24px));
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.85);
+    animation: targetSheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes targetSheetSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @media (min-width: 769px) {
+    .target-picker-overlay {
+      align-items: center;
+      padding: 20px;
+    }
+    .target-picker-sheet {
+      border-radius: 26px;
+      border-bottom: 2px solid var(--wood-border);
+      max-height: 85vh;
+      animation: fadeIn 0.2s ease;
+    }
+  }
+
+  .target-picker-handle {
+    width: 44px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    margin: 0 auto 12px auto;
+  }
+  .target-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .target-picker-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .target-picker-card-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+  .target-picker-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+  }
+  .target-picker-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.25);
+    border: 1px solid var(--gold);
+    color: #fde68a;
+  }
+  .target-picker-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .target-picker-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #cbd5e1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .target-picker-close-btn:hover {
+    background: rgba(239, 68, 68, 0.4);
+    color: #fff;
+  }
+  .target-picker-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 52vh;
+    padding: 4px 2px 10px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .target-option-card {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .target-option-card.can-target {
+    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, rgba(45, 22, 10, 0.7) 0%, rgba(25, 12, 5, 0.8) 100%);
+  }
+  .target-option-card.can-target:hover,
+  .target-option-card.can-target:active {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(75, 38, 16, 0.85) 0%, rgba(40, 20, 8, 0.95) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.3);
+  }
+  .target-option-card.out-of-range {
+    opacity: 0.52;
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.06);
+    cursor: not-allowed;
+  }
+  .target-option-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+  .target-option-avatar {
+    font-size: 2.2rem;
+    flex-shrink: 0;
+  }
+  .target-option-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .target-option-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .target-option-name {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .target-option-bullets {
+    font-size: 0.78rem;
+    color: #fde68a;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+  }
+  .target-option-inplay {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .target-option-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .target-action-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+    color: #1a0a00;
+    font-weight: 900;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    transition: transform 0.1s, filter 0.15s;
+  }
+  .target-action-btn:hover {
+    filter: brightness(1.15);
+    transform: scale(1.03);
+  }
+  .target-action-btn:active {
+    transform: scale(0.97);
+  }
+  .target-empty-notice {
+    padding: 24px 16px;
+    text-align: center;
+    color: #fde68a;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .target-picker-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .target-picker-cancel-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .target-picker-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
   /* Responsive layout */
   @media (max-width: 768px) {
     .bang-card { min-width: 110px; max-width: 110px; height: 160px; padding: 6px; }
@@ -1463,6 +1736,33 @@
       <button class="btn-secondary" onclick="closeCardTheftModal()">
         <span>Cancel</span>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile & Quick Target Picker Bottom Sheet Modal -->
+<div id="target-picker-modal" class="target-picker-overlay">
+  <div class="target-picker-backdrop" onclick="closeTargetPicker(true)"></div>
+  <div class="target-picker-sheet">
+    <div class="target-picker-handle"></div>
+    <div class="target-picker-header">
+      <div class="target-picker-title-group">
+        <span class="target-picker-card-icon" id="target-picker-card-icon">🎯</span>
+        <div>
+          <div class="target-picker-title">
+            <span id="target-picker-card-title">Choose Target</span>
+            <span class="target-picker-badge">Targeting</span>
+          </div>
+          <div class="target-picker-subtitle" id="target-picker-subtitle">Tap an opponent in range to fire:</div>
+        </div>
+      </div>
+      <button class="target-picker-close-btn" onclick="closeTargetPicker(true)" aria-label="Close">✕</button>
+    </div>
+    <div class="target-picker-list" id="target-picker-list">
+      <!-- Opponent cards rendered dynamically -->
+    </div>
+    <div class="target-picker-footer">
+      <button class="target-picker-cancel-btn" onclick="closeTargetPicker(true)">Cancel</button>
     </div>
   </div>
 </div>
@@ -5854,6 +6154,7 @@
             };
           }
         });
+        openTargetPicker({ name: "BANG! (Doc Holyday)", isDocHolyday: true }, false);
       }
     });
   }
@@ -5990,6 +6291,8 @@
         btn.classList.remove("active-target");
       }
     });
+
+    openTargetPicker(card, false);
   }
 
   function showTargetButtonsForGreenCard(card) {
@@ -6034,6 +6337,8 @@
         btn.classList.remove("active-target");
       }
     });
+
+    openTargetPicker(card, true);
   }
 
   function hideAllTargetButtons() {
@@ -6042,6 +6347,208 @@
       btn.classList.remove("active-target");
       btn.innerText = "🎯 Target with BANG!";
     });
+    closeTargetPicker(false);
+  }
+
+  /* =========================================================================
+     TARGET PICKER BOTTOM SHEET LOGIC
+     ========================================================================= */
+  function openTargetPicker(card, isGreenCard = false) {
+    if (!card) return;
+    const modal = document.getElementById("target-picker-modal");
+    const iconEl = document.getElementById("target-picker-card-icon");
+    const titleEl = document.getElementById("target-picker-card-title");
+    const subEl = document.getElementById("target-picker-subtitle");
+    const listEl = document.getElementById("target-picker-list");
+    if (!modal || !listEl) return;
+
+    const me = roomPlayers[clientId];
+    if (!me) return;
+
+    const iconMap = {
+      "BANG!": "🔫",
+      "Panic!": "🫳",
+      "Cat Balou": "💥",
+      "Duel": "⚔️",
+      "Punch": "🥊",
+      "Springfield": "🎯",
+      "Rag Time": "🪕",
+      "Pepperbox": "🔫",
+      "Buffalo Rifle": "🎯",
+      "Knife": "🗡️",
+      "Derringer": "🔫",
+      "Conestoga": "🛒"
+    };
+
+    if (iconEl) iconEl.innerText = iconMap[card.name] || (isGreenCard ? "🟢" : "🎯");
+    if (titleEl) titleEl.innerText = card.name;
+    if (subEl) subEl.innerText = card.isDocHolyday ? "Doc Holyday discarded 2 cards: select a rival to shoot:" : "Tap an opponent in range to fire:";
+
+    listEl.innerHTML = "";
+    const livingOpponents = getLivingPlayersCircle().filter(p => p.id !== clientId);
+
+    let eligibleCount = 0;
+
+    livingOpponents.forEach(p => {
+      let canTarget = false;
+      let label = `🎯 Target`;
+      let reason = "";
+
+      const dist = calculateEffectiveDistance(clientId, p.id);
+
+      if (card.isDocHolyday) {
+        canTarget = canPlayerShootTarget(clientId, p.id);
+        label = `🩺 Shoot ${escapeHTML(p.name)}`;
+        if (!canTarget) reason = `Out of range (Distance: ${dist})`;
+      } else if (!isGreenCard) {
+        if (card.name === "BANG!" || (me.charKey === "CALAMITY_JANET" && card.name === "Missed!")) {
+          canTarget = canPlayerShootTarget(clientId, p.id);
+          label = `🎯 Shoot ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `Out of range (Distance: ${dist})`;
+        } else if (card.name === "Panic!") {
+          canTarget = dist <= 1 && (p.hand.length > 0 || p.inPlay.length > 0);
+          label = `🫳 Steal from ${escapeHTML(p.name)}`;
+          if (dist > 1) reason = `Must be distance 1 (Distance: ${dist})`;
+          else if (!p.hand.length && !p.inPlay.length) reason = `No cards to steal`;
+        } else if (card.name === "Punch") {
+          canTarget = dist <= 1;
+          label = `🥊 Punch ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
+        } else if (card.name === "Cat Balou") {
+          canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+          label = `💥 Discard from ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `No cards to discard`;
+        } else if (card.name === "Duel") {
+          canTarget = true;
+          label = `⚔️ Duel ${escapeHTML(p.name)}!`;
+        } else if (card.name === "Springfield") {
+          canTarget = true;
+          label = `🎯 Snipe ${escapeHTML(p.name)}`;
+        } else if (card.name === "Rag Time") {
+          canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+          label = `🪕 Swipe from ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `No cards to swipe`;
+        } else if (card.sub === "jail") {
+          canTarget = (p.role !== "sheriff") && !p.inPlay.some(c => c.sub === "jail");
+          label = `🔒 Jail ${escapeHTML(p.name)}`;
+          if (p.role === "sheriff") reason = `Sheriff cannot be jailed`;
+          else if (p.inPlay.some(c => c.sub === "jail")) reason = `Already in Jail`;
+        }
+      } else {
+        // Green card targeting
+        if (card.name === "Pepperbox") {
+          canTarget = canPlayerShootTarget(clientId, p.id);
+          label = `🔫 Shoot ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `Out of range (Distance: ${dist})`;
+        } else if (card.name === "Buffalo Rifle") {
+          canTarget = true;
+          label = `🎯 Snipe ${escapeHTML(p.name)}`;
+        } else if (card.name === "Knife") {
+          canTarget = dist <= 1;
+          label = `🗡️ Knife ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
+        } else if (card.name === "Derringer") {
+          canTarget = dist <= 1;
+          label = `🔫 Derringer ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
+        } else if (card.name === "Conestoga") {
+          canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
+          label = `🛒 Commandeer from ${escapeHTML(p.name)}`;
+          if (!canTarget) reason = `No cards to commandeer`;
+        }
+      }
+
+      if (card.suit === "D" && (playerHasAbility(p, "APACHE_KID") || p.immuneToDiamonds)) {
+        canTarget = false;
+        reason = `Immune to Diamonds (Apache Kid)`;
+      }
+
+      if (canTarget) eligibleCount++;
+
+      // Bullets visualization
+      let bulletsStr = "";
+      for (let b = 0; b < p.maxLp; b++) {
+        bulletsStr += (b < p.currentLp ? '🟡' : '⚫');
+      }
+
+      // Equipment mini badges
+      let inPlayTags = "";
+      if (p.inPlay && p.inPlay.length > 0) {
+        p.inPlay.forEach(eq => {
+          inPlayTags += `<span class="in-play-mini-tag ${eq.type === 'green' ? 'green' : (eq.type === 'gold_black' ? 'black' : '')}" style="font-size: 0.68rem; padding: 1px 5px;">${escapeHTML(eq.name)}</span>`;
+        });
+      }
+
+      const item = document.createElement("div");
+      item.className = `target-option-card ${canTarget ? 'can-target' : 'out-of-range'}`;
+
+      let roleTag = "";
+      if (p.role === "sheriff") roleTag = `<span class="role-badge sheriff" style="font-size:0.68rem; padding:1px 6px;">⭐ Sheriff</span>`;
+      else if (Object.keys(roomPlayers).length === 3) roleTag = `<span class="role-badge ${p.role}" style="font-size:0.68rem; padding:1px 6px;">${p.role}</span>`;
+
+      item.innerHTML = `
+        <div class="target-option-left">
+          <div class="target-option-avatar">${p.avatar}</div>
+          <div class="target-option-details">
+            <div class="target-option-name-row">
+              <span class="target-option-name">${escapeHTML(p.name)}</span>
+              ${roleTag}
+              <span class="distance-badge ${canTarget ? 'in-range' : ''}" style="font-size: 0.68rem; padding: 1px 6px;">Dist: ${dist}</span>
+            </div>
+            <div class="target-option-bullets">
+              <span>${bulletsStr}</span>
+              <span>(${p.currentLp}/${p.maxLp} LP)</span>
+              ${(p.gold && config.enableGoldRush) ? `<span style="color:#ffd700; margin-left:4px;">🪙 ${p.gold}</span>` : ''}
+            </div>
+            ${inPlayTags ? `<div class="target-option-inplay">${inPlayTags}</div>` : ''}
+            ${(!canTarget && reason) ? `<div style="font-size: 0.72rem; color: #f87171; font-weight: 600; margin-top: 2px;">⚠️ ${escapeHTML(reason)}</div>` : ''}
+          </div>
+        </div>
+        <div class="target-option-right">
+          ${canTarget ? `<button class="target-action-btn">${label}</button>` : `<span style="font-size:0.75rem; color:#888; font-weight:700;">Out of Range</span>`}
+        </div>
+      `;
+
+      if (canTarget) {
+        item.onclick = (e) => {
+          e.stopPropagation();
+          closeTargetPicker(false);
+          if (card.isDocHolyday) {
+            hideAllTargetButtons();
+            addActivityLog(`🩺 Doc Holyday discarded 2 cards and fired a free shot at ${p.name}!`);
+            initiateAttackInterrupt(clientId, p.id, "BANG!", 1);
+          } else {
+            selectTargetPlayer(p.id);
+          }
+        };
+      }
+
+      listEl.appendChild(item);
+    });
+
+    if (eligibleCount === 0) {
+      const notice = document.createElement("div");
+      notice.className = "target-empty-notice";
+      notice.innerHTML = `
+        <div style="font-size: 2.2rem; margin-bottom: 6px;">🌵</div>
+        <div style="font-weight: 900; color: #fff; font-size: 1.05rem; margin-bottom: 4px;">No Rivals in Range</div>
+        <div style="color: #fde68a; font-size: 0.82rem; margin-bottom: 12px;">All living players are currently beyond this card's distance range. Equip a gun with more reach or discard opponent defensive equipment.</div>
+      `;
+      listEl.appendChild(notice);
+    }
+
+    modal.classList.add("active");
+  }
+
+  function closeTargetPicker(unselectCard = false) {
+    const modal = document.getElementById("target-picker-modal");
+    if (modal) modal.classList.remove("active");
+    if (unselectCard) {
+      selectedCardIndex = null;
+      selectedGreenCardIndex = null;
+      hideAllTargetButtons();
+      renderPlayerCockpit();
+    }
   }
 
   function selectTargetPlayer(targetId) {
@@ -6086,7 +6593,7 @@
     const me = roomPlayers[clientId];
     const card = me.hand[selectedCardIndex];
     if (isTargetedHandCard(card, me)) {
-      alert(`Please choose an opponent by clicking the 'Target' button on their card to use ${card.name}!`);
+      openTargetPicker(card, false);
       return;
     }
     playCardFromHand(clientId, selectedCardIndex);
@@ -6274,7 +6781,7 @@
     playVictoryFanfare();
 
     // Close any dangling modal dialogs
-    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal", "card-theft-modal", "check-card-modal"].forEach(id => {
+    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal", "card-theft-modal", "check-card-modal", "target-picker-modal"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove("active");
     });
