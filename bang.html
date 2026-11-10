@@ -1200,106 +1200,278 @@
     -webkit-overflow-scrolling: touch;
   }
   .target-option-card {
-    background: rgba(0, 0, 0, 0.45);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(20, 10, 5, 0.7);
+    border: 1.5px solid rgba(245, 158, 11, 0.22);
     border-radius: 16px;
     padding: 12px 14px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
     user-select: none;
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
   }
   .target-option-card.can-target {
-    border-color: rgba(245, 158, 11, 0.4);
-    background: linear-gradient(135deg, rgba(45, 22, 10, 0.7) 0%, rgba(25, 12, 5, 0.8) 100%);
+    border-color: rgba(245, 158, 11, 0.45);
+    background: linear-gradient(135deg, rgba(48, 24, 12, 0.85) 0%, rgba(26, 13, 6, 0.95) 100%);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   }
-  .target-option-card.can-target:hover,
-  .target-option-card.can-target:active {
+  .target-option-card.can-target:hover {
     border-color: var(--gold);
-    background: linear-gradient(135deg, rgba(75, 38, 16, 0.85) 0%, rgba(40, 20, 8, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(78, 38, 18, 0.95) 0%, rgba(42, 20, 8, 1) 100%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+  }
+  .target-option-card.can-target:active {
+    transform: scale(0.985);
   }
   .target-option-card.out-of-range {
-    opacity: 0.52;
-    background: rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.06);
+    opacity: 0.55;
+    background: rgba(15, 8, 5, 0.5);
+    border-color: rgba(255, 255, 255, 0.08);
     cursor: not-allowed;
   }
-  .target-option-left {
+
+  .target-card-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+  }
+  .target-card-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     min-width: 0;
     flex: 1;
   }
-  .target-option-avatar {
-    font-size: 2.2rem;
+  .target-card-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(180, 83, 9, 0.35) 100%);
+    border: 1.5px solid rgba(245, 158, 11, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   }
-  .target-option-details {
+  .target-card-identity {
+    min-width: 0;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-width: 0;
+    gap: 2px;
   }
-  .target-option-name-row {
+  .target-card-name-row {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    min-width: 0;
   }
-  .target-option-name {
-    font-size: 0.95rem;
+  .target-card-player-name {
+    font-size: 1.02rem;
     font-weight: 900;
-    color: #fff;
+    color: #ffffff;
+    letter-spacing: 0.2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
   }
-  .target-option-bullets {
+  .target-card-char-name {
     font-size: 0.78rem;
     color: #fde68a;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 700;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
   }
-  .target-option-inplay {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    margin-top: 2px;
-  }
-  .target-option-right {
+
+  .target-card-action {
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    align-items: center;
   }
   .target-action-btn {
     background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
     color: #1a0a00;
     font-weight: 900;
-    font-size: 0.85rem;
-    padding: 8px 16px;
+    font-size: 0.82rem;
+    padding: 6px 14px;
     border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    border-radius: 999px;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
     white-space: nowrap;
-    transition: transform 0.1s, filter 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    pointer-events: none;
   }
-  .target-action-btn:hover {
+  .target-option-card.can-target:hover .target-action-btn {
     filter: brightness(1.15);
-    transform: scale(1.03);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.55);
   }
-  .target-action-btn:active {
-    transform: scale(0.97);
+  .target-option-card.can-target:active .target-action-btn {
+    transform: scale(0.95);
+  }
+  .target-out-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 4px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+
+  .target-card-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .target-card-lp {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .target-bullets-strip {
+    font-size: 0.95rem;
+    line-height: 1;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .target-lp-text {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #fde68a;
+    white-space: nowrap;
+  }
+  .target-card-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .target-dist-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .target-dist-pill.in-range {
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    color: #86efac;
+  }
+  .target-dist-pill.out-of-range {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+  .target-stat-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .target-stat-pill.gold {
+    color: #fde047;
+    background: rgba(234, 179, 8, 0.18);
+    border-color: rgba(234, 179, 8, 0.4);
+  }
+
+  .target-card-inplay {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    padding-top: 2px;
+  }
+  .target-eq-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 2px;
+  }
+  .target-inplay-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    background: rgba(30, 64, 175, 0.35);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+  }
+  .target-inplay-tag.green {
+    background: rgba(20, 83, 45, 0.35);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #86efac;
+  }
+  .target-inplay-tag.gold-black {
+    background: rgba(113, 63, 18, 0.35);
+    border-color: rgba(234, 179, 8, 0.4);
+    color: #fde047;
+  }
+  .target-inplay-tag.jail {
+    background: rgba(120, 53, 15, 0.4);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #fed7aa;
+  }
+  .target-inplay-tag.dynamite {
+    background: rgba(127, 29, 29, 0.4);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fecaca;
+  }
+
+  .target-card-reason {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    padding: 3px 8px;
+    margin-top: 2px;
   }
   .target-empty-notice {
     padding: 24px 16px;
@@ -6398,39 +6570,39 @@
 
       if (card.isDocHolyday) {
         canTarget = canPlayerShootTarget(clientId, p.id);
-        label = `🩺 Shoot ${escapeHTML(p.name)}`;
+        label = `🩺 Shoot`;
         if (!canTarget) reason = `Out of range (Distance: ${dist})`;
       } else if (!isGreenCard) {
         if (card.name === "BANG!" || (me.charKey === "CALAMITY_JANET" && card.name === "Missed!")) {
           canTarget = canPlayerShootTarget(clientId, p.id);
-          label = `🎯 Shoot ${escapeHTML(p.name)}`;
+          label = `🎯 Shoot`;
           if (!canTarget) reason = `Out of range (Distance: ${dist})`;
         } else if (card.name === "Panic!") {
           canTarget = dist <= 1 && (p.hand.length > 0 || p.inPlay.length > 0);
-          label = `🫳 Steal from ${escapeHTML(p.name)}`;
+          label = `🫳 Steal`;
           if (dist > 1) reason = `Must be distance 1 (Distance: ${dist})`;
           else if (!p.hand.length && !p.inPlay.length) reason = `No cards to steal`;
         } else if (card.name === "Punch") {
           canTarget = dist <= 1;
-          label = `🥊 Punch ${escapeHTML(p.name)}`;
+          label = `🥊 Punch`;
           if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
         } else if (card.name === "Cat Balou") {
           canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
-          label = `💥 Discard from ${escapeHTML(p.name)}`;
+          label = `💥 Discard`;
           if (!canTarget) reason = `No cards to discard`;
         } else if (card.name === "Duel") {
           canTarget = true;
-          label = `⚔️ Duel ${escapeHTML(p.name)}!`;
+          label = `⚔️ Duel`;
         } else if (card.name === "Springfield") {
           canTarget = true;
-          label = `🎯 Snipe ${escapeHTML(p.name)}`;
+          label = `🎯 Snipe`;
         } else if (card.name === "Rag Time") {
           canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
-          label = `🪕 Swipe from ${escapeHTML(p.name)}`;
+          label = `🪕 Swipe`;
           if (!canTarget) reason = `No cards to swipe`;
         } else if (card.sub === "jail") {
           canTarget = (p.role !== "sheriff") && !p.inPlay.some(c => c.sub === "jail");
-          label = `🔒 Jail ${escapeHTML(p.name)}`;
+          label = `🔒 Jail`;
           if (p.role === "sheriff") reason = `Sheriff cannot be jailed`;
           else if (p.inPlay.some(c => c.sub === "jail")) reason = `Already in Jail`;
         }
@@ -6438,23 +6610,23 @@
         // Green card targeting
         if (card.name === "Pepperbox") {
           canTarget = canPlayerShootTarget(clientId, p.id);
-          label = `🔫 Shoot ${escapeHTML(p.name)}`;
+          label = `🔫 Shoot`;
           if (!canTarget) reason = `Out of range (Distance: ${dist})`;
         } else if (card.name === "Buffalo Rifle") {
           canTarget = true;
-          label = `🎯 Snipe ${escapeHTML(p.name)}`;
+          label = `🎯 Snipe`;
         } else if (card.name === "Knife") {
           canTarget = dist <= 1;
-          label = `🗡️ Knife ${escapeHTML(p.name)}`;
+          label = `🗡️ Knife`;
           if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
         } else if (card.name === "Derringer") {
           canTarget = dist <= 1;
-          label = `🔫 Derringer ${escapeHTML(p.name)}`;
+          label = `🔫 Derringer`;
           if (!canTarget) reason = `Must be distance 1 (Distance: ${dist})`;
         } else if (card.name === "Conestoga") {
           canTarget = (p.hand.length > 0 || p.inPlay.length > 0);
-          label = `🛒 Commandeer from ${escapeHTML(p.name)}`;
-          if (!canTarget) reason = `No cards to commandeer`;
+          label = `🛒 Take`;
+          if (!canTarget) reason = `No cards to take`;
         }
       }
 
@@ -6464,6 +6636,10 @@
       }
 
       if (canTarget) eligibleCount++;
+
+      // Character name
+      const charInfo = (p.copiedCharKey && CHARACTERS[p.copiedCharKey]) || (p.charKey && CHARACTERS[p.charKey]);
+      const charName = charInfo ? charInfo.name : 'Gunslinger';
 
       // Bullets visualization
       let bulletsStr = "";
@@ -6475,7 +6651,30 @@
       let inPlayTags = "";
       if (p.inPlay && p.inPlay.length > 0) {
         p.inPlay.forEach(eq => {
-          inPlayTags += `<span class="in-play-mini-tag ${eq.type === 'green' ? 'green' : (eq.type === 'gold_black' ? 'black' : '')}" style="font-size: 0.68rem; padding: 1px 5px;">${escapeHTML(eq.name)}</span>`;
+          let badgeClass = "blue";
+          let icon = "🔷";
+          if (eq.type === "green") {
+            badgeClass = "green";
+            icon = "🟢";
+          } else if (eq.type === "gold_black") {
+            badgeClass = "gold-black";
+            icon = "🪙";
+          } else if (eq.sub === "jail") {
+            badgeClass = "jail";
+            icon = "🔒";
+          } else if (eq.sub === "dynamite") {
+            badgeClass = "dynamite";
+            icon = "🧨";
+          } else if (eq.sub === "weapon") {
+            icon = "🔫";
+          } else if (eq.sub === "barrel") {
+            icon = "🛡️";
+          } else if (eq.sub === "mustang") {
+            icon = "🐴";
+          } else if (eq.sub === "appaloosa") {
+            icon = "🔍";
+          }
+          inPlayTags += `<span class="target-inplay-tag ${badgeClass}">${icon} ${escapeHTML(eq.name)}</span>`;
         });
       }
 
@@ -6483,30 +6682,53 @@
       item.className = `target-option-card ${canTarget ? 'can-target' : 'out-of-range'}`;
 
       let roleTag = "";
-      if (p.role === "sheriff") roleTag = `<span class="role-badge sheriff" style="font-size:0.68rem; padding:1px 6px;">⭐ Sheriff</span>`;
-      else if (Object.keys(roomPlayers).length === 3) roleTag = `<span class="role-badge ${p.role}" style="font-size:0.68rem; padding:1px 6px;">${p.role}</span>`;
+      if (p.role === "sheriff") {
+        roleTag = `<span class="role-badge sheriff" style="font-size: 0.68rem; padding: 2px 7px; border-radius: 999px;">⭐ Sheriff</span>`;
+      } else if (!p.isAlive) {
+        roleTag = `<span class="role-badge ${p.role}" style="font-size: 0.68rem; padding: 2px 7px; border-radius: 999px;">${p.role}</span>`;
+      } else if (Object.keys(roomPlayers).length === 3) {
+        roleTag = `<span class="role-badge ${p.role}" style="font-size: 0.68rem; padding: 2px 7px; border-radius: 999px;">${p.role}</span>`;
+      }
 
       item.innerHTML = `
-        <div class="target-option-left">
-          <div class="target-option-avatar">${p.avatar}</div>
-          <div class="target-option-details">
-            <div class="target-option-name-row">
-              <span class="target-option-name">${escapeHTML(p.name)}</span>
-              ${roleTag}
-              <span class="distance-badge ${canTarget ? 'in-range' : ''}" style="font-size: 0.68rem; padding: 1px 6px;">Dist: ${dist}</span>
+        <div class="target-card-header">
+          <div class="target-card-user">
+            <div class="target-card-avatar">${p.avatar || '🤠'}</div>
+            <div class="target-card-identity">
+              <div class="target-card-name-row">
+                <span class="target-card-player-name">${escapeHTML(p.name)}</span>
+                ${roleTag}
+              </div>
+              <div class="target-card-char-name">${escapeHTML(charName)}</div>
             </div>
-            <div class="target-option-bullets">
-              <span>${bulletsStr}</span>
-              <span>(${p.currentLp}/${p.maxLp} LP)</span>
-              ${(p.gold && config.enableGoldRush) ? `<span style="color:#ffd700; margin-left:4px;">🪙 ${p.gold}</span>` : ''}
-            </div>
-            ${inPlayTags ? `<div class="target-option-inplay">${inPlayTags}</div>` : ''}
-            ${(!canTarget && reason) ? `<div style="font-size: 0.72rem; color: #f87171; font-weight: 600; margin-top: 2px;">⚠️ ${escapeHTML(reason)}</div>` : ''}
+          </div>
+          <div class="target-card-action">
+            ${canTarget ? `<button class="target-action-btn" type="button">${label}</button>` : `<span class="target-out-badge">Out of Range</span>`}
           </div>
         </div>
-        <div class="target-option-right">
-          ${canTarget ? `<button class="target-action-btn">${label}</button>` : `<span style="font-size:0.75rem; color:#888; font-weight:700;">Out of Range</span>`}
+        <div class="target-card-stats">
+          <div class="target-card-lp">
+            <span class="target-bullets-strip">${bulletsStr}</span>
+            <span class="target-lp-text">${p.currentLp}/${p.maxLp} LP</span>
+          </div>
+          <div class="target-card-badges">
+            <span class="target-dist-pill ${canTarget ? 'in-range' : 'out-of-range'}">📍 Dist: ${dist}</span>
+            <span class="target-stat-pill">🃏 ${p.hand ? p.hand.length : 0}</span>
+            ${(p.gold && config.enableGoldRush) ? `<span class="target-stat-pill gold">🪙 ${p.gold}</span>` : ''}
+          </div>
         </div>
+        ${inPlayTags ? `
+          <div class="target-card-inplay">
+            <span class="target-eq-label">Gear:</span>
+            ${inPlayTags}
+          </div>
+        ` : ''}
+        ${(!canTarget && reason) ? `
+          <div class="target-card-reason">
+            <span>⚠️</span>
+            <span>${escapeHTML(reason)}</span>
+          </div>
+        ` : ''}
       `;
 
       if (canTarget) {
