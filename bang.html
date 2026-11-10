@@ -6330,6 +6330,11 @@
      15. SCREEN SWITCHING & URL PARAMS
      ========================================================================== */
   function switchScreen(id) {
+    const current = document.querySelector(".screen.active");
+    if (current && current.id === id) {
+      // Already on this screen — preserve scroll position and avoid jumping to top!
+      return;
+    }
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     const t = document.getElementById(id);
     if (t) t.classList.add("active");
