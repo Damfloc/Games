@@ -1033,13 +1033,15 @@
 
   /* Check Card "Draw!" Modal Styling */
   .check-card-modal-box {
-    max-width: 440px;
+    max-width: 580px;
     background: radial-gradient(circle at top, #2e1810, #150a06);
     border: 3px solid var(--gold);
     border-radius: 24px;
     box-shadow: 0 0 50px rgba(217, 119, 6, 0.4), 0 25px 60px rgba(0, 0, 0, 0.9);
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    max-height: calc(100dvh - 32px);
+    -webkit-overflow-scrolling: touch;
   }
   .check-card-badge {
     padding: 12px 18px;
@@ -1062,6 +1064,12 @@
     box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
     animation: dangerShake 0.5s ease-in-out;
   }
+  .check-card-badge.choice {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.85), rgba(180, 83, 9, 0.95));
+    border: 2px solid var(--gold);
+    color: #fffbeb;
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.6);
+  }
   @keyframes dangerShake {
     0%, 100% { transform: translateX(0); }
     20%, 60% { transform: translateX(-6px); }
@@ -1071,19 +1079,42 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 18px 0;
+    gap: 16px;
+    margin: 16px 0;
+    flex-wrap: wrap;
     perspective: 800px;
   }
   .check-card-display-zone .bang-card {
-    width: 140px;
-    height: 195px;
-    transform: scale(1.15) rotateY(0deg);
-    animation: cardFlipIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.85);
+    min-width: 125px;
+    max-width: 135px;
+    height: 185px;
+    transform: scale(1.02);
+    animation: cardFlipIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.85);
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .check-card-display-zone .bang-card.is-chosen-check {
+    border: 3px solid #22c55e !important;
+    box-shadow: 0 0 22px rgba(34, 197, 94, 0.85) !important;
+    transform: scale(1.05);
+  }
+  .check-card-display-zone .bang-card.is-rejected-check {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+    transform: scale(0.95);
+  }
+  .check-card-display-zone .bang-card.is-selectable {
+    cursor: pointer;
+  }
+  .check-card-display-zone .bang-card.is-selectable:hover {
+    border-color: var(--gold) !important;
+    transform: translateY(-6px) scale(1.04);
+    box-shadow: 0 12px 28px rgba(251, 191, 36, 0.7);
   }
   @keyframes cardFlipIn {
     0% { transform: scale(0.6) rotateY(180deg); opacity: 0; }
-    100% { transform: scale(1.15) rotateY(0deg); opacity: 1; }
+    100% { transform: scale(1.02) rotateY(0deg); opacity: 1; }
   }
 
   /* Role Badges */
@@ -1932,20 +1963,8 @@
     <div class="modal-title" id="check-modal-title">Barrel Check ("Draw!")</div>
     <div class="modal-message" id="check-modal-subtitle" style="margin-bottom: 8px;">Drawing top card from the deck...</div>
     
-    <!-- Flipped Card Display -->
-    <div class="check-card-display-zone">
-      <div class="bang-card" id="check-flipped-card">
-        <div>
-          <div class="card-top-icon" id="check-card-icon">🎴</div>
-          <div class="card-name-title" id="check-card-name">Card Name</div>
-          <div class="card-effect-text" id="check-card-desc">Check Card</div>
-        </div>
-        <div class="card-suit-value" id="check-card-suit-val">
-          <span id="check-card-val">7</span>
-          <span id="check-card-suit">♥️</span>
-        </div>
-      </div>
-    </div>
+    <!-- Flipped Card(s) Display (supports 1 or multiple cards for Lucky Duke / Horseshoe) -->
+    <div class="check-card-display-zone" id="check-card-display-zone"></div>
 
     <!-- Result Banner: SAFE vs UNSAFE -->
     <div class="check-card-badge safe" id="check-card-badge">
@@ -1953,7 +1972,7 @@
       <div id="check-detail-text" style="font-size: 0.92rem; font-weight: 600; line-height: 1.4;">Heart flipped! The attack was dodged!</div>
     </div>
 
-    <div style="margin-top: 14px;">
+    <div style="margin-top: 14px;" id="check-modal-actions">
       <button class="btn-gold" id="check-modal-btn" onclick="dismissCheckCardModal()" style="width: 100%; padding: 12px; font-size: 1.05rem;">
         <span>Continue</span>
       </button>
@@ -2656,6 +2675,10 @@
       if (isCurrentUserHost()) {
         executeDrawChoiceAction(data.playerId, data.choice);
       }
+    } else if (data.type === "CHECK_CHOICE_ACTION") {
+      if (isCurrentUserHost()) {
+        executeCheckChoiceAction(data.playerId, data.choiceIndex);
+      }
     }
   }
 
@@ -3215,24 +3238,13 @@
       return onComplete();
     }
 
-    const flip = drawCardForCheck(activePlayer);
-    const isExploded = (flip.suit === "S" && flip.value >= 2 && flip.value <= 9);
-    addActivityLog(`🧨 Dynamite check for ${activePlayer.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}).`);
-
-    const checkData = {
+    startCheckResolution(activePlayer, {
       actionType: "dynamite",
       icon: "🧨",
       title: 'Dynamite "Draw!" Check',
-      subtitle: `${activePlayer.name} is checking for Dynamite! (Spades ♠️ 2-9 = Explodes)`,
-      card: flip,
-      isSafe: !isExploded,
-      statusText: isExploded ? "💥 BOOM! EXPLODED!" : "🛡️ SAFE! FUSE SPARKS HARMLESSLY",
-      detailText: isExploded
-        ? `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Spades 2 to 9! 3 damage taken!`
-        : `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Not Spades 2-9. Dynamite safely passes clockwise to the next player!`
-    };
-
-    triggerCheckCardDisplay(checkData, () => {
+      subtitle: `${activePlayer.name} is checking for Dynamite! (Spades ♠️ 2-9 = Explodes)`
+    }, (flip, evalRes) => {
+      const isExploded = !evalRes.isSafe;
       const currentDynIndex = activePlayer.inPlay.findIndex(c => c.sub === "dynamite");
       if (currentDynIndex !== -1) {
         const dynCard = activePlayer.inPlay.splice(currentDynIndex, 1)[0];
@@ -3275,24 +3287,13 @@
     gameState.discardPile.push(jailCard);
     updateDiscardPileUI();
 
-    const flip = drawCardForCheck(activePlayer);
-    const isEscaped = (flip.suit === "H" || (gameState.activeHighNoonCard?.effect === "hearts_suit"));
-    addActivityLog(`🔒 Jail check for ${activePlayer.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}).`);
-
-    const checkData = {
+    startCheckResolution(activePlayer, {
       actionType: "jail",
       icon: "🔒",
       title: 'Jail Break "Draw!" Check',
-      subtitle: `${activePlayer.name} is checking Jail! (Hearts ♥️ = Escape)`,
-      card: flip,
-      isSafe: isEscaped,
-      statusText: isEscaped ? "🛡️ ESCAPED! YOU BROKE OUT!" : "🔒 LOCKED UP! TURN SKIPPED",
-      detailText: isEscaped
-        ? `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Heart! Jailbreak successful! Turn proceeds.`
-        : `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Not a Heart. You remain locked in jail and skip your turn.`
-    };
-
-    triggerCheckCardDisplay(checkData, () => {
+      subtitle: `${activePlayer.name} is checking Jail! (Hearts ♥️ = Escape)`
+    }, (flip, evalRes) => {
+      const isEscaped = evalRes.isSafe;
       if (isEscaped) {
         addActivityLog(`⚖️ ${activePlayer.name} broke out of Jail! Turn proceeds.`);
         broadcastGameState();
@@ -3526,31 +3527,28 @@
     // Check Don Bell ability: at end of turn, draws check; if Hearts or Diamonds, immediate extra turn!
     const currentActive = roomPlayers[gameState.activePlayerId];
     if (currentActive && currentActive.charKey === "DON_BELL" && !currentActive.tookExtraTurn && (currentActive.isAlive || currentActive.isShadow)) {
-      const flip = drawCardForCheck(currentActive);
-      const isExtraTurn = (flip.suit === "H" || flip.suit === "D" || gameState.activeHighNoonCard?.effect === "hearts_suit");
-      addActivityLog(`🔔 Don Bell check for extra turn: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}).`);
-
-      triggerCheckCardDisplay({
+      startCheckResolution(currentActive, {
         actionType: "don_bell",
         icon: "🔔",
         title: 'Don Bell "Draw!" Check',
-        subtitle: `${currentActive.name} checks for an extra turn! (♥️/♦️ = Extra Turn)`,
-        card: flip,
-        isSafe: isExtraTurn,
-        statusText: isExtraTurn ? "🎉 EXTRA TURN! (SUCCESS)" : "❌ NO EXTRA TURN",
-        detailText: isExtraTurn
-          ? `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Red card! ${currentActive.name} takes an immediate extra turn!`
-          : `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Black card. Turn ends normally.`
+        subtitle: `${currentActive.name} checks for an extra turn! (♥️/♦️ = Extra Turn)`
+      }, (flip, evalRes) => {
+        const isExtraTurn = evalRes.isSafe;
+        if (isExtraTurn) {
+          currentActive.tookExtraTurn = true;
+          addActivityLog(`🔔 Don Bell takes an IMMEDIATE EXTRA TURN!`);
+          executePhase1Draw();
+          return;
+        }
+        finishAdvanceToNextTurn(currentActive, playerList);
       });
-
-      if (isExtraTurn) {
-        currentActive.tookExtraTurn = true;
-        addActivityLog(`🔔 Don Bell takes an IMMEDIATE EXTRA TURN!`);
-        executePhase1Draw();
-        return;
-      }
+      return;
     }
 
+    finishAdvanceToNextTurn(currentActive, playerList);
+  }
+
+  function finishAdvanceToNextTurn(currentActive, playerList) {
     if (currentActive) {
       currentActive.tookExtraTurn = false;
       currentActive.usedShopDiscountThisTurn = false;
@@ -4330,21 +4328,30 @@
 
       // 1. Jourdonnais ability check for Bot
       if (isJourdonnais && missesRequired > 0) {
-        const flip = drawCardForCheck(defender);
-        const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
-        addActivityLog(`🤠 Jourdonnais check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}). Discarded.`);
+        const checkCount = getCheckDrawCount(defender);
+        const cards = drawCardsFromDeckForCheck(checkCount);
+        let chosenIdx = cards.findIndex(c => evaluateCheckCard("jourdonnais", c).isSafe);
+        if (chosenIdx === -1) chosenIdx = 0;
+        const flip = cards[chosenIdx];
+        const evalRes = evaluateCheckCard("jourdonnais", flip);
+        finalizeCheckCards(defender, flip, cards.filter((_, i) => i !== chosenIdx));
+        const isHearts = evalRes.isSafe;
+
+        const cardsStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+        addActivityLog(`🤠 Jourdonnais check for ${defender.name}: flipped ${cardsStr} -> Selected ${getSuitSymbol(flip.suit)} ${flip.value}.`);
 
         triggerCheckCardDisplay({
           actionType: "jourdonnais",
           icon: "🤠",
           title: 'Jourdonnais "Draw!" Check' + (hasBarrel ? ' [Chance 1 of 2]' : ''),
           subtitle: `${defender.name} checked Jourdonnais ability! (Hearts ♥️ = Dodge)`,
+          cards: cards,
           card: flip,
+          chosenIndex: chosenIdx,
           isSafe: isHearts,
-          statusText: isHearts ? "🛡️ DEFLECTED! (SAFE)" : "💥 FAILED! (UNSAFE)",
-          detailText: isHearts
-            ? `${defender.name} flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Heart! Attack deflected!`
-            : `${defender.name} flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Not a Heart. Check failed!`
+          statusText: evalRes.statusText,
+          detailText: evalRes.detailText,
+          requiresChoice: false
         });
 
         if (isHearts) {
@@ -4359,21 +4366,30 @@
 
       // 2. Barrel card check for Bot (stacks with Jourdonnais!)
       if (hasBarrel && missesRequired > 0) {
-        const flip = drawCardForCheck(defender);
-        const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
-        addActivityLog(`🛢️ Barrel check for ${defender.name}: flipped ${getSuitSymbol(flip.suit)} ${flip.value} (${flip.name || 'Card'}). Discarded.`);
+        const checkCount = getCheckDrawCount(defender);
+        const cards = drawCardsFromDeckForCheck(checkCount);
+        let chosenIdx = cards.findIndex(c => evaluateCheckCard("barrel", c).isSafe);
+        if (chosenIdx === -1) chosenIdx = 0;
+        const flip = cards[chosenIdx];
+        const evalRes = evaluateCheckCard("barrel", flip);
+        finalizeCheckCards(defender, flip, cards.filter((_, i) => i !== chosenIdx));
+        const isHearts = evalRes.isSafe;
+
+        const cardsStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+        addActivityLog(`🛢️ Barrel check for ${defender.name}: flipped ${cardsStr} -> Selected ${getSuitSymbol(flip.suit)} ${flip.value}.`);
 
         triggerCheckCardDisplay({
           actionType: "barrel",
           icon: "🛢️",
           title: 'Barrel "Draw!" Check' + (isJourdonnais ? ' [Chance 2 of 2]' : ''),
           subtitle: `${defender.name} checked Barrel card! (Hearts ♥️ = Dodge)`,
+          cards: cards,
           card: flip,
+          chosenIndex: chosenIdx,
           isSafe: isHearts,
-          statusText: isHearts ? "🛡️ DEFLECTED! (SAFE)" : "💥 FAILED! (UNSAFE)",
-          detailText: isHearts
-            ? `${defender.name} flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Heart! Attack deflected!`
-            : `${defender.name} flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Not a Heart. Check failed!`
+          statusText: evalRes.statusText,
+          detailText: evalRes.detailText,
+          requiresChoice: false
         });
 
         if (isHearts) {
@@ -4629,26 +4645,17 @@
     }
 
     function executeInterruptCheck(sourceLabel) {
-      const flip = drawCardForCheck(me);
-      playCardDraw();
-      updateDiscardPileUI();
-
-      const isHearts = (flip.suit === "H" || (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit"));
-
-      const checkData = {
-        actionType: "barrel",
-        icon: sourceLabel.includes("Barrel") ? "🛢️" : "🤠",
+      const checkType = sourceLabel.includes("Barrel") ? "barrel" : "jourdonnais";
+      startCheckResolution(me, {
+        actionType: checkType,
+        icon: checkType === "barrel" ? "🛢️" : "🤠",
         title: `${sourceLabel} "Draw!" Check`,
-        subtitle: `${me.name} is checking ${sourceLabel} to dodge the attack! (Hearts ♥️ = Dodge)`,
-        card: flip,
-        isSafe: isHearts,
-        statusText: isHearts ? "🛡️ SAFE! ATTACK DODGED!" : "💥 UNSAFE! CHECK FAILED",
-        detailText: isHearts
-          ? `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Heart! Attack deflected and card sent to discard pile.`
-          : `Flipped ${flip.name} (${getSuitSymbol(flip.suit)} ${flip.value}) - Not a Heart. Check failed and card sent to discard pile.`
-      };
+        subtitle: `${me.name} is checking ${sourceLabel} to dodge the attack! (Hearts ♥️ = Dodge)`
+      }, (flip, evalRes) => {
+        playCardDraw();
+        updateDiscardPileUI();
+        const isHearts = evalRes.isSafe;
 
-      triggerCheckCardDisplay(checkData, () => {
         if (banner) {
           banner.style.display = "block";
           if (isHearts) {
@@ -4962,21 +4969,30 @@
 
       // Teren Kill check (WWS)
       if (playerHasAbility(victim, "TEREN_KILL")) {
-        const checkCard = drawCardForCheck(victim);
-        const cheatsDeath = (checkCard.suit !== "S");
-        addActivityLog(`🩸 Teren Kill lethal check: ${getSuitSymbol(checkCard.suit)} ${checkCard.value} (${checkCard.name || 'Card'})!`);
+        const checkCount = getCheckDrawCount(victim);
+        const cards = drawCardsFromDeckForCheck(checkCount);
+        let chosenIdx = cards.findIndex(c => evaluateCheckCard("teren_kill", c).isSafe);
+        if (chosenIdx === -1) chosenIdx = 0;
+        const checkCard = cards[chosenIdx];
+        const evalRes = evaluateCheckCard("teren_kill", checkCard);
+        finalizeCheckCards(victim, checkCard, cards.filter((_, i) => i !== chosenIdx));
+        const cheatsDeath = evalRes.isSafe;
+
+        const cardsStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+        addActivityLog(`🩸 Teren Kill lethal check for ${victim.name}: ${cardsStr} -> Selected ${getSuitSymbol(checkCard.suit)} ${checkCard.value} (${checkCard.name || 'Card'})!`);
 
         triggerCheckCardDisplay({
           actionType: "teren_kill",
           icon: "🩸",
           title: 'Teren Kill Lethal Check',
           subtitle: `${victim.name} is checking to cheat death! (Any suit except ♠️ = Survives)`,
+          cards: cards,
           card: checkCard,
+          chosenIndex: chosenIdx,
           isSafe: cheatsDeath,
-          statusText: cheatsDeath ? "🛡️ CHEATED DEATH! (SURVIVES)" : "💀 FATAL! (ELIMINATED)",
-          detailText: cheatsDeath
-            ? `Flipped ${checkCard.name} (${getSuitSymbol(checkCard.suit)} ${checkCard.value}) - Not Spades! ${victim.name} survives at 1 LP and draws 1 card!`
-            : `Flipped ${checkCard.name} (${getSuitSymbol(checkCard.suit)} ${checkCard.value}) - Spades! Lethal blow stands!`
+          statusText: evalRes.statusText,
+          detailText: evalRes.detailText,
+          requiresChoice: false
         });
 
         if (cheatsDeath) {
@@ -5075,44 +5091,98 @@
     }
   }
 
-  function drawCardForCheck(player) {
+  /* ==========================================================================
+     CARD CHECK ("DRAW!") ENGINE WITH LUCKY DUKE / HORSESHOE SUPPORT
+     ========================================================================== */
+
+  function evaluateCheckCard(actionType, card) {
+    if (!card) return { isSafe: false, label: "Fail", statusText: "💥 FAILED", detailText: "" };
+    const suit = card.suit;
+    const val = card.value;
+    const isHighNoonHearts = (gameState.activeHighNoonCard && gameState.activeHighNoonCard.effect === "hearts_suit");
+
+    if (actionType === "dynamite") {
+      const isExploded = (suit === "S" && val >= 2 && val <= 9);
+      return {
+        isSafe: !isExploded,
+        label: isExploded ? "Explode! (💥 3 Dmg)" : "Safe (Passes)",
+        statusText: isExploded ? "💥 BOOM! EXPLODED!" : "🛡️ SAFE! FUSE SPARKS HARMLESSLY",
+        detailText: isExploded
+          ? `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Spades 2 to 9! 3 damage taken!`
+          : `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Not Spades 2-9. Dynamite safely passes clockwise!`
+      };
+    } else if (actionType === "jail") {
+      const isEscaped = (suit === "H" || isHighNoonHearts);
+      return {
+        isSafe: isEscaped,
+        label: isEscaped ? "Escape! (🛡️ Turn Active)" : "Locked (Turn Skipped)",
+        statusText: isEscaped ? "🛡️ ESCAPED! YOU BROKE OUT!" : "🔒 LOCKED UP! TURN SKIPPED",
+        detailText: isEscaped
+          ? `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Heart! Jailbreak successful! Turn proceeds.`
+          : `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Not a Heart. You remain locked in jail and skip your turn.`
+      };
+    } else if (actionType === "barrel" || actionType === "jourdonnais") {
+      const isHearts = (suit === "H" || isHighNoonHearts);
+      return {
+        isSafe: isHearts,
+        label: isHearts ? "Dodge! (🛡️ Deflected)" : "Miss (Attack Hits)",
+        statusText: isHearts ? "🛡️ DEFLECTED! (SAFE)" : "💥 FAILED! (UNSAFE)",
+        detailText: isHearts
+          ? `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Heart! Attack deflected and card discarded.`
+          : `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Not a Heart. Check failed and card discarded.`
+      };
+    } else if (actionType === "don_bell") {
+      const isExtraTurn = (suit === "H" || suit === "D" || isHighNoonHearts);
+      return {
+        isSafe: isExtraTurn,
+        label: isExtraTurn ? "Extra Turn! (🎉 Play Again)" : "End Turn Normally",
+        statusText: isExtraTurn ? "🎉 EXTRA TURN! (SUCCESS)" : "❌ NO EXTRA TURN",
+        detailText: isExtraTurn
+          ? `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Red card! Immediate extra turn!`
+          : `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Black card. Turn ends normally.`
+      };
+    } else if (actionType === "teren_kill") {
+      const cheatsDeath = (suit !== "S");
+      return {
+        isSafe: cheatsDeath,
+        label: cheatsDeath ? "Survive! (🩸 1 LP)" : "Fatal Blow",
+        statusText: cheatsDeath ? "🛡️ CHEATED DEATH! (SURVIVES)" : "💀 FATAL! (ELIMINATED)",
+        detailText: cheatsDeath
+          ? `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Not Spades! Survives at 1 LP and draws 1 card!`
+          : `Flipped ${card.name || 'Card'} (${getSuitSymbol(suit)} ${val}) - Spades! Lethal blow stands!`
+      };
+    }
+
+    return { isSafe: true, label: "Check Passed", statusText: "CHECK COMPLETED", detailText: "" };
+  }
+
+  function getCheckDrawCount(player) {
     let checkCount = 1;
     if (player) {
       if (playerHasAbility(player, "LUCKY_DUKE")) checkCount++;
-      if (player.inPlay.some(c => c.name === "Horseshoe")) checkCount++;
+      if (player.inPlay && player.inPlay.some(c => c.name === "Horseshoe")) checkCount++;
       if (player.extraDrawCheck) checkCount++;
     }
+    return checkCount;
+  }
 
+  function drawCardsFromDeckForCheck(count) {
     const cards = [];
-    for (let i = 0; i < checkCount; i++) {
+    for (let i = 0; i < count; i++) {
       const c = drawFromDeck();
       if (c) cards.push(c);
     }
     if (cards.length === 0) cards.push({ suit: "H", value: 7, name: "Hearts Card" });
+    return cards;
+  }
 
-    let chosenCard = cards[0];
-    if (cards.length > 1) {
-      // Prioritize Hearts (safe for Barrel, Jail, Don Bell)
-      const heartCard = cards.find(c => c.suit === "H" || (gameState.activeHighNoonCard?.effect === "hearts_suit"));
-      if (heartCard) {
-        chosenCard = heartCard;
-      } else {
-        // Otherwise avoid Spades 2-9 (Dynamite danger)
-        const safeDynamite = cards.find(c => !(c.suit === "S" && c.value >= 2 && c.value <= 9));
-        if (safeDynamite) chosenCard = safeDynamite;
-        else chosenCard = cards[0];
-      }
-
-      // Discard unchosen cards
-      cards.forEach(c => {
-        if (c !== chosenCard) gameState.discardPile.push(c);
-      });
-
-      const cardsFlippedStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
-      addActivityLog(`🎲 Check: flipped ${cardsFlippedStr} -> Selected ${getSuitSymbol(chosenCard.suit)} ${chosenCard.value}!`);
+  function finalizeCheckCards(player, chosenCard, otherCards) {
+    // 1. Unchosen cards discarded
+    if (otherCards && otherCards.length > 0) {
+      otherCards.forEach(c => gameState.discardPile.push(c));
     }
 
-    // John Pain (WWS): If John Pain has < 6 cards, he takes any card drawn for checks by other players.
+    // 2. John Pain (WWS): If John Pain has < 6 cards, he takes check cards drawn by other players
     const johnPain = Object.values(roomPlayers).find(p => p.isAlive && playerHasAbility(p, "JOHN_PAIN") && p.id !== (player ? player.id : null));
     if (johnPain && johnPain.hand.length < 6) {
       johnPain.hand.push(chosenCard);
@@ -5122,14 +5192,38 @@
     }
 
     updateDiscardPileUI();
+  }
+
+  function drawCardForCheck(player) {
+    const count = getCheckDrawCount(player);
+    const cards = drawCardsFromDeckForCheck(count);
+    let chosenCard = cards[0];
+    if (cards.length > 1) {
+      const heartCard = cards.find(c => c.suit === "H" || (gameState.activeHighNoonCard?.effect === "hearts_suit"));
+      if (heartCard) {
+        chosenCard = heartCard;
+      } else {
+        const safeDynamite = cards.find(c => !(c.suit === "S" && c.value >= 2 && c.value <= 9));
+        if (safeDynamite) chosenCard = safeDynamite;
+        else chosenCard = cards[0];
+      }
+      finalizeCheckCards(player, chosenCard, cards.filter(c => c !== chosenCard));
+      const cardsFlippedStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+      addActivityLog(`🎲 Check: flipped ${cardsFlippedStr} -> Selected ${getSuitSymbol(chosenCard.suit)} ${chosenCard.value}!`);
+    } else {
+      finalizeCheckCards(player, chosenCard, []);
+    }
     return chosenCard;
   }
 
   let activeCheckCallback = null;
   let checkModalTimer = null;
+  let currentCheckModalData = null;
+  let pendingRemoteCheck = null;
 
   function showCardCheckModal(data, onDismiss = null) {
     activeCheckCallback = onDismiss;
+    currentCheckModalData = data;
     if (checkModalTimer) {
       clearTimeout(checkModalTimer);
       checkModalTimer = null;
@@ -5144,65 +5238,192 @@
     const icon = document.getElementById("check-modal-icon");
     const title = document.getElementById("check-modal-title");
     const subtitle = document.getElementById("check-modal-subtitle");
-    const cardEl = document.getElementById("check-flipped-card");
-    const cardIcon = document.getElementById("check-card-icon");
-    const cardName = document.getElementById("check-card-name");
-    const cardDesc = document.getElementById("check-card-desc");
-    const suitVal = document.getElementById("check-card-suit-val");
-    const cardVal = document.getElementById("check-card-val");
-    const cardSuit = document.getElementById("check-card-suit");
+    const displayZone = document.getElementById("check-card-display-zone");
     const badge = document.getElementById("check-card-badge");
     const statusText = document.getElementById("check-status-text");
     const detailText = document.getElementById("check-detail-text");
+    const actions = document.getElementById("check-modal-actions");
 
     if (icon) icon.innerText = data.icon || (data.isSafe ? "🛡️" : "💥");
     if (title) title.innerText = data.title || 'Check Card ("Draw!")';
-    if (subtitle) subtitle.innerText = data.subtitle || '';
 
-    // Card Details
-    const c = data.card || { name: "Check Card", suit: "H", value: 7, desc: "" };
-    const isRed = c.suit === "H" || c.suit === "D";
-    if (cardEl) {
-      cardEl.className = `bang-card ${c.type || 'brown'}`;
+    const cards = (data.cards && data.cards.length > 0) ? data.cards : (data.card ? [data.card] : [{ name: "Check Card", suit: "H", value: 7 }]);
+    const isChoiceActive = data.requiresChoice && (!data.playerId || data.playerId === clientId);
+
+    if (subtitle) {
+      if (isChoiceActive) {
+        subtitle.innerHTML = `🎲 <strong>Lucky Duke / Horseshoe:</strong> You flipped <strong>${cards.length} cards</strong>! Tap your preferred result:`;
+      } else {
+        subtitle.innerText = data.subtitle || '';
+      }
     }
-    if (cardIcon) cardIcon.innerText = c.icon || (isRed ? "♥️" : "♠️");
-    if (cardName) cardName.innerText = c.name || "Card";
-    if (cardDesc) cardDesc.innerText = c.desc || `Drawn for check and placed in discard pile.`;
-    if (suitVal) {
-      suitVal.className = `card-suit-value ${isRed ? 'red' : 'black'}`;
+
+    // Render Cards in Display Zone
+    if (displayZone) {
+      displayZone.innerHTML = "";
+      cards.forEach((c, idx) => {
+        const isRed = (c.suit === "H" || c.suit === "D");
+        const evalForCard = evaluateCheckCard(data.actionType, c);
+        const isChosen = data.chosenIndex !== undefined ? data.chosenIndex === idx : (cards.length === 1 || !isChoiceActive);
+
+        const cardBox = document.createElement("div");
+        cardBox.className = `bang-card ${c.type || 'brown'} ${isChoiceActive ? 'is-selectable' : ''} ${isChosen ? 'is-chosen-check' : (data.chosenIndex !== undefined ? 'is-rejected-check' : '')}`;
+        cardBox.style.cssText = "position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; cursor: " + (isChoiceActive ? "pointer" : "default") + ";";
+        cardBox.id = `check-card-item-${idx}`;
+
+        cardBox.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="card-suit-value ${isRed ? 'red' : 'black'}">
+              <span class="card-val" style="font-size: 1.15rem; font-weight: 900;">${c.value || ''}</span>
+              <span class="card-suit" style="font-size: 1.1rem;">${getSuitSymbol(c.suit)}</span>
+            </div>
+            <div style="font-size: 1.35rem;">${c.icon || (isRed ? '♥️' : '♠️')}</div>
+          </div>
+          <div style="text-align: center; margin: 6px 0;">
+            <div style="font-size: 0.88rem; font-weight: 900; color: #1a0a00; line-height: 1.2;">${escapeHTML(c.name || 'Card')}</div>
+            ${c.desc ? `<div style="font-size: 0.70rem; color: #5c3a21; margin-top: 2px; line-height: 1.2;">${escapeHTML(c.desc)}</div>` : ''}
+          </div>
+          <div style="text-align: center; padding: 4px 6px; border-radius: 8px; font-size: 0.74rem; font-weight: 800; background: ${evalForCard.isSafe ? 'rgba(34, 197, 94, 0.22)' : 'rgba(239, 68, 68, 0.22)'}; color: ${evalForCard.isSafe ? '#15803d' : '#b91c1c'}; border: 1px solid ${evalForCard.isSafe ? '#4ade80' : '#f87171'};">
+            ${evalForCard.label}
+          </div>
+          ${isChoiceActive ? `
+            <button class="btn-gold" style="width: 100%; padding: 7px 4px; font-size: 0.82rem; font-weight: 900; margin-top: 8px; pointer-events: auto;" onclick="event.stopPropagation(); chooseCheckCardModalItem(${idx});">
+              <span>⭐ Choose</span>
+            </button>
+          ` : ''}
+        `;
+
+        if (isChoiceActive) {
+          cardBox.onclick = () => chooseCheckCardModalItem(idx);
+        }
+
+        displayZone.appendChild(cardBox);
+      });
     }
-    if (cardVal) cardVal.innerText = c.value || '';
-    if (cardSuit) cardSuit.innerText = getSuitSymbol(c.suit);
 
     // Badge styling & text
     if (badge) {
-      badge.className = `check-card-badge ${data.isSafe ? 'safe' : 'unsafe'}`;
+      if (isChoiceActive) {
+        badge.className = "check-card-badge choice";
+      } else {
+        badge.className = `check-card-badge ${data.isSafe ? 'safe' : 'unsafe'}`;
+      }
     }
     if (statusText) {
-      statusText.innerText = data.statusText || (data.isSafe ? "🛡️ SAFE!" : "💥 UNSAFE!");
-      statusText.style.color = data.isSafe ? "#4ade80" : "#f87171";
+      if (isChoiceActive) {
+        statusText.innerText = "🎲 CHOOSE YOUR RESULT";
+        statusText.style.color = "#ffd700";
+      } else {
+        statusText.innerText = data.statusText || (data.isSafe ? "🛡️ SAFE!" : "💥 UNSAFE!");
+        statusText.style.color = data.isSafe ? "#4ade80" : "#f87171";
+      }
     }
     if (detailText) {
-      detailText.innerText = data.detailText || '';
+      if (isChoiceActive) {
+        detailText.innerText = "Tap a card or click '⭐ Choose' to select your preferred result.";
+      } else {
+        detailText.innerText = data.detailText || '';
+      }
+    }
+
+    if (actions) {
+      if (isChoiceActive) {
+        actions.style.display = "none";
+      } else {
+        actions.style.display = "block";
+      }
     }
 
     // Audio cue
-    if (data.isSafe) {
-      playSaloonChime();
-    } else {
-      if (data.actionType === "dynamite") playDynamite();
-      else playGunshot();
+    if (!isChoiceActive) {
+      if (data.isSafe) {
+        playSaloonChime();
+      } else {
+        if (data.actionType === "dynamite") playDynamite();
+        else playGunshot();
+      }
     }
 
     modal.classList.add("active");
 
-    // Auto-dismiss after 2.8 seconds so turn flow remains snappy
+    // Auto-dismiss ONLY if not waiting for human choice
+    if (!isChoiceActive) {
+      checkModalTimer = setTimeout(() => {
+        dismissCheckCardModal();
+      }, 2800);
+    }
+  }
+
+  function chooseCheckCardModalItem(chosenIdx) {
+    if (!currentCheckModalData) return;
+    const data = currentCheckModalData;
+    const cards = data.cards || [];
+    if (chosenIdx < 0 || chosenIdx >= cards.length) return;
+
+    data.hasChosen = true;
+    data.chosenIndex = chosenIdx;
+    const chosenCard = cards[chosenIdx];
+    const evalRes = evaluateCheckCard(data.actionType, chosenCard);
+
+    // Update card visuals
+    cards.forEach((_, idx) => {
+      const cardEl = document.getElementById(`check-card-item-${idx}`);
+      if (cardEl) {
+        cardEl.className = `bang-card ${cards[idx].type || 'brown'} ${idx === chosenIdx ? 'is-chosen-check' : 'is-rejected-check'}`;
+        cardEl.onclick = null;
+        cardEl.style.cursor = "default";
+        const btn = cardEl.querySelector("button");
+        if (btn) btn.style.display = "none";
+      }
+    });
+
+    const badge = document.getElementById("check-card-badge");
+    const statusText = document.getElementById("check-status-text");
+    const detailText = document.getElementById("check-detail-text");
+    const actions = document.getElementById("check-modal-actions");
+
+    if (badge) badge.className = `check-card-badge ${evalRes.isSafe ? 'safe' : 'unsafe'}`;
+    if (statusText) {
+      statusText.innerText = evalRes.statusText;
+      statusText.style.color = evalRes.isSafe ? "#4ade80" : "#f87171";
+    }
+    if (detailText) {
+      detailText.innerText = evalRes.detailText;
+    }
+    if (actions) {
+      actions.style.display = "block";
+    }
+
+    // Audio cue
+    if (evalRes.isSafe) playSaloonChime();
+    else if (data.actionType === "dynamite") playDynamite();
+    else playGunshot();
+
+    // Send network message if remote multiplayer client
+    if (!isSoloMode && !isCurrentUserHost()) {
+      publishMessage({
+        type: "CHECK_CHOICE_ACTION",
+        playerId: clientId,
+        choiceIndex: chosenIdx
+      });
+    }
+
+    // Call choice callback
+    if (typeof data.onChoiceSelected === "function") {
+      data.onChoiceSelected(chosenIdx, chosenCard, evalRes);
+    }
+
+    // Auto-dismiss after 1.5 seconds so user sees confirmed selection
+    if (checkModalTimer) clearTimeout(checkModalTimer);
     checkModalTimer = setTimeout(() => {
       dismissCheckCardModal();
-    }, 2800);
+    }, 1500);
   }
 
   function dismissCheckCardModal() {
+    if (currentCheckModalData && currentCheckModalData.requiresChoice && !currentCheckModalData.hasChosen) {
+      return; // Do not dismiss while user still needs to choose
+    }
     if (checkModalTimer) {
       clearTimeout(checkModalTimer);
       checkModalTimer = null;
@@ -5212,6 +5433,7 @@
 
     const callback = activeCheckCallback;
     activeCheckCallback = null;
+    currentCheckModalData = null;
     if (callback) callback();
   }
 
@@ -5223,6 +5445,151 @@
         checkData: data
       });
     }
+  }
+
+  function startCheckResolution(player, checkInfo, onResolved) {
+    const count = getCheckDrawCount(player);
+    const cards = drawCardsFromDeckForCheck(count);
+
+    if (cards.length === 1) {
+      const chosenCard = cards[0];
+      finalizeCheckCards(player, chosenCard, []);
+      const evalRes = evaluateCheckCard(checkInfo.actionType, chosenCard);
+      const checkData = {
+        ...checkInfo,
+        cards: cards,
+        card: chosenCard,
+        isSafe: evalRes.isSafe,
+        statusText: evalRes.statusText,
+        detailText: evalRes.detailText,
+        requiresChoice: false
+      };
+      triggerCheckCardDisplay(checkData, () => {
+        onResolved(chosenCard, evalRes);
+      });
+      return;
+    }
+
+    // Multiple cards: Lucky Duke or Horseshoe!
+    // Case A: AI Bot
+    if (player.isBot) {
+      let chosenIdx = cards.findIndex(c => evaluateCheckCard(checkInfo.actionType, c).isSafe);
+      if (chosenIdx === -1) chosenIdx = 0;
+      const chosenCard = cards[chosenIdx];
+      const otherCards = cards.filter((_, i) => i !== chosenIdx);
+      finalizeCheckCards(player, chosenCard, otherCards);
+      const evalRes = evaluateCheckCard(checkInfo.actionType, chosenCard);
+
+      const cardsFlippedStr = cards.map(c => `${getSuitSymbol(c.suit)} ${c.value} (${c.name || 'Card'})`).join(" vs ");
+      addActivityLog(`🎲 <strong>${escapeHTML(player.name)}</strong> (Lucky Duke) flipped ${cardsFlippedStr} -> Selected <strong>${getSuitSymbol(chosenCard.suit)} ${chosenCard.value}</strong>!`);
+
+      const checkData = {
+        ...checkInfo,
+        cards: cards,
+        card: chosenCard,
+        chosenIndex: chosenIdx,
+        isSafe: evalRes.isSafe,
+        statusText: evalRes.statusText,
+        detailText: evalRes.detailText,
+        requiresChoice: false
+      };
+      triggerCheckCardDisplay(checkData, () => {
+        onResolved(chosenCard, evalRes);
+      });
+      return;
+    }
+
+    // Case B: Local human player
+    if (player.id === clientId) {
+      let resolved = false;
+      const checkData = {
+        ...checkInfo,
+        playerId: player.id,
+        cards: cards,
+        requiresChoice: true,
+        onChoiceSelected: (chosenIdx, chosenCard, evalRes) => {
+          if (resolved) return;
+          resolved = true;
+          const otherCards = cards.filter((_, i) => i !== chosenIdx);
+          finalizeCheckCards(player, chosenCard, otherCards);
+          addActivityLog(`🎲 <strong>${escapeHTML(player.name)}</strong> (Lucky Duke) chose <strong>${getSuitSymbol(chosenCard.suit)} ${chosenCard.value} (${chosenCard.name || 'Card'})</strong>!`);
+          activeCheckCallback = () => {
+            onResolved(chosenCard, evalRes);
+          };
+        }
+      };
+      triggerCheckCardDisplay(checkData);
+      return;
+    }
+
+    // Case C: Remote human player in multiplayer
+    if (isCurrentUserHost() && !isSoloMode) {
+      pendingRemoteCheck = {
+        playerId: player.id,
+        cards: cards,
+        player: player,
+        checkInfo: checkInfo,
+        onResolved: onResolved,
+        timeout: setTimeout(() => {
+          if (pendingRemoteCheck && pendingRemoteCheck.playerId === player.id) {
+            let fallbackIdx = cards.findIndex(c => evaluateCheckCard(checkInfo.actionType, c).isSafe);
+            if (fallbackIdx === -1) fallbackIdx = 0;
+            executeCheckChoiceAction(player.id, fallbackIdx);
+          }
+        }, 25000)
+      };
+
+      // Broadcast check event to all players
+      publishMessage({
+        type: "CARD_CHECK_EVENT",
+        checkData: {
+          ...checkInfo,
+          playerId: player.id,
+          cards: cards,
+          requiresChoice: true
+        }
+      });
+
+      // Show spectator modal on host
+      showCardCheckModal({
+        ...checkInfo,
+        playerId: player.id,
+        cards: cards,
+        requiresChoice: false,
+        subtitle: `Waiting for ${player.name} to choose a check card...`
+      });
+    }
+  }
+
+  function executeCheckChoiceAction(playerId, choiceIndex) {
+    if (!pendingRemoteCheck || pendingRemoteCheck.playerId !== playerId) return;
+    if (pendingRemoteCheck.timeout) clearTimeout(pendingRemoteCheck.timeout);
+
+    const { cards, player, checkInfo, onResolved } = pendingRemoteCheck;
+    pendingRemoteCheck = null;
+
+    const chosenIdx = (choiceIndex >= 0 && choiceIndex < cards.length) ? choiceIndex : 0;
+    const chosenCard = cards[chosenIdx];
+    const otherCards = cards.filter((_, i) => i !== chosenIdx);
+    const resolvedPlayer = player || roomPlayers[playerId];
+    finalizeCheckCards(resolvedPlayer, chosenCard, otherCards);
+    const evalRes = evaluateCheckCard(checkInfo.actionType, chosenCard);
+
+    addActivityLog(`🎲 <strong>${escapeHTML(resolvedPlayer ? resolvedPlayer.name : 'Player')}</strong> (Lucky Duke) chose <strong>${getSuitSymbol(chosenCard.suit)} ${chosenCard.value} (${chosenCard.name || 'Card'})</strong>!`);
+
+    // Broadcast final chosen event to all players
+    triggerCheckCardDisplay({
+      ...checkInfo,
+      cards: cards,
+      card: chosenCard,
+      chosenIndex: chosenIdx,
+      isSafe: evalRes.isSafe,
+      statusText: evalRes.statusText,
+      detailText: evalRes.detailText,
+      requiresChoice: false
+    }, () => {
+      onResolved(chosenCard, evalRes);
+    });
   }
 
   /* ==========================================================================
