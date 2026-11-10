@@ -559,10 +559,41 @@
     padding: 4px;
   }
   .activity-log-item {
-    padding: 3px 6px;
+    padding: 4px 8px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.04);
     border-left: 2px solid var(--gold);
+    line-height: 1.35;
+    transition: background 0.2s ease;
+  }
+  .activity-log-item.attack-on-you {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.38) 0%, rgba(153, 27, 27, 0.22) 100%) !important;
+    border-left: 4px solid #ef4444 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+    animation: attackFlash 0.8s ease-in-out;
+  }
+  .activity-log-item.damage-on-you {
+    background: linear-gradient(90deg, rgba(220, 38, 38, 0.45) 0%, rgba(127, 29, 29, 0.25) 100%) !important;
+    border-left: 4px solid #dc2626 !important;
+    color: #fee2e2 !important;
+    font-weight: 700;
+  }
+  .activity-log-item.attack-general {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-left: 3px solid #f59e0b !important;
+    color: #fef3c7 !important;
+  }
+  .activity-log-item.dodge-you {
+    background: rgba(34, 197, 94, 0.18) !important;
+    border-left: 3px solid #22c55e !important;
+    color: #dcfce7 !important;
+    font-weight: 700;
+  }
+  @keyframes attackFlash {
+    0% { transform: scale(1.02); filter: brightness(1.35); }
+    100% { transform: scale(1); filter: brightness(1); }
   }
 
   /* Player Cockpit Area (Bottom Hand, In-Play, Actions) */
@@ -1908,7 +1939,21 @@
       <button class="btn-secondary" onclick="closeCardTheftModal()">
         <span>Cancel</span>
       </button>
-    </div>
+  </div>
+</div>
+
+<!-- Character Draw Choice Modal (Kit Carlson, Dutch Will, Pedro Ramirez, Jesse Jones, Pat Brennan) -->
+<div id="draw-choice-modal" class="modal-overlay" style="z-index: 10003;">
+  <div class="modal-card" style="max-width: 680px;">
+    <div class="modal-header-icon" id="draw-choice-icon">📜</div>
+    <div class="modal-title" id="draw-choice-title">Character Ability</div>
+    <div class="modal-message" id="draw-choice-message">Choose cards for your draw phase:</div>
+
+    <!-- Cards container (Kit Carlson top 3 cards, Dutch Will 2 cards) -->
+    <div id="draw-choice-cards-container" class="cards-horizontal-scroll" style="justify-content: center; padding: 12px 0; min-height: 140px; gap: 12px;"></div>
+
+    <!-- Action Options container (Pedro Ramirez, Jesse Jones, Pat Brennan choices) -->
+    <div id="draw-choice-options-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;"></div>
   </div>
 </div>
 
@@ -2551,6 +2596,10 @@
     } else if (data.type === "THEFT_CARD_ACTION") {
       if (isCurrentUserHost()) {
         executeCardTheftAction(data.actorId, data.cardName, data.sourceCardIdx, data.targetId, data.choice, data.isGreenCard);
+      }
+    } else if (data.type === "DRAW_CHOICE_ACTION") {
+      if (isCurrentUserHost()) {
+        executeDrawChoiceAction(data.playerId, data.choice);
       }
     }
   }
@@ -3275,70 +3324,117 @@
       });
     }
 
-    // Jesse Jones ability: draws 1st card from an opponent's hand if available
-    if (playerHasAbility(active, "JESSE_JONES")) {
-      const candidates = getLivingPlayersCircle().filter(p => p.id !== active.id && p.hand.length > 0);
-      if (candidates.length > 0) {
-        const victim = candidates[Math.floor(Math.random() * candidates.length)];
-        const stolen = victim.hand.pop();
-        if (stolen) {
-          active.hand.push(stolen);
-          addActivityLog(`🕶️ Jesse Jones drew his 1st card from ${victim.name}'s hand!`);
-          drawCount = Math.max(0, drawCount - 1);
-        }
-      }
-    }
-
-    // Pedro Ramirez ability: may draw 1st card from discard pile if available
-    if (playerHasAbility(active, "PEDRO_RAMIREZ") && gameState.discardPile.length > 0) {
-      const topDiscard = gameState.discardPile.pop();
-      active.hand.push(topDiscard);
-      addActivityLog(`⛏️ Pedro Ramirez drew his 1st card (${topDiscard.name}) from the Discard Pile!`);
-      drawCount = Math.max(0, drawCount - 1);
-      updateDiscardPileUI();
-    }
-
-    // Kit Carlson ability: looks at top 3 cards, chooses 2, returns 1
+    // Interactive Character Draw Abilities
     if (playerHasAbility(active, "KIT_CARLSON")) {
       const c1 = drawFromDeck();
       const c2 = drawFromDeck();
       const c3 = drawFromDeck();
-      const drawn = [c1, c2, c3].filter(Boolean);
-      if (drawn.length >= 3) {
-        const returned = drawn.pop();
-        gameState.deck.push(returned);
-        active.hand.push(...drawn);
-        addActivityLog(`📜 Kit Carlson viewed top 3 cards, kept 2 (${drawn.map(c=>c.name).join(", ")}), and placed 1 back on top!`);
-        drawCount = 0;
+      const cards = [c1, c2, c3].filter(Boolean);
+      if (cards.length >= 3) {
+        if (active.isBot) {
+          const ret = cards.pop();
+          gameState.deck.push(ret);
+          active.hand.push(...cards);
+          addActivityLog(`📜 <strong>${escapeHTML(active.name)}</strong> (Kit Carlson) viewed top 3 cards, kept 2 (${cards.map(c=>c.name).join(", ")}), and placed 1 back on top!`);
+          continuePhase1DrawAfterChoice(active.id, 0);
+          return;
+        } else {
+          gameState.pendingDrawChoice = { type: "KIT_CARLSON", playerId: active.id, cards: cards };
+          broadcastGameState();
+          return;
+        }
       }
     }
 
-    // Pat Brennan ability: may draw 1 in-play card from any player instead of 2 from deck
-    if (playerHasAbility(active, "PAT_BRENNAN")) {
-      const oppWithInPlay = getLivingPlayersCircle().filter(p => p.id !== active.id && p.inPlay.length > 0);
-      if (oppWithInPlay.length > 0) {
-        const victim = oppWithInPlay[0];
-        const snatched = victim.inPlay.pop();
-        active.hand.push(snatched);
-        addActivityLog(`🐴 Pat Brennan snatched in-play ${snatched.name} from ${victim.name} instead of drawing from deck!`);
-        drawCount = 0;
-      }
-    }
-
-    // Dutch Will ability: draws 2 cards, must discard 1, gains 1 Gold Nugget
     if (playerHasAbility(active, "DUTCH_WILL")) {
       const dw1 = drawFromDeck();
       const dw2 = drawFromDeck();
-      if (dw1) active.hand.push(dw1);
-      if (dw2) {
-        gameState.discardPile.push(dw2);
-        active.gold = (active.gold || 0) + 1;
-        addActivityLog(`🍺 Dutch Will discarded ${dw2.name} and gained 1 Gold Nugget!`);
+      const cards = [dw1, dw2].filter(Boolean);
+      if (cards.length >= 2) {
+        if (active.isBot) {
+          const kept = cards[0];
+          const discarded = cards[1];
+          active.hand.push(kept);
+          gameState.discardPile.push(discarded);
+          active.gold = (active.gold || 0) + 1;
+          addActivityLog(`🍺 <strong>${escapeHTML(active.name)}</strong> (Dutch Will) kept <strong>${kept.name}</strong>, discarded <strong>${discarded.name}</strong>, and gained 1 Gold Nugget!`);
+          continuePhase1DrawAfterChoice(active.id, 0);
+          return;
+        } else {
+          gameState.pendingDrawChoice = { type: "DUTCH_WILL", playerId: active.id, cards: cards };
+          broadcastGameState();
+          return;
+        }
       }
     }
 
-    // Draw cards from deck
-    for (let i = 0; i < drawCount; i++) {
+    if (playerHasAbility(active, "PEDRO_RAMIREZ") && gameState.discardPile.length > 0) {
+      if (active.isBot) {
+        const topD = gameState.discardPile.pop();
+        active.hand.push(topD);
+        updateDiscardPileUI();
+        addActivityLog(`⛏️ <strong>${escapeHTML(active.name)}</strong> (Pedro Ramirez) drew 1st card (<strong>${topD.name}</strong>) from Discard Pile!`);
+        continuePhase1DrawAfterChoice(active.id, Math.max(0, drawCount - 1));
+        return;
+      } else {
+        gameState.pendingDrawChoice = { type: "PEDRO_RAMIREZ", playerId: active.id, topDiscard: gameState.discardPile[gameState.discardPile.length - 1] };
+        broadcastGameState();
+        return;
+      }
+    }
+
+    if (playerHasAbility(active, "JESSE_JONES")) {
+      const candidates = getLivingPlayersCircle().filter(p => p.id !== active.id && p.hand.length > 0);
+      if (candidates.length > 0) {
+        if (active.isBot) {
+          const victim = candidates[Math.floor(Math.random() * candidates.length)];
+          const stolen = victim.hand.pop();
+          if (stolen) {
+            active.hand.push(stolen);
+            addActivityLog(`🕶️ <strong>${escapeHTML(active.name)}</strong> (Jesse Jones) drew 1st card from <strong>${escapeHTML(victim.name)}'s</strong> hand!`);
+            checkSuzyLafayette(victim);
+          }
+          continuePhase1DrawAfterChoice(active.id, Math.max(0, drawCount - 1));
+          return;
+        } else {
+          gameState.pendingDrawChoice = { type: "JESSE_JONES", playerId: active.id, candidateIds: candidates.map(c => c.id) };
+          broadcastGameState();
+          return;
+        }
+      }
+    }
+
+    if (playerHasAbility(active, "PAT_BRENNAN")) {
+      const oppWithInPlay = getLivingPlayersCircle().filter(p => p.id !== active.id && p.inPlay.length > 0);
+      if (oppWithInPlay.length > 0) {
+        if (active.isBot) {
+          const victim = oppWithInPlay[0];
+          const snatched = victim.inPlay.pop();
+          active.hand.push(snatched);
+          addActivityLog(`🐴 <strong>${escapeHTML(active.name)}</strong> (Pat Brennan) snatched in-play <strong>${snatched.name}</strong> from <strong>${escapeHTML(victim.name)}</strong>!`);
+          continuePhase1DrawAfterChoice(active.id, 0);
+          return;
+        } else {
+          gameState.pendingDrawChoice = { type: "PAT_BRENNAN", playerId: active.id };
+          broadcastGameState();
+          return;
+        }
+      }
+    }
+
+    // Default: draw normal card count
+    continuePhase1DrawAfterChoice(active.id, drawCount);
+  }
+
+  function continuePhase1DrawAfterChoice(playerId, remainingDraws = 0) {
+    if (!isCurrentUserHost()) return;
+    const active = roomPlayers[playerId];
+    if (!active || (!active.isAlive && !(config.enableShadowGunslingers && active.isShadow))) {
+      advanceToNextTurn();
+      return;
+    }
+
+    for (let i = 0; i < remainingDraws; i++) {
       const c = drawFromDeck();
       if (c) active.hand.push(c);
     }
@@ -3363,7 +3459,7 @@
     gameState.turnPhase = "play";
     gameState.turnBangCount = 0;
 
-    addActivityLog(`🤠 ${active.name} drew ${drawCount} card(s) and started Phase 2 (Play).`);
+    addActivityLog(`🤠 <strong>${escapeHTML(active.name)}</strong> started Phase 2 (Play).`);
     broadcastGameState("draw");
     checkBotTurnTrigger();
   }
@@ -3607,7 +3703,6 @@
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
       gameState.turnBangCount++;
-      addActivityLog(`🔫 ${player.name} shot a BANG! at ${roomPlayers[targetId].name}!`);
 
       initiateAttackInterrupt(playerId, targetId, "BANG!", (playerHasAbility(player, "SLAB_THE_KILLER") ? 2 : 1));
       return;
@@ -3623,8 +3718,7 @@
         player.hand.splice(cardIndex, 1);
         gameState.discardPile.push(card);
         gameState.turnBangCount++;
-        addActivityLog(`👢 Calamity Janet fired a Missed! card as a BANG! at ${roomPlayers[targetId].name}!`);
-        initiateAttackInterrupt(playerId, targetId, "BANG!", 1);
+        initiateAttackInterrupt(playerId, targetId, "Missed! as BANG! (Calamity Janet)", 1);
         return;
       }
       if (playerId === clientId) alert("Missed! can only be played when you are targeted by an attack.");
@@ -3745,7 +3839,10 @@
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
       updateDiscardPileUI();
-      addActivityLog(`⚔️ <strong>${escapeHTML(player.name)}</strong> challenged <strong>${escapeHTML(roomPlayers[targetId].name)}</strong> to a DUEL!`);
+      const isTargetMe = (targetId === clientId);
+      const prefix = isTargetMe ? `🚨 <strong>[DUEL CHALLENGE ON YOU!]</strong>` : `⚔️ <strong>[DUEL]</strong>`;
+      const tgtName = isTargetMe ? "YOU" : escapeHTML(roomPlayers[targetId].name);
+      addActivityLog(`${prefix} <strong>${escapeHTML(player.name)}</strong> challenged <strong>${tgtName}</strong> to a DUEL!`, isTargetMe ? "attack-on-you" : "attack-general", { attackerId: playerId, victimId: targetId, attackType: "Duel" });
       broadcastGameState();
       initiateDuel(playerId, targetId);
       return;
@@ -3759,7 +3856,6 @@
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
       updateDiscardPileUI();
-      addActivityLog(`🥊 ${player.name} threw a Punch at ${roomPlayers[targetId].name}!`);
       initiateAttackInterrupt(playerId, targetId, "Punch", 1);
       return;
     }
@@ -3782,7 +3878,6 @@
           message: "Select 1 extra card to discard to fire Springfield:",
           allowCancel: false,
           onConfirm: (discarded) => {
-            addActivityLog(`🎯 ${player.name} fired a Springfield rifle at ${roomPlayers[targetId].name}!`);
             initiateAttackInterrupt(playerId, targetId, "Springfield", 1);
           }
         });
@@ -3791,7 +3886,6 @@
         const extra = player.hand.pop();
         gameState.discardPile.push(extra);
         updateDiscardPileUI();
-        addActivityLog(`🎯 ${player.name} fired a Springfield rifle at ${roomPlayers[targetId].name}!`);
         initiateAttackInterrupt(playerId, targetId, "Springfield", 1);
         return;
       }
@@ -3955,14 +4049,20 @@
     if (card.name === "Indians!") {
       player.hand.splice(cardIndex, 1);
       gameState.discardPile.push(card);
-      addActivityLog(`🏹 ${player.name} played Indians! All other players must discard a BANG!`);
+      const isTargetingMe = (playerId !== clientId);
+      const prefix = isTargetingMe ? `🚨 <strong>[ATTACK ON YOU!]</strong>` : `🏹 <strong>[ATTACK]</strong>`;
+      addActivityLog(`${prefix} <strong>${escapeHTML(player.name)}</strong> unleashed Indians! All other players must discard a BANG!`, isTargetingMe ? "attack-on-you" : "attack-general", { attackerId: playerId, victimId: isTargetingMe ? clientId : null, attackType: "Indians!" });
       const victims = getLivingPlayersCircle().filter(p => p.id !== playerId);
       victims.forEach(v => {
         const bangIdx = v.hand.findIndex(c => c.name === "BANG!");
         if (bangIdx !== -1) {
           const removed = v.hand.splice(bangIdx, 1)[0];
           gameState.discardPile.push(removed);
-          addActivityLog(`${v.name} fended off Indians with a BANG!`);
+          const isFenderMe = (v.id === clientId);
+          const fenderMsg = isFenderMe
+            ? `🛡️ <strong>[DODGED] YOU</strong> fended off Indians with a BANG!`
+            : `🛡️ <strong>${escapeHTML(v.name)}</strong> fended off Indians with a BANG!`;
+          addActivityLog(fenderMsg, isFenderMe ? "dodge-you" : "normal", { victimId: v.id });
           if (v.charKey === "MOLLY_STARK" || v.copiedCharKey === "MOLLY_STARK") {
             const mollyBonus = drawFromDeck();
             if (mollyBonus) {
@@ -4154,9 +4254,19 @@
   /* ==========================================================================
      10. ATTACK & DAMAGE RESOLUTION
      ========================================================================== */
-  function initiateAttackInterrupt(attackerId, defenderId, attackType, missesRequired = 1) {
+  function initiateAttackInterrupt(attackerId, defenderId, attackType, missesRequired = 1, suppressLog = false) {
     const defender = roomPlayers[defenderId];
+    const attacker = roomPlayers[attackerId];
     if (!defender || !defender.isAlive) return;
+
+    if (!suppressLog && attacker) {
+      const isAttackingMe = (defenderId === clientId);
+      const attackerName = escapeHTML(attacker.name);
+      const defenderName = isAttackingMe ? "YOU" : escapeHTML(defender.name);
+      const prefix = isAttackingMe ? `🚨 <strong>[ATTACK ON YOU!]</strong>` : `💥 <strong>[ATTACK]</strong>`;
+      const logMsg = `${prefix} <strong>${attackerName}</strong> attacked <strong>${defenderName}</strong> with ${escapeHTML(attackType)}!`;
+      addActivityLog(logMsg, isAttackingMe ? "attack-on-you" : "attack-general", { attackerId, victimId: defenderId, attackType });
+    }
 
     // Check if Defender is AI Bot
     if (defender.isBot) {
@@ -4322,7 +4432,8 @@
     let jourdonnaisTested = false;
     let barrelTested = false;
 
-    title.innerText = `Under Fire! (${attackType})`;
+    const atkDisplayName = attacker ? escapeHTML(attacker.name) : 'An Enemy';
+    title.innerHTML = `🚨 Under Fire! <span style="color:#ffd700;">${atkDisplayName}</span> attacked YOU!`;
 
     function renderInterruptActions() {
       if (!me.isAlive) {
@@ -4335,9 +4446,9 @@
       const isJourdonnais = playerHasAbility(me, "JOURDONNAIS");
 
       if (isJourdonnais && hasBarrelCard && neededMisses > 0 && (!jourdonnaisTested || !barrelTested)) {
-        msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You have BOTH Jourdonnais ability AND an equipped Barrel card (2 "Draw!" chances) to dodge!`;
+        msg.innerHTML = `<strong>${atkDisplayName}</strong> attacked YOU with <strong>${escapeHTML(attackType)}</strong>!<br><span style="font-size:0.85rem; color:#fde68a;">You have BOTH Jourdonnais ability AND an equipped Barrel card (2 "Draw!" chances) to dodge!</span>`;
       } else {
-        msg.innerText = `${attacker ? attacker.name : 'An enemy'} shot a ${attackType} at you! You need ${neededMisses} Missed! card(s) or Heart "Draw!" check to avoid damage.`;
+        msg.innerHTML = `<strong>${atkDisplayName}</strong> attacked YOU with <strong>${escapeHTML(attackType)}</strong>!<br><span style="font-size:0.85rem; color:#fde68a;">You need ${neededMisses} Missed! card(s) or Heart "Draw!" check to avoid damage.</span>`;
       }
       actions.innerHTML = "";
 
@@ -4711,7 +4822,15 @@
     if (!victim || !victim.isAlive) return;
 
     victim.currentLp -= amount;
-    addActivityLog(`🩸 ${victim.name} lost ${amount} LP from ${reason}! (${victim.currentLp}/${victim.maxLp} LP remaining)`);
+    const attacker = attackerId ? roomPlayers[attackerId] : null;
+    const isMe = (victimId === clientId);
+    const atkName = attacker ? escapeHTML(attacker.name) : "";
+    const vicName = isMe ? "YOU" : escapeHTML(victim.name);
+    const fromStr = attacker ? `by <strong>${atkName}</strong> (${escapeHTML(reason)})` : `from ${escapeHTML(reason)}`;
+    const damageMsg = isMe
+      ? `🩸 <strong>[DAMAGE ON YOU] YOU</strong> lost ${amount} LP from an attack by <strong>${atkName || 'an opponent'}</strong>! (${victim.currentLp}/${victim.maxLp} LP remaining)`
+      : `🩸 <strong>[DAMAGE]</strong> <strong>${vicName}</strong> lost ${amount} LP ${fromStr}! (${victim.currentLp}/${victim.maxLp} LP remaining)`;
+    addActivityLog(damageMsg, isMe ? "damage-on-you" : "damage", { attackerId, victimId, amount });
 
     // Gold Rush Damage Economy & Equipment Triggers
     if (config.enableGoldRush) {
@@ -5390,6 +5509,21 @@
         showDuelModal(gameState.pendingInterrupt.opponentId);
       }
     }
+
+    // 9. Pending Character Draw Choice Modal check (Kit Carlson, Dutch Will, Pedro Ramirez, Jesse Jones, Pat Brennan)
+    const drawModal = document.getElementById("draw-choice-modal");
+    if (gameState.pendingDrawChoice) {
+      if (gameState.pendingDrawChoice.playerId === clientId) {
+        renderDrawChoiceModal(gameState.pendingDrawChoice);
+      } else {
+        renderDrawChoiceWaitingModal(gameState.pendingDrawChoice);
+      }
+    } else if (drawModal && drawModal.classList.contains("active")) {
+      closeDrawChoiceModal();
+    }
+
+    // 10. Sync Activity Log Feed from gameState.logs
+    syncActivityLogFeed();
   }
 
   function renderOpponentsGrid() {
@@ -6985,14 +7119,338 @@
     syncActiveShootoutUI();
   }
 
-  function addActivityLog(msg) {
+  function addActivityLog(msg, type = "normal", meta = {}) {
+    const feed = document.getElementById("activity-log-feed");
+    const logEntry = {
+      id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+      text: msg,
+      type: type,
+      victimId: meta.victimId || null,
+      attackerId: meta.attackerId || null,
+      attackType: meta.attackType || null
+    };
+
+    if (!gameState.logs) gameState.logs = [];
+    gameState.logs.push(logEntry);
+    if (gameState.logs.length > 80) gameState.logs.shift();
+
+    if (feed) {
+      renderActivityLogItem(logEntry, true);
+    }
+  }
+
+  function renderActivityLogItem(logEntry, autoScroll = true) {
     const feed = document.getElementById("activity-log-feed");
     if (!feed) return;
     const item = document.createElement("div");
-    item.className = "activity-log-item";
-    item.innerHTML = msg;
+
+    let cls = "activity-log-item";
+    const isVictimMe = (logEntry.victimId === clientId);
+    if (logEntry.type === "attack-on-you" || (logEntry.type === "attack-general" && isVictimMe) || (logEntry.type === "attack" && isVictimMe)) {
+      cls += " attack-on-you";
+    } else if (logEntry.type === "damage-on-you" || (logEntry.type === "damage" && isVictimMe)) {
+      cls += " damage-on-you";
+    } else if (logEntry.type === "attack-general" || logEntry.type === "attack") {
+      cls += " attack-general";
+    } else if (logEntry.type === "dodge-you") {
+      cls += " dodge-you";
+    }
+
+    item.className = cls;
+    item.innerHTML = logEntry.text;
     feed.appendChild(item);
-    feed.scrollTop = feed.scrollHeight;
+    if (autoScroll) feed.scrollTop = feed.scrollHeight;
+  }
+
+  function syncActivityLogFeed() {
+    const feed = document.getElementById("activity-log-feed");
+    if (!feed || !gameState.logs) return;
+    const existingCount = feed.children.length;
+    if (existingCount < gameState.logs.length) {
+      for (let i = existingCount; i < gameState.logs.length; i++) {
+        renderActivityLogItem(gameState.logs[i], false);
+      }
+      feed.scrollTop = feed.scrollHeight;
+    }
+  }
+
+  /* =========================================================================
+     CHARACTER DRAW CHOICE MODAL LOGIC (Kit Carlson, Dutch Will, Pedro Ramirez, Jesse Jones, Pat Brennan)
+     ========================================================================= */
+  function renderDrawChoiceModal(choice) {
+    const modal = document.getElementById("draw-choice-modal");
+    const iconEl = document.getElementById("draw-choice-icon");
+    const titleEl = document.getElementById("draw-choice-title");
+    const msgEl = document.getElementById("draw-choice-message");
+    const cardsContainer = document.getElementById("draw-choice-cards-container");
+    const optionsContainer = document.getElementById("draw-choice-options-container");
+    if (!modal || !cardsContainer || !optionsContainer) return;
+
+    modal.classList.add("active");
+    cardsContainer.innerHTML = "";
+    optionsContainer.innerHTML = "";
+    cardsContainer.style.display = "none";
+    optionsContainer.style.display = "none";
+
+    if (choice.type === "KIT_CARLSON") {
+      if (iconEl) iconEl.innerText = "📜";
+      if (titleEl) titleEl.innerText = "Kit Carlson Ability";
+      if (msgEl) msgEl.innerHTML = `Top 3 cards drawn from the deck.<br><strong>Tap the 1 card you want to RETURN to the top of the deck</strong> (you will keep the other 2):`;
+      cardsContainer.style.display = "flex";
+
+      (choice.cards || []).forEach((c, idx) => {
+        const cardEl = document.createElement("div");
+        const isRed = (c.suit === "H" || c.suit === "D");
+        cardEl.className = `bang-card ${c.type || 'playing'}`;
+        cardEl.style.cursor = "pointer";
+        cardEl.style.minWidth = "120px";
+        cardEl.style.maxWidth = "130px";
+        cardEl.style.height = "180px";
+        cardEl.style.transform = "none";
+        cardEl.innerHTML = `
+          <div>
+            <div class="card-top-icon">${c.icon || '🎴'}</div>
+            <div class="card-name-title" style="font-size: 0.85rem;">${escapeHTML(c.name)}</div>
+            <div class="card-effect-text" style="font-size: 0.68rem;">${escapeHTML(c.desc || '')}</div>
+          </div>
+          <div>
+            <div class="card-suit-value ${isRed ? 'red' : 'black'}" style="margin-bottom: 6px;">
+              <span>${c.value || ''}</span>
+              <span>${getSuitSymbol(c.suit)}</span>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%; font-size: 0.72rem; padding: 4px; border-radius: 6px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5;">
+              ↩️ Return
+            </button>
+          </div>
+        `;
+        cardEl.onclick = () => confirmDrawChoice({ action: "KIT_CARLSON_RETURN", returnIndex: idx });
+        cardsContainer.appendChild(cardEl);
+      });
+    } else if (choice.type === "DUTCH_WILL") {
+      if (iconEl) iconEl.innerText = "🍺";
+      if (titleEl) titleEl.innerText = "Dutch Will Ability";
+      if (msgEl) msgEl.innerHTML = `Drew 2 cards from deck.<br><strong>Choose 1 card to KEEP</strong> (the other card will be discarded for 1 Gold Nugget):`;
+      cardsContainer.style.display = "flex";
+
+      (choice.cards || []).forEach((c, idx) => {
+        const cardEl = document.createElement("div");
+        const isRed = (c.suit === "H" || c.suit === "D");
+        cardEl.className = `bang-card ${c.type || 'playing'}`;
+        cardEl.style.cursor = "pointer";
+        cardEl.style.minWidth = "120px";
+        cardEl.style.maxWidth = "130px";
+        cardEl.style.height = "180px";
+        cardEl.innerHTML = `
+          <div>
+            <div class="card-top-icon">${c.icon || '🎴'}</div>
+            <div class="card-name-title" style="font-size: 0.85rem;">${escapeHTML(c.name)}</div>
+            <div class="card-effect-text" style="font-size: 0.68rem;">${escapeHTML(c.desc || '')}</div>
+          </div>
+          <div>
+            <div class="card-suit-value ${isRed ? 'red' : 'black'}" style="margin-bottom: 6px;">
+              <span>${c.value || ''}</span>
+              <span>${getSuitSymbol(c.suit)}</span>
+            </div>
+            <button class="btn-gold" style="width: 100%; font-size: 0.72rem; padding: 4px; border-radius: 6px;">
+              🌟 Keep
+            </button>
+          </div>
+        `;
+        cardEl.onclick = () => confirmDrawChoice({ action: "DUTCH_WILL_KEEP", keepIndex: idx });
+        cardsContainer.appendChild(cardEl);
+      });
+    } else if (choice.type === "PEDRO_RAMIREZ") {
+      if (iconEl) iconEl.innerText = "⛏️";
+      if (titleEl) titleEl.innerText = "Pedro Ramirez Ability";
+      const topD = choice.topDiscard;
+      const topDesc = topD ? `${topD.name} (${getSuitSymbol(topD.suit)} ${topD.value})` : "Discard Pile Card";
+      if (msgEl) msgEl.innerHTML = `You may draw your 1st card from the Discard Pile or from the Deck:`;
+      optionsContainer.style.display = "flex";
+
+      const btnDiscard = document.createElement("button");
+      btnDiscard.className = "btn-gold";
+      btnDiscard.style.padding = "12px 16px";
+      btnDiscard.style.fontSize = "0.95rem";
+      btnDiscard.innerHTML = `<span>⛏️ Draw 1st Card from Discard Pile: <strong>${escapeHTML(topDesc)}</strong></span>`;
+      btnDiscard.onclick = () => confirmDrawChoice({ action: "PEDRO_DISCARD" });
+      optionsContainer.appendChild(btnDiscard);
+
+      const btnDeck = document.createElement("button");
+      btnDeck.className = "btn-secondary";
+      btnDeck.style.padding = "12px 16px";
+      btnDeck.style.fontSize = "0.95rem";
+      btnDeck.innerHTML = `<span>🎴 Draw from Deck as usual (2 cards)</span>`;
+      btnDeck.onclick = () => confirmDrawChoice({ action: "PEDRO_DECK" });
+      optionsContainer.appendChild(btnDeck);
+    } else if (choice.type === "JESSE_JONES") {
+      if (iconEl) iconEl.innerText = "🕶️";
+      if (titleEl) titleEl.innerText = "Jesse Jones Ability";
+      if (msgEl) msgEl.innerHTML = `You may draw your 1st card from an opponent's hand or from the Deck:`;
+      optionsContainer.style.display = "flex";
+
+      (choice.candidateIds || []).forEach(candId => {
+        const cand = roomPlayers[candId];
+        if (cand && cand.hand && cand.hand.length > 0) {
+          const btnCand = document.createElement("button");
+          btnCand.className = "btn-gold";
+          btnCand.style.padding = "10px 16px";
+          btnCand.style.fontSize = "0.92rem";
+          btnCand.innerHTML = `<span>🫳 Draw 1 card from <strong>${escapeHTML(cand.name)}'s</strong> hand (${cand.hand.length} cards)</span>`;
+          btnCand.onclick = () => confirmDrawChoice({ action: "JESSE_STEAL", targetId: candId });
+          optionsContainer.appendChild(btnCand);
+        }
+      });
+
+      const btnDeck = document.createElement("button");
+      btnDeck.className = "btn-secondary";
+      btnDeck.style.padding = "10px 16px";
+      btnDeck.style.fontSize = "0.92rem";
+      btnDeck.innerHTML = `<span>🎴 Draw from Deck as usual (2 cards)</span>`;
+      btnDeck.onclick = () => confirmDrawChoice({ action: "JESSE_DECK" });
+      optionsContainer.appendChild(btnDeck);
+    } else if (choice.type === "PAT_BRENNAN") {
+      if (iconEl) iconEl.innerText = "🐴";
+      if (titleEl) titleEl.innerText = "Pat Brennan Ability";
+      if (msgEl) msgEl.innerHTML = `You may draw 1 in-play card from any player instead of 2 cards from the deck:`;
+      optionsContainer.style.display = "flex";
+
+      const opps = getLivingPlayersCircle().filter(p => p.id !== choice.playerId && p.inPlay && p.inPlay.length > 0);
+      opps.forEach(opp => {
+        opp.inPlay.forEach((eq, eqIdx) => {
+          const btnEq = document.createElement("button");
+          btnEq.className = "btn-gold";
+          btnEq.style.padding = "8px 14px";
+          btnEq.style.fontSize = "0.88rem";
+          btnEq.innerHTML = `<span>🐴 Take <strong>${escapeHTML(eq.name)}</strong> from <strong>${escapeHTML(opp.name)}</strong></span>`;
+          btnEq.onclick = () => confirmDrawChoice({ action: "PAT_SNATCH", targetId: opp.id, cardIndex: eqIdx });
+          optionsContainer.appendChild(btnEq);
+        });
+      });
+
+      const btnDeck = document.createElement("button");
+      btnDeck.className = "btn-secondary";
+      btnDeck.style.padding = "10px 16px";
+      btnDeck.style.fontSize = "0.92rem";
+      btnDeck.innerHTML = `<span>🎴 Draw 2 cards from Deck as usual</span>`;
+      btnDeck.onclick = () => confirmDrawChoice({ action: "PAT_DECK" });
+      optionsContainer.appendChild(btnDeck);
+    }
+  }
+
+  function renderDrawChoiceWaitingModal(choice) {
+    const modal = document.getElementById("draw-choice-modal");
+    const iconEl = document.getElementById("draw-choice-icon");
+    const titleEl = document.getElementById("draw-choice-title");
+    const msgEl = document.getElementById("draw-choice-message");
+    const cardsContainer = document.getElementById("draw-choice-cards-container");
+    const optionsContainer = document.getElementById("draw-choice-options-container");
+    if (!modal) return;
+
+    const drafter = roomPlayers[choice.playerId];
+    const drafterName = drafter ? drafter.name : "Active player";
+    const charName = drafter ? (CHARACTERS[drafter.charKey]?.name || "Character") : "Character";
+
+    modal.classList.add("active");
+    if (iconEl) iconEl.innerText = "⏳";
+    if (titleEl) titleEl.innerText = `${charName} Drawing...`;
+    if (msgEl) msgEl.innerHTML = `Waiting for <strong>${escapeHTML(drafterName)}</strong> to make their draw choice...`;
+    if (cardsContainer) cardsContainer.style.display = "none";
+    if (optionsContainer) optionsContainer.style.display = "none";
+  }
+
+  function closeDrawChoiceModal() {
+    const modal = document.getElementById("draw-choice-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  function confirmDrawChoice(choice) {
+    closeDrawChoiceModal();
+    if (isSoloMode || isCurrentUserHost()) {
+      executeDrawChoiceAction(clientId, choice);
+    } else {
+      publishMessage({
+        type: "DRAW_CHOICE_ACTION",
+        playerId: clientId,
+        choice: choice
+      });
+    }
+  }
+
+  function executeDrawChoiceAction(playerId, choice) {
+    const pending = gameState.pendingDrawChoice;
+    if (!pending || pending.playerId !== playerId) return;
+    const player = roomPlayers[playerId];
+    if (!player) return;
+
+    if (choice.action === "KIT_CARLSON_RETURN") {
+      const cards = pending.cards || [];
+      const retIdx = choice.returnIndex !== undefined ? choice.returnIndex : 0;
+      const returned = cards.splice(retIdx, 1)[0];
+      if (returned) gameState.deck.push(returned);
+      player.hand.push(...cards);
+      addActivityLog(`📜 <strong>${escapeHTML(player.name)}</strong> (Kit Carlson) viewed top 3 cards, kept 2 (${cards.map(c=>c.name).join(", ")}), and placed 1 back on top!`);
+      playCardDraw();
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 0);
+    } else if (choice.action === "DUTCH_WILL_KEEP") {
+      const cards = pending.cards || [];
+      const keepIdx = choice.keepIndex !== undefined ? choice.keepIndex : 0;
+      const kept = cards[keepIdx];
+      const discarded = cards[keepIdx === 0 ? 1 : 0];
+      if (kept) player.hand.push(kept);
+      if (discarded) {
+        gameState.discardPile.push(discarded);
+        player.gold = (player.gold || 0) + 1;
+        addActivityLog(`🍺 <strong>${escapeHTML(player.name)}</strong> (Dutch Will) kept <strong>${kept.name}</strong>, discarded <strong>${discarded.name}</strong>, and gained 1 Gold Nugget!`);
+      }
+      playCardDraw();
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 0);
+    } else if (choice.action === "PEDRO_DISCARD") {
+      if (gameState.discardPile.length > 0) {
+        const topDiscard = gameState.discardPile.pop();
+        player.hand.push(topDiscard);
+        updateDiscardPileUI();
+        addActivityLog(`⛏️ <strong>${escapeHTML(player.name)}</strong> (Pedro Ramirez) drew 1st card (<strong>${topDiscard.name}</strong>) from the Discard Pile!`);
+        playCardDraw();
+      }
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 1);
+    } else if (choice.action === "PEDRO_DECK") {
+      addActivityLog(`⛏️ <strong>${escapeHTML(player.name)}</strong> (Pedro Ramirez) chose to draw 2 cards from the deck.`);
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 2);
+    } else if (choice.action === "JESSE_STEAL") {
+      const tgt = roomPlayers[choice.targetId];
+      if (tgt && tgt.hand && tgt.hand.length > 0) {
+        const stolenIdx = Math.floor(Math.random() * tgt.hand.length);
+        const stolen = tgt.hand.splice(stolenIdx, 1)[0];
+        player.hand.push(stolen);
+        addActivityLog(`🕶️ <strong>${escapeHTML(player.name)}</strong> (Jesse Jones) drew 1st card from <strong>${escapeHTML(tgt.name)}'s</strong> hand!`);
+        playCardDraw();
+        checkSuzyLafayette(tgt);
+      }
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 1);
+    } else if (choice.action === "JESSE_DECK") {
+      addActivityLog(`🕶️ <strong>${escapeHTML(player.name)}</strong> (Jesse Jones) chose to draw 2 cards from the deck.`);
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 2);
+    } else if (choice.action === "PAT_SNATCH") {
+      const tgt = roomPlayers[choice.targetId];
+      if (tgt && tgt.inPlay && tgt.inPlay[choice.cardIndex]) {
+        const snatched = tgt.inPlay.splice(choice.cardIndex, 1)[0];
+        player.hand.push(snatched);
+        addActivityLog(`🐴 <strong>${escapeHTML(player.name)}</strong> (Pat Brennan) snatched in-play <strong>${snatched.name}</strong> from <strong>${escapeHTML(tgt.name)}</strong>!`);
+        playCardDraw();
+      }
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 0);
+    } else if (choice.action === "PAT_DECK") {
+      addActivityLog(`🐴 <strong>${escapeHTML(player.name)}</strong> (Pat Brennan) chose to draw 2 cards from the deck.`);
+      gameState.pendingDrawChoice = null;
+      continuePhase1DrawAfterChoice(playerId, 2);
+    }
   }
 
   /* ==========================================================================
@@ -7003,7 +7461,7 @@
     playVictoryFanfare();
 
     // Close any dangling modal dialogs
-    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal", "card-theft-modal", "check-card-modal", "target-picker-modal"].forEach(id => {
+    ["interrupt-modal", "general-store-modal", "character-select-modal", "discard-select-modal", "card-theft-modal", "check-card-modal", "target-picker-modal", "draw-choice-modal"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove("active");
     });
