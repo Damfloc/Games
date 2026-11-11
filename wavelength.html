@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -756,7 +756,7 @@
 <!-- Top Navbar Strip -->
 <header class="top-navbar">
   <a href="index.html" class="nav-brand">
-    <span>ðŸ“»</span>
+    <span>📻</span>
     <span>WAVELENGTH</span>
   </a>
 
@@ -765,9 +765,9 @@
       <span class="network-status-dot disconnected" id="network-dot"></span>
       <span id="room-code-tag">No Room</span>
     </div>
-    <button class="nav-pill-btn" onclick="toggleSound()" id="sound-btn">ðŸ”Š</button>
-    <button class="nav-pill-btn" onclick="openRulesModal()">â“ Rules</button>
-    <a href="index.html" class="nav-pill-btn">Exit</a>
+    <button class="nav-pill-btn" onclick="toggleSound()" id="sound-btn">🔊</button>
+    <button class="nav-pill-btn" onclick="openRulesModal()">❓ Rules</button>
+    <a href="index.html" class="nav-pill-btn">← Hub</a>
   </div>
 </header>
 
@@ -791,7 +791,7 @@
 
       <div style="margin-top: 10px;">
         <button class="btn-primary" onclick="createOnlineRoom()">
-          <span>ðŸŒ</span> Create Online Room
+          <span>🌐</span> Create Online Room
         </button>
       </div>
 
@@ -803,7 +803,7 @@
 
       <div style="display: flex; gap: 10px;">
         <input type="text" class="text-input" id="room-code-input" maxlength="8" placeholder="ROOM CODE" style="text-transform: uppercase; margin-bottom: 0; font-weight: 800; letter-spacing: 0.1em; text-align: center;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
-        <button class="btn-secondary" onclick="joinOnlineRoom()" style="white-space: nowrap; font-weight: 700;">Join Room â†’</button>
+        <button class="btn-secondary" onclick="joinOnlineRoom()" style="white-space: nowrap; font-weight: 700;">Join Room →</button>
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px; margin: 18px 0;">
@@ -813,7 +813,7 @@
       </div>
 
       <button class="btn-secondary" style="width: 100%;" onclick="startPassAndPlay()">
-        <span>ðŸ“±</span> Play Pass &amp; Play (Single Phone)
+        <span>📱</span> Play Pass &amp; Play (Single Phone)
       </button>
     </div>
 
@@ -825,7 +825,7 @@
           <div class="room-code-val" id="display-room-code">----</div>
         </div>
         <button class="btn-secondary" onclick="copyRoomLink()" style="background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.35); color: #fff;">
-          <span>ðŸ”— Share Link</span>
+          <span>🔗 Share Link</span>
         </button>
       </div>
 
@@ -833,13 +833,13 @@
       <div id="host-settings-panel">
         <div class="card-box-header">
           <span>Game Settings</span>
-          <span style="font-size: 0.75rem; color: var(--accent-gold);" id="host-indicator">ðŸ‘‘ You are the Host</span>
+          <span style="font-size: 0.75rem; color: var(--accent-gold);" id="host-indicator">👑 You are the Host</span>
         </div>
 
         <label class="input-label">Game Mode</label>
         <div class="pill-group" id="mode-pill-group">
-          <div class="pill-option selected" id="pill-mode-coop" onclick="selectGameMode('coop')">ðŸ¤ Cooperative</div>
-          <div class="pill-option" id="pill-mode-comp" onclick="selectGameMode('competitive')">âš”ï¸ Competitive</div>
+          <div class="pill-option selected" id="pill-mode-coop" onclick="selectGameMode('coop')">🤝 Cooperative</div>
+          <div class="pill-option" id="pill-mode-comp" onclick="selectGameMode('competitive')">⚔️ Competitive</div>
         </div>
 
         <label class="input-label">Rounds Per Match</label>
@@ -866,15 +866,15 @@
       <div class="roster-grid" id="roster-grid"></div>
 
       <div style="margin-top: 16px;">
-        <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">Start Game ðŸš€</button>
+        <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">Start Game 🚀</button>
         <div id="guest-waiting-msg" style="display: none; text-align: center; color: var(--accent-gold); font-size: 0.95rem; font-weight: 700; margin-top: 10px; padding: 12px; background: rgba(255, 214, 10, 0.08); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
-          â³ Waiting for Host to start the game...
+          ⏳ Waiting for Host to start the game...
         </div>
         <p id="min-players-hint" style="font-size: 0.8rem; color: #8e8e93; margin-top: 8px; text-align: center;">Recommended 2+ players for online play</p>
       </div>
 
       <button class="btn-secondary" style="width: 100%; margin-top: 14px;" onclick="leaveRoom()">
-        â† Leave Room
+        ← Leave Room
       </button>
     </div>
   </main>
@@ -901,21 +901,21 @@
 
     <!-- Role & Status Banner -->
     <div class="role-banner psychic" id="role-banner">
-      <span id="role-banner-icon">ðŸ”®</span>
+      <span id="role-banner-icon">🔮</span>
       <span id="role-banner-text">You are the Psychic! Think of a clue for the target.</span>
     </div>
 
     <!-- Spectrum Opposites Card -->
     <div class="spectrum-card">
       <div class="spectrum-pole left">
-        <div class="pole-label left">â—€ Left (0%)</div>
+        <div class="pole-label left">◀ Left (0%)</div>
         <div class="pole-concept" id="pole-left-text">Cold</div>
       </div>
       <div class="spectrum-middle">
-        <span>âš¡</span>
+        <span>⚡</span>
       </div>
       <div class="spectrum-pole right">
-        <div class="pole-label right">Right (100%) â–¶</div>
+        <div class="pole-label right">Right (100%) ▶</div>
         <div class="pole-concept" id="pole-right-text">Hot</div>
       </div>
     </div>
@@ -963,10 +963,10 @@
             <path d="M 72 200 A 128 128 0 0 1 328 200" fill="none" stroke="#2a2e40" stroke-width="2"/>
             <path d="M 96 200 A 104 104 0 0 1 304 200" fill="none" stroke="#232736" stroke-width="2"/>
             <circle cx="200" cy="180" r="16" fill="#181a24" stroke="#383d52" stroke-width="1.5"/>
-            <text x="200" y="184" text-anchor="middle" font-size="12" fill="#8e8e93" font-weight="bold">ðŸ”’</text>
+            <text x="200" y="184" text-anchor="middle" font-size="12" fill="#8e8e93" font-weight="bold">🔒</text>
           </g>
 
-          <!-- DIAL NEEDLE GROUP (Rotates 0Â° to 180Â°, centered at 90Â°) -->
+          <!-- DIAL NEEDLE GROUP (Rotates 0° to 180°, centered at 90°) -->
           <g id="needle-group" transform="rotate(0, 200, 200)">
             <line x1="200" y1="200" x2="200" y2="16" stroke="#ff3b30" stroke-width="4" stroke-linecap="round" filter="url(#glow-needle)"/>
             <line x1="200" y1="200" x2="200" y2="24" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
@@ -983,11 +983,11 @@
 
       <!-- Fine Tuning Stepper Bar -->
       <div class="stepper-bar" id="stepper-bar">
-        <button class="step-btn" onclick="stepNeedle(-5)" title="Step -5Â°">â—€â—€ -5Â°</button>
-        <button class="step-btn" onclick="stepNeedle(-1)" title="Step -1Â°">â—€ -1Â°</button>
+        <button class="step-btn" onclick="stepNeedle(-5)" title="Step -5°">◀◀ -5°</button>
+        <button class="step-btn" onclick="stepNeedle(-1)" title="Step -1°">◀ -1°</button>
         <div class="dial-value-badge" id="dial-angle-display" onclick="resetNeedleCenter()" title="Click to snap to Center (50%)" style="cursor: pointer;">50%</div>
-        <button class="step-btn" onclick="stepNeedle(1)" title="Step +1Â°">+1Â° â–¶</button>
-        <button class="step-btn" onclick="stepNeedle(5)" title="Step +5Â°">+5Â° â–¶â–¶</button>
+        <button class="step-btn" onclick="stepNeedle(1)" title="Step +1°">+1° ▶</button>
+        <button class="step-btn" onclick="stepNeedle(5)" title="Step +5°">+5° ▶▶</button>
       </div>
     </div>
 
@@ -995,24 +995,24 @@
     <div class="clue-box" id="clue-box">
       <!-- State A: Psychic Form -->
       <div id="psychic-clue-form" style="display: none; flex-direction: column;">
-        <div class="clue-label">ðŸ”® You Are The Psychic</div>
+        <div class="clue-label">🔮 You Are The Psychic</div>
         <p style="font-size: 0.88rem; color: #fff; line-height: 1.35; margin-bottom: 8px;">
           Look at the target highlighted on the dial above! Enter a <strong>one-concept clue</strong> that lands at that exact position:
         </p>
         <input type="text" id="clue-input-field" class="text-input" placeholder='e.g. "A steaming mug of fresh coffee"' maxlength="60" autocomplete="off" autocorrect="off">
         <div style="display: flex; gap: 8px;">
-          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="rerollSpectrumCard()" title="Draw a different spectrum card">ðŸ”„ New Card</button>
-          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="spinTargetWheel()" title="Spin the dial to a new target position">ðŸŽ² Spin Target</button>
-          <button class="btn-primary" style="flex: 2; padding: 11px;" onclick="submitPsychicClue()">âœ… Submit Clue</button>
+          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="rerollSpectrumCard()" title="Draw a different spectrum card">🔄 New Card</button>
+          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="spinTargetWheel()" title="Spin the dial to a new target position">🎲 Spin Target</button>
+          <button class="btn-primary" style="flex: 2; padding: 11px;" onclick="submitPsychicClue()">✅ Submit Clue</button>
         </div>
         <div class="hint-helper">
-          ðŸ’¡ <strong>Clue Rules:</strong> Be creative! Name any concept, movie, celebrity, object, or feeling, but do not use words from the spectrum poles directly.
+          💡 <strong>Clue Rules:</strong> Be creative! Name any concept, movie, celebrity, object, or feeling, but do not use words from the spectrum poles directly.
         </div>
       </div>
 
       <!-- State B: Waiting for Clue (Guesser View) -->
       <div id="guesser-waiting-box" style="display: none; text-align: center;">
-        <div class="clue-label">â³ Waiting for Psychic</div>
+        <div class="clue-label">⏳ Waiting for Psychic</div>
         <div class="clue-text" id="waiting-psychic-name" style="color: var(--cyan-glow); font-size: 1.15rem;">
           Waiting for psychic to tune in and give a clue...
         </div>
@@ -1021,20 +1021,20 @@
         </p>
         <div style="margin-top: 12px;">
           <button class="btn-secondary" style="font-size: 0.82rem; padding: 8px 16px;" onclick="spinTargetWheel()" title="Spin the dial wheel for the psychic">
-            ðŸŽ² Spin Wheel for Psychic
+            🎲 Spin Wheel for Psychic
           </button>
         </div>
       </div>
 
       <!-- State C: Clue Given (Guessing Active) -->
       <div id="guesser-active-box" style="display: none;">
-        <div class="clue-label">ðŸ”® The Psychic's Clue</div>
+        <div class="clue-label">🔮 The Psychic's Clue</div>
         <div class="clue-text" id="display-clue-text">"Coffee on a cold winter morning"</div>
         <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;" id="guess-instruction-text">
           Drag the red needle to where you believe this clue lands on the spectrum!
         </p>
         <button class="btn-primary" id="lock-guess-btn" style="margin-top: 14px;" onclick="lockInGuess()">
-          ðŸ”’ Lock In Team Guess
+          🔒 Lock In Team Guess
         </button>
       </div>
     </div>
@@ -1042,14 +1042,14 @@
     <!-- Reveal Result Card -->
     <div class="reveal-card" id="reveal-card">
       <div class="reveal-points p4" id="reveal-points">+4 PTS</div>
-      <div class="reveal-title" id="reveal-title">ðŸŽ¯ Bullseye! Direct Hit!</div>
+      <div class="reveal-title" id="reveal-title">🎯 Bullseye! Direct Hit!</div>
       <div class="reveal-desc" id="reveal-desc">Your telepathic link is unbreakable! Perfect calibration.</div>
       <div style="display: flex; gap: 8px; margin-top: 14px;">
         <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="spinTargetWheel()" title="Re-spin target to test dial">
-          ðŸŽ² Re-spin Target
+          🎲 Re-spin Target
         </button>
         <button class="btn-primary" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
-          <span>âž¡ï¸</span> Next Round
+          <span>➡️</span> Next Round
         </button>
       </div>
     </div>
@@ -1057,8 +1057,8 @@
     <!-- Match History Drawer -->
     <div class="history-drawer">
       <div class="history-header" onclick="toggleHistoryDrawer()">
-        <span>ðŸ“œ Match History (<span id="history-count">0</span> Rounds)</span>
-        <span id="history-toggle-icon">â–¼</span>
+        <span>📜 Match History (<span id="history-count">0</span> Rounds)</span>
+        <span id="history-toggle-icon">▼</span>
       </div>
       <div class="history-list" id="history-list" style="display: none;"></div>
     </div>
@@ -1068,9 +1068,9 @@
        SCREEN 3: GAME OVER SCREEN
        ========================================================================= -->
   <main class="screen" id="gameover-screen">
-    <div class="gameover-badge" id="gameover-emoji">ðŸ§ </div>
+    <div class="gameover-badge" id="gameover-emoji">🧠</div>
     <h1 id="gameover-title">Telepathic Sync</h1>
-    <div class="rank-pill" id="gameover-rank">ðŸŒŸ Galaxy Brain (24 Pts)</div>
+    <div class="rank-pill" id="gameover-rank">🌟 Galaxy Brain (24 Pts)</div>
 
     <p class="subtitle" id="gameover-summary" style="margin-bottom: 20px;">
       Incredible teamwork! You finished all rounds with high psychic resonance.
@@ -1084,10 +1084,10 @@
 
     <div style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
       <button class="btn-primary" onclick="restartMatch()">
-        <span>ðŸ”„</span> Play Another Match
+        <span>🔄</span> Play Another Match
       </button>
       <button class="btn-secondary" onclick="returnToLobby()">
-        <span>ðŸ </span> Return to Lobby
+        <span>🏠</span> Return to Lobby
       </button>
     </div>
   </main>
@@ -1100,8 +1100,8 @@
 <div class="modal-overlay" id="rules-modal">
   <div class="modal-card">
     <div class="modal-title">
-      <span>ðŸ“» How to Play Wavelength</span>
-      <button class="nav-pill-btn" onclick="closeRulesModal()">âœ•</button>
+      <span>📻 How to Play Wavelength</span>
+      <button class="nav-pill-btn" onclick="closeRulesModal()">✕</button>
     </div>
     <div style="font-size: 0.9rem; line-height: 1.55; color: #d1d1d6;">
       <p style="margin-bottom: 12px;"><strong>Wavelength</strong> is a party game of mind reading, empathy, and hilarious debates where two or more players try to read each other's minds across a spectrum.</p>
@@ -1110,17 +1110,17 @@
       <p style="margin-bottom: 10px;">One player is chosen as the <strong>Psychic</strong>. The psychic secretly sees where the hidden target wedge is positioned on the dial from 0% (Left) to 100% (Right).</p>
 
       <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">2. The Clue</h3>
-      <p style="margin-bottom: 10px;">The Psychic gives a single clue that exists at that exact position on the spectrum. For example, on the spectrum <em>Cold â—€â”€â”€â–¶ Hot</em>, a target around 85% might prompt the clue <em>"Fresh black coffee"</em>.</p>
+      <p style="margin-bottom: 10px;">The Psychic gives a single clue that exists at that exact position on the spectrum. For example, on the spectrum <em>Cold ◀──▶ Hot</em>, a target around 85% might prompt the clue <em>"Fresh black coffee"</em>.</p>
 
       <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">3. Calibrating The Dial</h3>
       <p style="margin-bottom: 10px;">Teammates discuss and drag the red needle to where they think the clue lands. Fine-tune using the stepper buttons, then lock in your guess!</p>
 
       <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">4. Scoring</h3>
       <ul style="margin-left: 20px; margin-bottom: 16px;">
-        <li><strong style="color: var(--score-4);">ðŸŽ¯ Bullseye (Center):</strong> 4 Points</li>
-        <li><strong style="color: var(--score-3);">ðŸ”¥ Very Close (Adjacent):</strong> 3 Points</li>
-        <li><strong style="color: var(--score-2);">âš¡ Outer Edge:</strong> 2 Points</li>
-        <li><strong>âŒ Outside Target:</strong> 0 Points</li>
+        <li><strong style="color: var(--score-4);">🎯 Bullseye (Center):</strong> 4 Points</li>
+        <li><strong style="color: var(--score-3);">🔥 Very Close (Adjacent):</strong> 3 Points</li>
+        <li><strong style="color: var(--score-2);">⚡ Outer Edge:</strong> 2 Points</li>
+        <li><strong>❌ Outside Target:</strong> 0 Points</li>
       </ul>
 
       <button class="btn-primary" onclick="closeRulesModal()">Got It, Let's Play!</button>
@@ -1130,7 +1130,7 @@
 
 <div class="modal-overlay" id="pass-modal">
   <div class="modal-card" style="text-align: center;">
-    <div style="font-size: 3rem; margin-bottom: 8px;" id="pass-modal-avatar">ðŸ”®</div>
+    <div style="font-size: 3rem; margin-bottom: 8px;" id="pass-modal-avatar">🔮</div>
     <h2 id="pass-modal-title" style="margin-bottom: 6px;">Pass Phone to Psychic</h2>
     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 18px;" id="pass-modal-desc">
       Hand the device to Player 1. Only the psychic should look at the screen!
@@ -1391,13 +1391,13 @@ const SPECTRUM_CARDS = [
   function toggleSound() {
     isSoundEnabled = !isSoundEnabled;
     const btn = document.getElementById("sound-btn");
-    if (btn) btn.innerText = isSoundEnabled ? "ðŸ”Š" : "ðŸ”‡";
+    if (btn) btn.innerText = isSoundEnabled ? "🔊" : "🔇";
   }
 
   /* ==========================================================================
      3. CLIENT IDENTITY & MULTIPLAYER VARIABLES
      ========================================================================== */
-  const AVATARS = ["ðŸ§ ", "ðŸ”®", "ðŸ“»", "âš¡", "ðŸŽ¯", "ðŸ‘½", "ðŸ¦Š", "ðŸŽ²", "ðŸš€", "ðŸŽ­"];
+  const AVATARS = ["🧠", "🔮", "📻", "⚡", "🎯", "👽", "🦊", "🎲", "🚀", "🎭"];
 
   // Tab-isolated session ID for MQTT multiplayer
   let sessionId = "";
@@ -1414,7 +1414,7 @@ const SPECTRUM_CARDS = [
   try {
     playerName = localStorage.getItem("party_games_player_name") || localStorage.getItem("wavelength_player_name") || "";
   } catch(e) {}
-  let selectedAvatar = "ðŸ§ ";
+  let selectedAvatar = "🧠";
 
   let client = null;
   let isConnected = false;
@@ -1630,7 +1630,7 @@ const SPECTRUM_CARDS = [
       if (data.card) gameState.card = data.card;
       gameState.phase = "guess";
       renderGameUI();
-      showSyncIndicator("ðŸ”® Psychic submitted clue!");
+      showSyncIndicator("🔮 Psychic submitted clue!");
     } else if (data.type === "DIAL_MOVE") {
       gameState.guessAngle = data.angle;
       applyNeedleAngle(data.angle, false);
@@ -1654,14 +1654,14 @@ const SPECTRUM_CARDS = [
       renderTargetWedges(gameState.targetAngle);
       playTickSound();
       const spinner = data.senderName || roomPlayers[data.senderId]?.name || "Teammate";
-      showSyncIndicator(`ðŸŽ² ${spinner} re-spun target!`);
+      showSyncIndicator(`🎲 ${spinner} re-spun target!`);
     } else if (data.type === "REROLL_CARD") {
       gameState.card = data.card;
       document.getElementById("pole-left-text").innerText = gameState.card.left;
       document.getElementById("pole-right-text").innerText = gameState.card.right;
       playTickSound();
       const roller = data.senderName || roomPlayers[data.senderId]?.name || "Psychic";
-      showSyncIndicator(`ðŸ”„ ${roller} drew a new card!`);
+      showSyncIndicator(`🔄 ${roller} drew a new card!`);
     } else if (data.type === "RETURN_TO_LOBBY") {
       gameState.status = "lobby";
       switchScreen("lobby-screen");
@@ -1781,11 +1781,11 @@ const SPECTRUM_CARDS = [
     const hostInd = document.getElementById("host-indicator");
     if (hostInd) {
       if (isCurrentUserHost()) {
-        hostInd.innerText = "ðŸ‘‘ You are the Host";
+        hostInd.innerText = "👑 You are the Host";
         hostInd.style.color = "var(--accent-gold)";
       } else {
         const hostPlayer = roomPlayers[gameState.hostId];
-        hostInd.innerText = `ðŸ‘‘ Host: ${hostPlayer ? hostPlayer.name : 'Host'}`;
+        hostInd.innerText = `👑 Host: ${hostPlayer ? hostPlayer.name : 'Host'}`;
         hostInd.style.color = "var(--text-secondary)";
       }
     }
@@ -1861,8 +1861,8 @@ const SPECTRUM_CARDS = [
 
     roomPlayers = {
       [clientId]: { id: clientId, name: playerName || "Player 1", avatar: selectedAvatar, isHost: true, score: 0 },
-      "p2": { id: "p2", name: "Player 2", avatar: "ðŸ”®", isHost: false, score: 0 },
-      "p3": { id: "p3", name: "Player 3", avatar: "ðŸ“»", isHost: false, score: 0 }
+      "p2": { id: "p2", name: "Player 2", avatar: "🔮", isHost: false, score: 0 },
+      "p3": { id: "p3", name: "Player 3", avatar: "📻", isHost: false, score: 0 }
     };
 
     updateNetworkStatus("solo");
@@ -1913,11 +1913,11 @@ const SPECTRUM_CARDS = [
 
       item.innerHTML = `
         <div class="roster-player-info">
-          <span class="roster-avatar">${p.avatar || 'ðŸ§ '}</span>
+          <span class="roster-avatar">${p.avatar || '🧠'}</span>
           <span class="roster-name">${escapeHTML(p.name)}</span>
         </div>
         <div style="display: flex; gap: 6px; align-items: center;">
-          ${isHostP ? '<span class="roster-tag">ðŸ‘‘ HOST</span>' : ''}
+          ${isHostP ? '<span class="roster-tag">👑 HOST</span>' : ''}
           ${isYou ? '<span class="roster-tag" style="background: rgba(0, 242, 254, 0.15); color: var(--cyan-glow); border-color: rgba(0, 242, 254, 0.3);">YOU</span>' : ''}
         </div>
       `;
@@ -1974,7 +1974,7 @@ const SPECTRUM_CARDS = [
     renderGameUI();
   }
 
-  // True High-Entropy Random Dial Generator across full 0.0Â° to 180.0Â°
+  // True High-Entropy Random Dial Generator across full 0.0° to 180.0°
   function generateRandomTargetAngle() {
     let randFloat;
     if (window.crypto && window.crypto.getRandomValues) {
@@ -2193,7 +2193,7 @@ const SPECTRUM_CARDS = [
      ========================================================================== */
   function renderGameUI() {
     const isPsychic = (gameState.psychicId === clientId) || isSoloPassAndPlay;
-    const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "ðŸ”®" };
+    const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "🔮" };
 
     // 1. HUD Status Bar
     document.getElementById("hud-round").innerText = `${gameState.round} / ${gameState.maxRounds}`;
@@ -2217,15 +2217,15 @@ const SPECTRUM_CARDS = [
 
     if (isPsychic && gameState.phase === "clue") {
       roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "ðŸ”®";
+      roleIcon.innerText = "🔮";
       roleText.innerText = "You are the Psychic! Read the spectrum and enter your clue.";
     } else if (isPsychic && gameState.phase === "guess") {
       roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "ðŸ¤«";
+      roleIcon.innerText = "🤫";
       roleText.innerText = "Clue submitted! Keep your poker face while teammates calibrate the dial.";
     } else {
       roleBanner.className = "role-banner guesser";
-      roleIcon.innerText = "ðŸŽ¯";
+      roleIcon.innerText = "🎯";
       roleText.innerText = `Psychic is ${psychicPlayer.name} ${psychicPlayer.avatar}. Tune into their frequency!`;
     }
 
@@ -2294,16 +2294,16 @@ const SPECTRUM_CARDS = [
       ptsEl.innerText = `+${pts} PTS`;
 
       if (pts === 4) {
-        titleEl.innerText = "ðŸŽ¯ BULLSEYE! PERFECT TELEPATHY!";
+        titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
         descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
       } else if (pts === 3) {
-        titleEl.innerText = "ðŸ”¥ CLOSE! GREAT VIBES!";
+        titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
         descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
       } else if (pts === 2) {
-        titleEl.innerText = "âš¡ ON THE WAVELENGTH!";
+        titleEl.innerText = "⚡ ON THE WAVELENGTH!";
         descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
       } else {
-        titleEl.innerText = "âŒ STATIC ON THE RADIO (MISS)";
+        titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
         descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
       }
     }
@@ -2593,7 +2593,7 @@ const SPECTRUM_CARDS = [
     if (!list) return;
     const isHidden = (list.style.display === "none");
     list.style.display = isHidden ? "flex" : "none";
-    if (icon) icon.innerText = isHidden ? "â–²" : "â–¼";
+    if (icon) icon.innerText = isHidden ? "▲" : "▼";
   }
 
   function renderHistoryDrawer() {
@@ -2612,7 +2612,7 @@ const SPECTRUM_CARDS = [
       item.innerHTML = `
         <div>
           <strong>R${h.round}: "${escapeHTML(h.clue)}"</strong>
-          <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} â—€â”€â”€â–¶ ${escapeHTML(h.card.right)} (Guess: ${guessPct}% | Target: ${targetPct}%)</div>
+          <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} ◀──▶ ${escapeHTML(h.card.right)} (Guess: ${guessPct}% | Target: ${targetPct}%)</div>
         </div>
         <span class="roster-tag" style="background: rgba(255,214,10,0.15); color: var(--score-4); font-size: 0.8rem;">+${h.points} PTS</span>
       `;
@@ -2628,20 +2628,20 @@ const SPECTRUM_CARDS = [
     const summaryEl = document.getElementById("gameover-summary");
 
     if (total >= 22) {
-      emojiEl.innerText = "ðŸ§ ";
-      rankEl.innerText = `ðŸŒŸ Galaxy Brain (${total} Pts)`;
+      emojiEl.innerText = "🧠";
+      rankEl.innerText = `🌟 Galaxy Brain (${total} Pts)`;
       summaryEl.innerText = "Incredible! Your minds are intertwined on an astronomical level.";
     } else if (total >= 16) {
-      emojiEl.innerText = "ðŸ”®";
-      rankEl.innerText = `ðŸ”® Mind Readers (${total} Pts)`;
+      emojiEl.innerText = "🔮";
+      rankEl.innerText = `🔮 Mind Readers (${total} Pts)`;
       summaryEl.innerText = "Great connection! You read each other with uncanny accuracy.";
     } else if (total >= 10) {
-      emojiEl.innerText = "ðŸ“»";
-      rankEl.innerText = `ðŸ“» Good Reception (${total} Pts)`;
+      emojiEl.innerText = "📻";
+      rankEl.innerText = `📻 Good Reception (${total} Pts)`;
       summaryEl.innerText = "Solid telepathy! A few static frequencies, but overall on wavelength.";
     } else {
-      emojiEl.innerText = "ðŸ“‰";
-      rankEl.innerText = `ðŸ“¡ Static on the Radio (${total} Pts)`;
+      emojiEl.innerText = "📉";
+      rankEl.innerText = `📡 Static on the Radio (${total} Pts)`;
       summaryEl.innerText = "Lost in transmission! Play another match to recalibrate your antennas.";
     }
 
@@ -2684,12 +2684,12 @@ const SPECTRUM_CARDS = [
     if (!modal) return;
 
     if (gameState.phase === "clue") {
-      const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "ðŸ”®" };
+      const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "🔮" };
       avatar.innerText = psychicPlayer.avatar;
       title.innerText = `Pass Phone to ${psychicPlayer.name}`;
       desc.innerText = "Only the Psychic may look at the screen to see the secret target!";
     } else if (gameState.phase === "guess") {
-      avatar.innerText = "ðŸŽ¯";
+      avatar.innerText = "🎯";
       title.innerText = "Pass Phone to Guessers";
       desc.innerText = "The Psychic has locked in their clue. Teammates, tune the dial together!";
     }

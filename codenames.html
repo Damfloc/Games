@@ -57,57 +57,94 @@
     overflow-x: hidden;
   }
 
-  /* Top Navigation */
-  .top-bar {
+  /* Top Navigation Strip */
+  .top-navbar {
     width: 100%;
     max-width: 1100px;
-    height: 60px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
   }
-  .nav-btn {
-    color: #8E8E93;
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: none;
-    cursor: pointer;
-  }
-  .nav-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
 
-  /* Room & Network Badge */
-  .room-badge {
-    display: inline-flex;
+  .nav-brand {
+    display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-decoration: none;
   }
-  .status-dot {
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-pill-btn, .nav-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .nav-pill-btn:hover, .nav-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  /* Room & Network Badge */
+  .network-status-dot, .status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #32D74B;
-    box-shadow: 0 0 8px #32D74B;
+    display: inline-block;
+    background: #32d74b;
+    box-shadow: 0 0 8px #32d74b;
   }
-  .status-dot.disconnected { background: #FF453A; box-shadow: 0 0 8px #FF453A; }
+  .network-status-dot.disconnected, .status-dot.disconnected {
+    background: #ff453a;
+    box-shadow: 0 0 8px #ff453a;
+  }
+  .network-status-dot.connecting, .status-dot.connecting {
+    background: #ffd60a;
+    box-shadow: 0 0 8px #ffd60a;
+  }
+
+  /* Room Code Box in Lobby */
+  .room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10, 132, 255, 0.1);
+    border: 1px dashed rgba(10, 132, 255, 0.4);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .room-code-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #fff;
+    font-family: monospace;
+  }
 
   /* Screens */
   .screen {
@@ -940,19 +977,22 @@
 
 <canvas id="confetti-canvas"></canvas>
 
-<!-- Top Bar -->
-<header class="top-bar">
-  <a href="index.html" class="nav-btn">← Games Hub</a>
-  
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <div class="room-badge" id="hud-room-badge" onclick="copyInviteLink()" title="Click to copy invite link">
-      <span class="status-dot" id="hud-status-dot"></span>
-      <span id="hud-room-code-text">ROOM: ----</span>
-      <span style="font-size: 0.75rem; color: #8e8e93;">📋 Copy</span>
+<!-- Top Navbar Strip -->
+<nav class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>🕵️‍♂️</span>
+    <span>CODENAMES</span>
+  </a>
+
+  <div class="nav-controls">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8e8e93; cursor: pointer;" onclick="copyInviteLink()" title="Click to copy invite link">
+      <span class="network-status-dot disconnected" id="hud-status-dot"></span>
+      <span id="hud-room-code-text">No Room</span>
     </div>
-    <button class="nav-btn" onclick="toggleMute()" id="sound-btn">🔊</button>
+    <button class="nav-pill-btn" onclick="toggleMute()" id="sound-btn">🔊</button>
+    <a href="index.html" class="nav-pill-btn">← Hub</a>
   </div>
-</header>
+</nav>
 
 <!-- SCREEN 1: LANDING / CREATE OR JOIN ROOM -->
 <div id="landing-screen" class="screen active">
@@ -988,9 +1028,14 @@
 <!-- SCREEN 2: WAITING ROOM / TEAM SELECTION LOBBY -->
 <div id="lobby-screen" class="screen">
   <div class="waiting-room-header">
-    <div class="room-banner">
-      <span>Room: <strong id="lobby-room-code-display" style="color: #fff;">----</strong></span>
-      <button class="copy-btn" onclick="copyInviteLink()">Copy Invite Link 📋</button>
+    <div class="room-code-display">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--blue-team, #0a84ff); font-weight: 800; letter-spacing: 0.06em;">Room Code</div>
+        <div class="room-code-val" id="lobby-room-code-display">----</div>
+      </div>
+      <button class="btn-secondary" onclick="copyInviteLink()" style="background: rgba(10, 132, 255, 0.2); border-color: rgba(10, 132, 255, 0.4); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <span>🔗 Share Link</span>
+      </button>
     </div>
     <p style="color: #8E8E93; font-size: 0.95rem;">
       Pick your team and role below. The cards will remain hidden until everyone is ready!
@@ -2301,12 +2346,17 @@
 
   function copyInviteLink() {
     const url = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
-    navigator.clipboard.writeText(url).then(() => {
-      alert(`Room Link Copied to Clipboard!\n\nSend this link to friends:\n${url}`);
-    }).catch(() => {
-      prompt("Copy room link:", url);
-    });
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`Room link copied! Send it to your friends: ${url}`);
+      }).catch(() => {
+        prompt("Copy this invite link:", url);
+      });
+    } else {
+      prompt("Copy this invite link:", url);
+    }
   }
+  window.copyRoomLink = copyInviteLink;
 
   function addLog(html, teamType = "system") {
     const panel = document.getElementById("log-panel");

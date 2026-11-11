@@ -63,53 +63,88 @@
     overflow-x: hidden;
   }
 
-  /* Navigation Top Bar */
-  .top-bar {
+  /* Navigation Top Navbar */
+  .top-navbar {
     width: 100%;
     max-width: 1100px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
-    z-index: 100;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
   }
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.92rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--wood-border);
-    transition: background 0.2s, color 0.2s;
-  }
-  .back-btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
 
-  .network-pill {
-    display: inline-flex;
+  .nav-brand {
+    display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--wood-border);
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-decoration: none;
   }
-  .network-dot {
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-pill-btn, .back-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .nav-pill-btn:hover, .back-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  .network-status-dot, .network-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+    display: inline-block;
     background: #ef4444;
     box-shadow: 0 0 8px #ef4444;
   }
-  .network-dot.connected {
+  .network-status-dot.connected, .network-dot.connected {
     background: #22c55e;
     box-shadow: 0 0 8px #22c55e;
+  }
+
+  /* Room Code Box in Saloon Lobby */
+  .room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px dashed rgba(234, 179, 8, 0.4);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .room-code-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: var(--gold, #eab308);
+    font-family: monospace;
   }
 
   /* Screen Switcher */
@@ -1630,16 +1665,21 @@
 </head>
 <body>
 
-<!-- Navigation Bar -->
-<header class="top-bar">
-  <a href="index.html" class="back-btn">
-    <span>← Hub</span>
+<!-- Navigation Top Navbar Strip -->
+<nav class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>🤠</span>
+    <span>BANG!</span>
   </a>
-  <div class="network-pill">
-    <div class="network-dot" id="network-dot"></div>
-    <span id="network-label">Offline</span>
+
+  <div class="nav-controls">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8e8e93;">
+      <span class="network-status-dot" id="network-dot"></span>
+      <span id="network-label">Offline</span>
+    </div>
+    <a href="index.html" class="nav-pill-btn">← Hub</a>
   </div>
-</header>
+</nav>
 
 <!-- ==========================================================================
      SCREEN 1: WELCOME & ROOM LOBBY CREATION
@@ -1680,13 +1720,14 @@
      SCREEN 2: SALOON LOBBY (Expansions, Players & Bot Controls)
      ========================================================================== -->
 <div id="lobby-screen" class="screen">
-  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 16px;">
+  <div class="room-code-display">
     <div>
-      <h2 style="font-size: 1.8rem; font-weight: 900; color: #fff;">Saloon Room: <span id="lobby-code-display" style="color: var(--gold);">BANG-000</span></h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted);">Assemble 3 to 8 gunslingers. Enable modular expansions below.</p>
+      <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--gold); font-weight: 800; letter-spacing: 0.06em;">Saloon Room Code</div>
+      <div class="room-code-val" id="lobby-code-display">BANG-000</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Assemble 3 to 8 gunslingers. Enable modular expansions below.</div>
     </div>
-    <button class="btn-secondary" onclick="copyInviteLink()">
-      <span>🔗 Copy Link</span>
+    <button class="btn-secondary" onclick="copyInviteLink()" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.35); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+      <span>🔗 Share Link</span>
     </button>
   </div>
 
@@ -2876,6 +2917,7 @@
       prompt("Copy this invite link:", url);
     }
   }
+  window.copyRoomLink = copyInviteLink;
 
   function renderLobbyRoster() {
     const grid = document.getElementById("roster-grid");

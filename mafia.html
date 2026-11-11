@@ -64,53 +64,89 @@
     overflow-x: hidden;
   }
 
-  /* Top Navigation Bar */
-  .top-bar {
+  /* Top Navigation Strip */
+  .top-navbar {
     width: 100%;
     max-width: 900px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 16px;
     margin-bottom: 20px;
-    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
   }
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--card-border);
-    transition: background 0.2s, color 0.2s;
-  }
-  .back-btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
 
-  .network-pill {
-    display: inline-flex;
+  .nav-brand {
+    display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--card-border);
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-decoration: none;
   }
-  .network-dot {
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-pill-btn, .back-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .nav-pill-btn:hover, .back-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  .network-status-dot, .network-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+    display: inline-block;
     background: #ff453a;
     box-shadow: 0 0 8px #ff453a;
   }
-  .network-dot.connected {
+  .network-status-dot.connected, .network-dot.connected {
     background: #32d74b;
     box-shadow: 0 0 8px #32d74b;
+  }
+
+  /* Room Code Box in Lobby */
+  .room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 69, 58, 0.1);
+    border: 1px dashed rgba(255, 69, 58, 0.4);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .room-code-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #fff;
+    font-family: monospace;
   }
 
   /* Screens Wrapper */
@@ -695,16 +731,21 @@
 </head>
 <body>
 
-<!-- Top Navigation Bar -->
-<div class="top-bar">
-  <a href="index.html" class="back-btn">
-    <span>←</span> Exit to Games Hub
+<!-- Top Navbar Strip -->
+<nav class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>🕵️</span>
+    <span>MAFIA</span>
   </a>
-  <div class="network-pill">
-    <div class="network-dot" id="network-dot"></div>
-    <span id="network-label">Connecting...</span>
+
+  <div class="nav-controls">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8e8e93;">
+      <span class="network-status-dot" id="network-dot"></span>
+      <span id="network-label">Connecting...</span>
+    </div>
+    <a href="index.html" class="nav-pill-btn">← Hub</a>
   </div>
-</div>
+</nav>
 
 <!-- ==========================================================================
      SCREEN 1: LANDING & ROOM CREATION
@@ -740,13 +781,13 @@
      ========================================================================== -->
 <div id="lobby-screen" class="screen">
   <div class="card-box">
-    <div class="room-header">
+    <div class="room-code-display">
       <div>
-        <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888;">Room Code</span>
-        <div class="room-code-tag" id="lobby-code-display">MAF-101</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-red, #ff453a); font-weight: 800;">Room Code</div>
+        <div class="room-code-val" id="lobby-code-display">MAF-101</div>
       </div>
-      <button class="btn-secondary" onclick="copyInviteLink()">
-        <span>🔗 Copy Invite Link</span>
+      <button class="btn-secondary" onclick="copyInviteLink()" style="background: rgba(255, 69, 58, 0.15); border-color: rgba(255, 69, 58, 0.35); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <span>🔗 Share Link</span>
       </button>
     </div>
 
@@ -1475,6 +1516,7 @@
       prompt("Copy this invite link:", url);
     }
   }
+  window.copyRoomLink = copyInviteLink;
 
   function renderLobbyRoster() {
     const grid = document.getElementById("roster-grid");

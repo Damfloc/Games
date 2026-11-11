@@ -30,37 +30,71 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: #0d0e12;
+    background-image: 
+      radial-gradient(circle at 20% 20%, rgba(10, 132, 255, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 80% 80%, rgba(255, 59, 48, 0.10) 0%, transparent 45%);
     color: white;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    justify-content: flex-start;
+    padding: 0 16px 60px;
   }
 
-  .back-btn {
-    position: absolute;
-    top: 24px;
-    left: 24px;
-    z-index: 100;
-    color: #8E8E93;
+  /* Top Navigation Strip */
+  .top-navbar {
+    width: 100%;
+    max-width: 900px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: #fff;
     text-decoration: none;
-    font-size: 1rem;
+  }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-pill-btn, .back-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
     font-weight: 600;
-    padding: 10px 16px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
-    transition: background 0.2s, color 0.2s, transform 0.15s;
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    transition: all 0.2s;
   }
-  .back-btn:hover {
+  .nav-pill-btn:hover, .back-btn:hover {
     background: rgba(255, 255, 255, 0.16);
     color: #fff;
-    transform: translateX(-2px);
   }
 
   .screen {
@@ -174,7 +208,17 @@
 </head>
 <body>
 
-<a href="index.html" class="back-btn">← Games Hub</a>
+<!-- Top Navbar Strip -->
+<nav class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>🧠</span>
+    <span>TRIVIA</span>
+  </a>
+
+  <div class="nav-controls">
+    <a href="index.html" class="nav-pill-btn">← Hub</a>
+  </div>
+</nav>
 
 <!-- Start Screen -->
 <div id="start-screen" class="screen active">
