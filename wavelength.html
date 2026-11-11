@@ -546,31 +546,40 @@
   .guesser-dial-card {
     background: var(--card-bg);
     border: 1px solid var(--border-soft);
-    border-radius: 22px;
-    padding: 16px;
+    border-radius: 24px;
+    padding: 20px 16px 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
     transition: border-color 0.25s, box-shadow 0.25s;
     touch-action: none;
   }
   .guesser-dial-card.is-self {
     border-color: rgba(0, 242, 254, 0.45);
     background: linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, var(--card-bg) 100%);
-    box-shadow: 0 10px 32px rgba(0, 242, 254, 0.12);
+    box-shadow: 0 16px 44px rgba(0, 242, 254, 0.15);
   }
   .guesser-dial-card.is-locked {
     border-color: rgba(48, 209, 88, 0.45);
+  }
+  .guesser-dial-card .stepper-bar {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 12px;
+  }
+  .guesser-dial-card .dial-svg-container {
+    width: 100%;
+    max-width: 100%;
   }
   .guesser-dial-header {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
   .guesser-dial-player {
@@ -578,13 +587,13 @@
     align-items: center;
     gap: 8px;
     font-weight: 800;
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: #fff;
   }
   .guesser-dial-status {
     font-size: 0.75rem;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.08);
     color: var(--cyan-glow);
@@ -596,29 +605,31 @@
   }
   .guesser-privacy-shield {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 6px; left: 6px; right: 6px; bottom: 6px;
     background: rgba(18, 20, 28, 0.94);
-    backdrop-filter: blur(8px);
-    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 5;
-    border: 1px dashed rgba(255, 255, 255, 0.18);
+    z-index: 10;
+    border: 1px dashed rgba(0, 242, 254, 0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     transition: opacity 0.3s ease;
   }
   .guesser-reveal-score {
     width: 100%;
     text-align: center;
-    margin-top: 10px;
-    padding: 10px;
+    margin-top: 12px;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .guesser-pts-desc {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     color: #fff;
     margin-top: 4px;
@@ -850,6 +861,29 @@
 <body>
 
 <canvas id="confetti-canvas"></canvas>
+
+<!-- Global Shared SVG Filters and Gradients (Persistent across screens and display:none toggles) -->
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none;" aria-hidden="true">
+  <defs>
+    <linearGradient id="frame-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="50%" stop-color="#0a84ff"/>
+      <stop offset="100%" stop-color="#ff7e40"/>
+    </linearGradient>
+
+    <linearGradient id="shutter-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#242838"/>
+      <stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+
+    <filter id="glow-needle" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff3b30" flood-opacity="0.8"/>
+    </filter>
+    <filter id="glow-target" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffd60a" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+</svg>
 
 <!-- Top Navbar Strip -->
 <header class="top-navbar">
@@ -2901,11 +2935,11 @@
           </div>
         </div>
 
-        <div class="dial-svg-container" id="dial-svg-container-${guesserId}" style="position: relative; width: 100%; max-width: 380px;">
+        <div class="dial-svg-container" id="dial-svg-container-${guesserId}">
           <div class="guesser-privacy-shield" id="privacy-shield-${guesserId}" style="display: ${showPrivacyShield ? 'flex' : 'none'};">
-            <span style="font-size: 2rem; margin-bottom: 8px;">🔒</span>
-            <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">${escapeHTML(p.name || 'Guesser')}'s Private Dial</div>
-            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Frequency hidden until all players lock in</div>
+            <span style="font-size: 2.2rem; margin-bottom: 8px;">🔒</span>
+            <div style="font-weight: 800; font-size: 1rem; color: #fff;">${escapeHTML(p.name || 'Guesser')}'s Private Dial</div>
+            <div style="font-size: 0.8rem; color: var(--cyan-glow); margin-top: 5px;">Frequency hidden until all players lock in</div>
           </div>
 
           <svg class="dial-svg" viewBox="0 0 400 230" id="dial-svg-${guesserId}">
@@ -2915,10 +2949,18 @@
                 <stop offset="50%" stop-color="#0a84ff"/>
                 <stop offset="100%" stop-color="#ff7e40"/>
               </linearGradient>
+
               <linearGradient id="shutter-grad-${guesserId}" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="#242838"/>
                 <stop offset="100%" stop-color="#12141c"/>
               </linearGradient>
+
+              <filter id="glow-needle-${guesserId}" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff3b30" flood-opacity="0.8"/>
+              </filter>
+              <filter id="glow-target-${guesserId}" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffd60a" flood-opacity="0.7"/>
+              </filter>
             </defs>
 
             <!-- Outer Housing Arc -->
@@ -2931,36 +2973,42 @@
             <!-- TARGET WEDGES GROUP (Target slices shown on reveal) -->
             <g id="target-wedges-group-${guesserId}" style="display: ${isReveal ? 'block' : 'none'};"></g>
 
-            <!-- Mechanical Shutter Face Cover -->
-            <path id="shutter-cover-${guesserId}" class="shutter-cover ${isReveal ? 'opened' : ''}" d="M 38 200 A 162 162 0 0 1 362 200 Z" fill="url(#shutter-grad-${guesserId})" stroke="#2f3549" stroke-width="2"/>
-
-            <!-- Center Hub Shadow & Base Plate -->
-            <circle cx="200" cy="200" r="48" fill="#151722" stroke="#2b3145" stroke-width="3"/>
-            <circle cx="200" cy="200" r="28" fill="#1d202e"/>
-
-            <!-- ROTATING NEEDLE GROUP -->
-            <g id="needle-group-${guesserId}" class="needle-group" transform="rotate(${angle - 90}, 200, 200)">
-              <polygon points="196,200 204,200 201,36 199,36" fill="#ff3b30" filter="url(#glow-needle)"/>
-              <circle cx="200" cy="36" r="4" fill="#ffffff"/>
-              <circle cx="200" cy="200" r="14" fill="#ff3b30" stroke="#ffffff" stroke-width="2"/>
-              <circle cx="200" cy="200" r="5" fill="#ffffff"/>
+            <!-- SLIDING SHUTTER COVER (Conceals target until revealed) -->
+            <g id="shutter-cover-${guesserId}" class="shutter-cover ${isReveal ? 'opened' : ''}">
+              <path d="M 36 200 A 164 164 0 0 1 364 200 Z" fill="url(#shutter-grad-${guesserId})" stroke="#383d52" stroke-width="2"/>
+              <path d="M 52 200 A 148 148 0 0 1 348 200" fill="none" stroke="#313649" stroke-width="2"/>
+              <path d="M 72 200 A 128 128 0 0 1 328 200" fill="none" stroke="#2a2e40" stroke-width="2"/>
+              <path d="M 96 200 A 104 104 0 0 1 304 200" fill="none" stroke="#232736" stroke-width="2"/>
+              <circle cx="200" cy="180" r="16" fill="#181a24" stroke="#383d52" stroke-width="1.5"/>
+              <text x="200" y="184" text-anchor="middle" font-size="12" fill="#8e8e93" font-weight="bold">🔒</text>
             </g>
+
+            <!-- DIAL NEEDLE GROUP (Rotates 0° to 180°, centered at 90°) -->
+            <g id="needle-group-${guesserId}" class="needle-group" transform="rotate(${angle - 90}, 200, 200)">
+              <line x1="200" y1="200" x2="200" y2="16" stroke="#ff3b30" stroke-width="4" stroke-linecap="round" filter="url(#glow-needle-${guesserId})"/>
+              <line x1="200" y1="200" x2="200" y2="24" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="200" cy="18" r="14" fill="#ff3b30" stroke="#ffffff" stroke-width="2.5" filter="url(#glow-needle-${guesserId})"/>
+              <circle cx="200" cy="18" r="5" fill="#ffffff"/>
+            </g>
+
+            <!-- Center Pivot -->
+            <circle cx="200" cy="200" r="28" fill="#1a1c26" stroke="#00f2fe" stroke-width="2.5"/>
+            <circle cx="200" cy="200" r="12" fill="#ff3b30"/>
+            <circle cx="200" cy="200" r="4" fill="#ffffff"/>
           </svg>
         </div>
 
-        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 8px 0;">
-          <span class="dial-angle-display" id="dial-angle-display-${guesserId}">${anglePct}%</span>
+        <!-- Fine Tuning Stepper Bar (Original Styling & Buttons) -->
+        <div class="stepper-bar" id="stepper-bar-${guesserId}">
+          <button class="step-btn" onclick="stepGuesserNeedle('${guesserId}', -5)" title="Step -5°" ${isLocked || (!allowInteraction && !isSoloPassAndPlay) ? 'disabled' : ''}>◀◀ -5°</button>
+          <button class="step-btn" onclick="stepGuesserNeedle('${guesserId}', -1)" title="Step -1°" ${isLocked || (!allowInteraction && !isSoloPassAndPlay) ? 'disabled' : ''}>◀ -1°</button>
+          <div class="dial-value-badge" id="dial-angle-display-${guesserId}" onclick="${allowInteraction ? `resetGuesserNeedle('${guesserId}')` : ''}" title="${allowInteraction ? 'Click to snap to Center (50%)' : ''}" style="${allowInteraction ? 'cursor: pointer;' : 'cursor: default;'}">${showPrivacyShield ? '🔒' : `${anglePct}%`}</div>
+          <button class="step-btn" onclick="stepGuesserNeedle('${guesserId}', 1)" title="Step +1°" ${isLocked || (!allowInteraction && !isSoloPassAndPlay) ? 'disabled' : ''}>+1° ▶</button>
+          <button class="step-btn" onclick="stepGuesserNeedle('${guesserId}', 5)" title="Step +5°" ${isLocked || (!allowInteraction && !isSoloPassAndPlay) ? 'disabled' : ''}>+5° ▶▶</button>
         </div>
 
-        ${allowInteraction || (isSelf && isLocked) || (isSoloPassAndPlay) ? `
-          <div class="dial-stepper-row" style="margin-bottom: 8px;" id="stepper-row-${guesserId}">
-            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', -5)" ${isLocked ? 'disabled' : ''}>-5%</button>
-            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', -1)" ${isLocked ? 'disabled' : ''}>-1%</button>
-            <button class="stepper-btn" onclick="resetGuesserNeedle('${guesserId}')" ${isLocked ? 'disabled' : ''}>Center (50%)</button>
-            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', 1)" ${isLocked ? 'disabled' : ''}>+1%</button>
-            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', 5)" ${isLocked ? 'disabled' : ''}>+5%</button>
-          </div>
-          <button class="btn-primary" id="lock-guesser-btn-${guesserId}" style="width: 100%; margin-top: 4px;" onclick="lockGuesserGuess('${guesserId}')" ${isLocked ? 'disabled' : ''}>
+        ${(isSelf || isSoloPassAndPlay) ? `
+          <button class="btn-primary" id="lock-guesser-btn-${guesserId}" style="width: 100%; margin-top: 10px;" onclick="lockGuesserGuess('${guesserId}')" ${isLocked ? 'disabled' : ''}>
             ${isLocked ? `🔒 Locked In (${anglePct}%)` : '🔒 Lock In My Guess'}
           </button>
         ` : ''}
@@ -3165,7 +3213,7 @@
       const angle = (gameState.guesses && gameState.guesses[guesserId]) ? gameState.guesses[guesserId].angle : 90;
       btn.innerText = `🔒 Locked In (${Math.round((angle / 180) * 100)}%)`;
     }
-    const steppers = document.getElementById(`stepper-row-${guesserId}`);
+    const steppers = document.getElementById(`stepper-bar-${guesserId}`) || document.getElementById(`stepper-row-${guesserId}`);
     if (steppers && isLocked) {
       steppers.querySelectorAll("button").forEach(b => b.disabled = true);
     }
