@@ -535,6 +535,95 @@
     pointer-events: none;
   }
 
+  /* Multi-Guesser Separate Dials Grid */
+  .multi-dials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .guesser-dial-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 22px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.25s, box-shadow 0.25s;
+    touch-action: none;
+  }
+  .guesser-dial-card.is-self {
+    border-color: rgba(0, 242, 254, 0.45);
+    background: linear-gradient(180deg, rgba(0, 242, 254, 0.05) 0%, var(--card-bg) 100%);
+    box-shadow: 0 10px 32px rgba(0, 242, 254, 0.12);
+  }
+  .guesser-dial-card.is-locked {
+    border-color: rgba(48, 209, 88, 0.45);
+  }
+  .guesser-dial-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .guesser-dial-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #fff;
+  }
+  .guesser-dial-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--cyan-glow);
+  }
+  .guesser-dial-status.locked {
+    background: rgba(48, 209, 88, 0.15);
+    color: #30d158;
+    border: 1px solid rgba(48, 209, 88, 0.3);
+  }
+  .guesser-privacy-shield {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(18, 20, 28, 0.94);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    transition: opacity 0.3s ease;
+  }
+  .guesser-reveal-score {
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .guesser-pts-desc {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 4px;
+  }
+
   .dial-svg-container {
     width: 100%;
     max-width: 440px;
@@ -932,8 +1021,11 @@
       </div>
     </div>
 
-    <!-- Dial Gauge Board -->
-    <div class="dial-stage">
+    <!-- Multi-Guesser Separate Dials Grid (for Competitive Mode with 3+ players) -->
+    <div id="multi-dials-container" class="multi-dials-grid" style="display: none;"></div>
+
+    <!-- Dial Gauge Board (Single Dial for Coop & 1v1 Duel) -->
+    <div class="dial-stage" id="main-dial-stage">
       <div class="sync-indicator" id="sync-indicator"></div>
 
       <div class="dial-svg-container" id="dial-svg-container">
@@ -1047,6 +1139,9 @@
         </p>
         <button class="btn-primary" id="lock-guess-btn" style="margin-top: 14px;" onclick="lockInGuess()">
           🔒 Lock In Team Guess
+        </button>
+        <button class="btn-secondary" id="force-reveal-btn" style="display: none; margin-top: 10px; width: 100%;" onclick="forceRevealAllGuesses()">
+          ⚡ Reveal All Guesses Now
         </button>
       </div>
     </div>
@@ -1246,7 +1341,7 @@
     sessionId = "wv_" + Math.random().toString(36).substring(2, 9);
     try { sessionStorage.setItem("party_wavelength_session_id", sessionId); } catch(e) {}
   }
-  const clientId = sessionId;
+  let clientId = sessionId;
 
   let playerName = "";
   try {
@@ -1272,6 +1367,8 @@
     psychicIndex: 0,
     psychicId: "",
     guesserId: "",
+    guesserIds: [], // All guessing player IDs in 3+ player competitive mode
+    guesses: {}, // { [guesserId]: { angle: 90, locked: false, points: 0 } }
     playerOrder: [],
     card: { left: "Cold", right: "Hot", category: "everyday" },
     targetAngle: 90, // 0.0 to 180.0
@@ -1491,6 +1588,36 @@
       applyNeedleAngle(data.angle, false);
       const mover = roomPlayers[data.senderId];
       showSyncIndicator(mover ? `${mover.name} tuning dial...` : "Teammate tuning dial...");
+    } else if (data.type === "GUESSER_DIAL_MOVE") {
+      const gid = data.guesserId;
+      if (gid && gameState.guesses) {
+        if (!gameState.guesses[gid]) gameState.guesses[gid] = { angle: 90, locked: false, points: 0 };
+        gameState.guesses[gid].angle = data.angle;
+        const isPsychic = (gameState.psychicId === clientId);
+        if (isPsychic || gameState.phase === "reveal" || isSoloPassAndPlay) {
+          updateGuesserDialVisual(gid, data.angle);
+        }
+        const mover = roomPlayers[gid];
+        showSyncIndicator(mover ? `${mover.name} tuning dial...` : "Guesser tuning dial...");
+      }
+    } else if (data.type === "GUESSER_LOCK") {
+      const gid = data.guesserId;
+      if (gid && gameState.guesses) {
+        if (!gameState.guesses[gid]) gameState.guesses[gid] = { angle: data.angle, locked: true, points: 0 };
+        gameState.guesses[gid].locked = true;
+        gameState.guesses[gid].angle = data.angle;
+        updateGuesserLockStatus(gid, true);
+        const locker = roomPlayers[gid];
+        showSyncIndicator(locker ? `🔒 ${locker.name} locked in!` : "🔒 Guess locked in!");
+        playTickSound();
+        checkAllGuessersLocked();
+      }
+    } else if (data.type === "ALL_GUESSES_LOCKED") {
+      gameState.phase = "reveal";
+      if (data.guesses) gameState.guesses = data.guesses;
+      if (data.scores) gameState.scores = data.scores;
+      if (typeof data.targetAngle === "number") gameState.targetAngle = data.targetAngle;
+      executeMultiGuesserRevealUI();
     } else if (data.type === "LOCK_GUESS") {
       gameState.guessAngle = data.guessAngle;
       if (typeof data.targetAngle === "number") gameState.targetAngle = data.targetAngle;
@@ -1507,6 +1634,12 @@
     } else if (data.type === "SPIN_TARGET") {
       gameState.targetAngle = data.targetAngle;
       renderTargetWedges(gameState.targetAngle);
+      if (gameState.guesserIds && gameState.guesserIds.length >= 2) {
+        gameState.guesserIds.forEach(gid => {
+          const tg = document.getElementById(`target-wedges-group-${gid}`);
+          if (tg) renderTargetWedges(gameState.targetAngle, tg);
+        });
+      }
       playTickSound();
       const spinner = data.senderName || roomPlayers[data.senderId]?.name || "Teammate";
       showSyncIndicator(`🎲 ${spinner} re-spun target!`);
@@ -1925,11 +2058,23 @@
     gameState.psychicIndex = psychicIdx;
     gameState.psychicId = order[psychicIdx] || clientId;
 
-    // Identify active guesser in 2-player competitive duel
-    if (gameState.mode === "competitive" && order.length === 2) {
-      gameState.guesserId = order.find(id => id !== gameState.psychicId) || clientId;
+    // Identify active guesser(s) in competitive mode
+    if (gameState.mode === "competitive") {
+      if (order.length === 2) {
+        gameState.guesserId = order.find(id => id !== gameState.psychicId) || clientId;
+        gameState.guesserIds = [gameState.guesserId];
+      } else {
+        gameState.guesserId = null;
+        gameState.guesserIds = order.filter(id => id !== gameState.psychicId);
+      }
+      gameState.guesses = {};
+      gameState.guesserIds.forEach(gid => {
+        gameState.guesses[gid] = { angle: 90, locked: false, points: 0 };
+      });
     } else {
       gameState.guesserId = null;
+      gameState.guesserIds = [];
+      gameState.guesses = {};
     }
 
     gameState.round = roundNumber;
@@ -1981,6 +2126,12 @@
     const newAngle = generateRandomTargetAngle();
     gameState.targetAngle = newAngle;
     renderTargetWedges(newAngle);
+    if (gameState.guesserIds && gameState.guesserIds.length >= 2) {
+      gameState.guesserIds.forEach(gid => {
+        const tg = document.getElementById(`target-wedges-group-${gid}`);
+        if (tg) renderTargetWedges(newAngle, tg);
+      });
+    }
     playTickSound();
 
     publishMessage({
@@ -2161,6 +2312,7 @@
     const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "🔮" };
     const pIds = Object.keys(roomPlayers);
     const is2PlayerComp = (gameState.mode === "competitive" && pIds.length === 2);
+    const isMultiGuesserComp = (gameState.mode === "competitive" && gameState.guesserIds && gameState.guesserIds.length >= 2);
     const guesserId = gameState.guesserId || pIds.find(id => id !== gameState.psychicId) || clientId;
     const guesserPlayer = roomPlayers[guesserId] || { name: "Guesser", avatar: "🎯" };
 
@@ -2177,10 +2329,13 @@
         scoreLabel.innerText = "1v1 Duel Score";
         scoreVal.innerHTML = `<span style="color: ${p1.id === clientId ? 'var(--cyan-glow)' : '#fff'};">${escapeHTML(p1.name)}: ${gameState.scores[p1.id] || 0}</span> ⚔️ <span style="color: ${p2.id === clientId ? 'var(--cyan-glow)' : '#fff'};">${escapeHTML(p2.name)}: ${gameState.scores[p2.id] || 0}</span>`;
       } else {
-        scoreLabel.innerText = "Your Score";
-        const myScore = gameState.scores[clientId] || 0;
-        const highest = Math.max(0, ...Object.values(gameState.scores));
-        scoreVal.innerText = `${myScore} Pts (Top: ${highest})`;
+        scoreLabel.innerText = "Standings";
+        const sorted = Object.values(roomPlayers).sort((a, b) => (gameState.scores[b.id] || 0) - (gameState.scores[a.id] || 0));
+        scoreVal.innerHTML = sorted.map(p => {
+          const isMe = (p.id === clientId);
+          const pts = gameState.scores[p.id] || 0;
+          return `<span style="color: ${isMe ? 'var(--cyan-glow)' : '#fff'}; margin-right: 8px;">${escapeHTML(p.name)}: ${pts}</span>`;
+        }).join(" ");
       }
     } else {
       scoreLabel.innerText = "Team Score";
@@ -2192,7 +2347,33 @@
     const roleIcon = document.getElementById("role-banner-icon");
     const roleText = document.getElementById("role-banner-text");
 
-    if (is2PlayerComp) {
+    if (isMultiGuesserComp) {
+      if (gameState.phase === "clue") {
+        if (isPsychic) {
+          roleBanner.className = "role-banner psychic";
+          roleIcon.innerText = "🔮";
+          roleText.innerText = `⚔️ Round ${gameState.round}: You are the Psychic! Enter a clue for both guessers!`;
+        } else {
+          roleBanner.className = "role-banner guesser";
+          roleIcon.innerText = "⏳";
+          roleText.innerText = `⚔️ Round ${gameState.round}: ${psychicPlayer.name} is formulating a secret clue for you and your rival!`;
+        }
+      } else if (gameState.phase === "guess") {
+        if (isPsychic) {
+          roleBanner.className = "role-banner psychic";
+          roleIcon.innerText = "🤫";
+          roleText.innerText = "Clue sent! Watch both guessers calibrate their separate dials in real time.";
+        } else {
+          roleBanner.className = "role-banner guesser";
+          roleIcon.innerText = "🎯";
+          roleText.innerText = `Tune your private dial to match ${psychicPlayer.name}'s clue! Lock in before your rival!`;
+        }
+      } else {
+        roleBanner.className = "role-banner";
+        roleIcon.innerText = "✨";
+        roleText.innerText = `Round ${gameState.round} Results: Shutters opened on all dials!`;
+      }
+    } else if (is2PlayerComp) {
       if (gameState.phase === "clue") {
         if (isPsychic) {
           roleBanner.className = "role-banner psychic";
@@ -2238,25 +2419,55 @@
     document.getElementById("pole-left-text").innerText = gameState.card.left;
     document.getElementById("pole-right-text").innerText = gameState.card.right;
 
-    // 4. Dial Target Wedges & Shutter
-    renderTargetWedges(gameState.targetAngle);
+    // 4. Dial Target Wedges, Shutters & Multi-Dial Stages
+    const mainDialStage = document.getElementById("main-dial-stage");
+    const multiDialsContainer = document.getElementById("multi-dials-container");
 
-    const shutter = document.getElementById("shutter-cover");
-    const wedgesGroup = document.getElementById("target-wedges-group");
-
-    if (gameState.phase === "reveal") {
-      if (shutter) shutter.classList.add("opened");
-      if (wedgesGroup) wedgesGroup.style.display = "block";
-    } else if (isPsychic && gameState.phase === "clue") {
-      if (shutter) shutter.classList.add("opened");
-      if (wedgesGroup) wedgesGroup.style.display = "block";
+    if (isMultiGuesserComp) {
+      if (gameState.phase === "clue") {
+        if (isPsychic) {
+          if (mainDialStage) mainDialStage.style.display = "flex";
+          if (multiDialsContainer) multiDialsContainer.style.display = "none";
+          renderTargetWedges(gameState.targetAngle);
+          const shutter = document.getElementById("shutter-cover");
+          const wedgesGroup = document.getElementById("target-wedges-group");
+          if (shutter) shutter.classList.add("opened");
+          if (wedgesGroup) wedgesGroup.style.display = "block";
+        } else {
+          if (mainDialStage) mainDialStage.style.display = "none";
+          if (multiDialsContainer) multiDialsContainer.style.display = "none";
+        }
+      } else {
+        // "guess" or "reveal" phase
+        if (mainDialStage) mainDialStage.style.display = "none";
+        if (multiDialsContainer) {
+          multiDialsContainer.style.display = "grid";
+          renderMultiGuesserDials();
+        }
+      }
     } else {
-      if (shutter) shutter.classList.remove("opened");
-      if (wedgesGroup) wedgesGroup.style.display = "none";
-    }
+      if (mainDialStage) mainDialStage.style.display = "flex";
+      if (multiDialsContainer) multiDialsContainer.style.display = "none";
 
-    // Position Needle
-    applyNeedleAngle(gameState.guessAngle, false);
+      renderTargetWedges(gameState.targetAngle);
+
+      const shutter = document.getElementById("shutter-cover");
+      const wedgesGroup = document.getElementById("target-wedges-group");
+
+      if (gameState.phase === "reveal") {
+        if (shutter) shutter.classList.add("opened");
+        if (wedgesGroup) wedgesGroup.style.display = "block";
+      } else if (isPsychic && gameState.phase === "clue") {
+        if (shutter) shutter.classList.add("opened");
+        if (wedgesGroup) wedgesGroup.style.display = "block";
+      } else {
+        if (shutter) shutter.classList.remove("opened");
+        if (wedgesGroup) wedgesGroup.style.display = "none";
+      }
+
+      // Position Needle
+      applyNeedleAngle(gameState.guessAngle, false);
+    }
 
     // 5. Interactive Clue Form & Actions
     const formBox = document.getElementById("psychic-clue-form");
@@ -2277,7 +2488,9 @@
         document.getElementById("waiting-psychic-name").innerText = `${psychicPlayer.name} (${psychicPlayer.avatar}) is tuning their mind...`;
         const subtext = document.getElementById("guesser-waiting-subtext");
         if (subtext) {
-          if (is2PlayerComp) {
+          if (isMultiGuesserComp) {
+            subtext.innerText = `Get ready! As soon as ${psychicPlayer.name} submits their clue, each player gets their own dial!`;
+          } else if (is2PlayerComp) {
             subtext.innerText = `Get ready! As soon as ${psychicPlayer.name} submits their clue, you will take control of the dial!`;
           } else {
             subtext.innerText = "Discuss with your teammates while the psychic formulates their clue!";
@@ -2289,20 +2502,36 @@
       document.getElementById("display-clue-text").innerText = `"${gameState.clue}"`;
       const lockBtn = document.getElementById("lock-guess-btn");
       const instr = document.getElementById("guess-instruction-text");
-      if (isPsychic && !isSoloPassAndPlay) {
+      const forceBtn = document.getElementById("force-reveal-btn");
+
+      if (isMultiGuesserComp) {
         if (lockBtn) lockBtn.style.display = "none";
         if (instr) {
-          instr.innerText = is2PlayerComp
-            ? `${guesserPlayer.name} is dragging the dial now to make their guess...`
-            : "Teammates are dragging the needle now...";
+          instr.innerText = isPsychic && !isSoloPassAndPlay
+            ? "Clue sent! Watch both guessers calibrate their separate dials..."
+            : "Calibrate your separate dial and lock in your private guess!";
+        }
+        if (forceBtn) {
+          const canForce = (isCurrentUserHost() || isSoloPassAndPlay);
+          forceBtn.style.display = canForce ? "block" : "none";
         }
       } else {
-        if (lockBtn) {
-          lockBtn.style.display = "block";
-          lockBtn.innerText = is2PlayerComp ? "🔒 Lock In My Guess" : "🔒 Lock In Team Guess";
-        }
-        if (instr) {
-          instr.innerText = "Drag the red needle to where you believe this clue lands on the spectrum!";
+        if (forceBtn) forceBtn.style.display = "none";
+        if (isPsychic && !isSoloPassAndPlay) {
+          if (lockBtn) lockBtn.style.display = "none";
+          if (instr) {
+            instr.innerText = is2PlayerComp
+              ? `${guesserPlayer.name} is dragging the dial now to make their guess...`
+              : "Teammates are dragging the needle now...";
+          }
+        } else {
+          if (lockBtn) {
+            lockBtn.style.display = "block";
+            lockBtn.innerText = is2PlayerComp ? "🔒 Lock In My Guess" : "🔒 Lock In Team Guess";
+          }
+          if (instr) {
+            instr.innerText = "Drag the red needle to where you believe this clue lands on the spectrum!";
+          }
         }
       }
     } else if (gameState.phase === "reveal") {
@@ -2312,36 +2541,55 @@
       const titleEl = document.getElementById("reveal-title");
       const descEl = document.getElementById("reveal-desc");
 
-      ptsEl.className = `reveal-points p${pts}`;
-      ptsEl.innerText = `+${pts} PTS`;
-
-      if (is2PlayerComp) {
-        if (pts === 4) {
-          titleEl.innerText = "🎯 BULLSEYE! PERFECT HIT!";
-          descEl.innerText = `+4 PTS to ${guesserPlayer.name}! (+1 Telepathy Bonus to ${psychicPlayer.name} for the perfect clue!)`;
-        } else if (pts === 3) {
-          titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
-          descEl.innerText = `+3 PTS to ${guesserPlayer.name}! Near center calibration.`;
-        } else if (pts === 2) {
-          titleEl.innerText = "⚡ ON THE WAVELENGTH!";
-          descEl.innerText = `+2 PTS to ${guesserPlayer.name}! Caught outer edge of frequency.`;
-        } else {
-          titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
-          descEl.innerText = `0 PTS. ${guesserPlayer.name} missed the target band!`;
+      if (isMultiGuesserComp) {
+        ptsEl.style.display = "none";
+        titleEl.innerText = "🎯 All Guesses Revealed!";
+        const summaryItems = [];
+        let hadBullseye = false;
+        gameState.guesserIds.forEach(gid => {
+          const p = roomPlayers[gid] || { name: "Guesser" };
+          const g = (gameState.guesses && gameState.guesses[gid]) || { points: 0, angle: 90 };
+          const pct = Math.round((g.angle / 180) * 100);
+          summaryItems.push(`<strong>${escapeHTML(p.name)}</strong>: ${pct}% (+${g.points} PTS)`);
+          if (g.points === 4) hadBullseye = true;
+        });
+        if (hadBullseye) {
+          summaryItems.push(`<em>+1 Psychic Bullseye Bonus to ${escapeHTML(psychicPlayer.name)}</em>`);
         }
+        descEl.innerHTML = summaryItems.join(" • ");
       } else {
-        if (pts === 4) {
-          titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
-          descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
-        } else if (pts === 3) {
-          titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
-          descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
-        } else if (pts === 2) {
-          titleEl.innerText = "⚡ ON THE WAVELENGTH!";
-          descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
+        ptsEl.style.display = "block";
+        ptsEl.className = `reveal-points p${pts}`;
+        ptsEl.innerText = `+${pts} PTS`;
+
+        if (is2PlayerComp) {
+          if (pts === 4) {
+            titleEl.innerText = "🎯 BULLSEYE! PERFECT HIT!";
+            descEl.innerText = `+4 PTS to ${guesserPlayer.name}! (+1 Telepathy Bonus to ${psychicPlayer.name} for the perfect clue!)`;
+          } else if (pts === 3) {
+            titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
+            descEl.innerText = `+3 PTS to ${guesserPlayer.name}! Near center calibration.`;
+          } else if (pts === 2) {
+            titleEl.innerText = "⚡ ON THE WAVELENGTH!";
+            descEl.innerText = `+2 PTS to ${guesserPlayer.name}! Caught outer edge of frequency.`;
+          } else {
+            titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
+            descEl.innerText = `0 PTS. ${guesserPlayer.name} missed the target band!`;
+          }
         } else {
-          titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
-          descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
+          if (pts === 4) {
+            titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
+            descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
+          } else if (pts === 3) {
+            titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
+            descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
+          } else if (pts === 2) {
+            titleEl.innerText = "⚡ ON THE WAVELENGTH!";
+            descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
+          } else {
+            titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
+            descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
+          }
         }
       }
     }
@@ -2350,8 +2598,8 @@
   }
 
   /* Render High-Fidelity Target Wedges: 4pt, 3pt, 2pt layered zones */
-  function renderTargetWedges(targetAngle) {
-    const group = document.getElementById("target-wedges-group");
+  function renderTargetWedges(targetAngle, groupElement = null) {
+    const group = groupElement || document.getElementById("target-wedges-group");
     if (!group) return;
     group.innerHTML = "";
 
@@ -2466,8 +2714,8 @@
     return `M ${x1} ${y1} A ${rOut} ${rOut} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${rIn} ${rIn} 0 0 0 ${x4} ${y4} Z`;
   }
 
-  function renderTicks() {
-    const group = document.getElementById("dial-ticks");
+  function renderTicks(groupElement = null) {
+    const group = groupElement || document.getElementById("dial-ticks");
     if (!group) return;
     group.innerHTML = "";
     for (let deg = 0; deg <= 180; deg += 5) {
@@ -2623,6 +2871,437 @@
   }
 
   /* ==========================================================================
+     8B. MULTI-GUESSER SEPARATE DIALS (COMPETITIVE 3+ PLAYERS)
+     ========================================================================== */
+  function getPointsDescription(pts) {
+    if (pts === 4) return "🎯 BULLSEYE! PERFECT HIT (+4 PTS)";
+    if (pts === 3) return "🔥 CLOSE! GREAT VIBES (+3 PTS)";
+    if (pts === 2) return "⚡ ON THE WAVELENGTH (+2 PTS)";
+    return "❌ STATIC ON THE RADIO (0 PTS)";
+  }
+
+  function buildGuesserDialCardHTML(guesserId, p, isSelf, isPsychic) {
+    const gData = (gameState.guesses && gameState.guesses[guesserId]) || { angle: 90, locked: false, points: 0 };
+    const angle = typeof gData.angle === "number" ? gData.angle : 90;
+    const isLocked = !!gData.locked;
+    const isReveal = (gameState.phase === "reveal");
+    const showPrivacyShield = (!isSelf && !isPsychic && !isSoloPassAndPlay && !isReveal);
+    const allowInteraction = (isSelf || isSoloPassAndPlay) && !isLocked && !isReveal;
+    const anglePct = Math.round((angle / 180) * 100);
+
+    return `
+      <div class="guesser-dial-card ${isSelf ? 'is-self' : ''} ${isLocked ? 'is-locked' : ''}" id="guesser-dial-card-${guesserId}">
+        <div class="guesser-dial-header">
+          <div class="guesser-dial-player">
+            <span>${p.avatar || '🎯'}</span>
+            <span>${escapeHTML(p.name || 'Guesser')} ${isSelf ? '<span style="color:var(--cyan-glow); font-size:0.75rem;">(You)</span>' : ''}</span>
+          </div>
+          <div class="guesser-dial-status ${isLocked ? 'locked' : ''}" id="guesser-status-${guesserId}">
+            ${isLocked ? '🔒 Locked In' : (isSelf ? '🎯 Tuning Needle' : '🤔 Tuning...')}
+          </div>
+        </div>
+
+        <div class="dial-svg-container" id="dial-svg-container-${guesserId}" style="position: relative; width: 100%; max-width: 380px;">
+          <div class="guesser-privacy-shield" id="privacy-shield-${guesserId}" style="display: ${showPrivacyShield ? 'flex' : 'none'};">
+            <span style="font-size: 2rem; margin-bottom: 8px;">🔒</span>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">${escapeHTML(p.name || 'Guesser')}'s Private Dial</div>
+            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">Frequency hidden until all players lock in</div>
+          </div>
+
+          <svg class="dial-svg" viewBox="0 0 400 230" id="dial-svg-${guesserId}">
+            <defs>
+              <linearGradient id="frame-grad-${guesserId}" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#00f2fe"/>
+                <stop offset="50%" stop-color="#0a84ff"/>
+                <stop offset="100%" stop-color="#ff7e40"/>
+              </linearGradient>
+              <linearGradient id="shutter-grad-${guesserId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#242838"/>
+                <stop offset="100%" stop-color="#12141c"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Outer Housing Arc -->
+            <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="#25293a" stroke-width="32" stroke-linecap="round"/>
+            <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="url(#frame-grad-${guesserId})" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+
+            <!-- Dial Tick Marks -->
+            <g id="dial-ticks-${guesserId}" opacity="0.4"></g>
+
+            <!-- TARGET WEDGES GROUP (Target slices shown on reveal) -->
+            <g id="target-wedges-group-${guesserId}" style="display: ${isReveal ? 'block' : 'none'};"></g>
+
+            <!-- Mechanical Shutter Face Cover -->
+            <path id="shutter-cover-${guesserId}" class="shutter-cover ${isReveal ? 'opened' : ''}" d="M 38 200 A 162 162 0 0 1 362 200 Z" fill="url(#shutter-grad-${guesserId})" stroke="#2f3549" stroke-width="2"/>
+
+            <!-- Center Hub Shadow & Base Plate -->
+            <circle cx="200" cy="200" r="48" fill="#151722" stroke="#2b3145" stroke-width="3"/>
+            <circle cx="200" cy="200" r="28" fill="#1d202e"/>
+
+            <!-- ROTATING NEEDLE GROUP -->
+            <g id="needle-group-${guesserId}" class="needle-group" transform="rotate(${angle - 90}, 200, 200)">
+              <polygon points="196,200 204,200 201,36 199,36" fill="#ff3b30" filter="url(#glow-needle)"/>
+              <circle cx="200" cy="36" r="4" fill="#ffffff"/>
+              <circle cx="200" cy="200" r="14" fill="#ff3b30" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="200" cy="200" r="5" fill="#ffffff"/>
+            </g>
+          </svg>
+        </div>
+
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin: 8px 0;">
+          <span class="dial-angle-display" id="dial-angle-display-${guesserId}">${anglePct}%</span>
+        </div>
+
+        ${allowInteraction || (isSelf && isLocked) || (isSoloPassAndPlay) ? `
+          <div class="dial-stepper-row" style="margin-bottom: 8px;" id="stepper-row-${guesserId}">
+            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', -5)" ${isLocked ? 'disabled' : ''}>-5%</button>
+            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', -1)" ${isLocked ? 'disabled' : ''}>-1%</button>
+            <button class="stepper-btn" onclick="resetGuesserNeedle('${guesserId}')" ${isLocked ? 'disabled' : ''}>Center (50%)</button>
+            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', 1)" ${isLocked ? 'disabled' : ''}>+1%</button>
+            <button class="stepper-btn" onclick="stepGuesserNeedle('${guesserId}', 5)" ${isLocked ? 'disabled' : ''}>+5%</button>
+          </div>
+          <button class="btn-primary" id="lock-guesser-btn-${guesserId}" style="width: 100%; margin-top: 4px;" onclick="lockGuesserGuess('${guesserId}')" ${isLocked ? 'disabled' : ''}>
+            ${isLocked ? `🔒 Locked In (${anglePct}%)` : '🔒 Lock In My Guess'}
+          </button>
+        ` : ''}
+
+        <div class="guesser-reveal-score" id="guesser-reveal-score-${guesserId}" style="display: ${isReveal ? 'block' : 'none'};">
+          <div class="reveal-points p${gData.points || 0}" id="guesser-pts-${guesserId}" style="font-size: 1.25rem;">
+            +${gData.points || 0} PTS
+          </div>
+          <div class="guesser-pts-desc" id="guesser-pts-desc-${guesserId}">
+            ${getPointsDescription(gData.points || 0)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMultiGuesserDials() {
+    const container = document.getElementById("multi-dials-container");
+    if (!container) return;
+    if (!gameState.guesserIds || gameState.guesserIds.length === 0) return;
+
+    const isPsychic = (gameState.psychicId === clientId);
+
+    container.innerHTML = gameState.guesserIds.map(gid => {
+      const p = roomPlayers[gid] || { name: "Guesser", avatar: "🎯", id: gid };
+      const isSelf = (gid === clientId);
+      return buildGuesserDialCardHTML(gid, p, isSelf, isPsychic);
+    }).join("");
+
+    gameState.guesserIds.forEach(gid => {
+      const ticksGroup = document.getElementById(`dial-ticks-${gid}`);
+      if (ticksGroup) renderTicks(ticksGroup);
+
+      const targetGroup = document.getElementById(`target-wedges-group-${gid}`);
+      if (targetGroup) renderTargetWedges(gameState.targetAngle, targetGroup);
+
+      setupGuesserDialDrag(gid);
+    });
+  }
+
+  function setupGuesserDialDrag(guesserId) {
+    const container = document.getElementById(`dial-svg-container-${guesserId}`);
+    if (!container) return;
+    if (container._dragBound) return;
+    container._dragBound = true;
+
+    let isDragging = false;
+
+    const handlePointerMove = (e) => {
+      if (!isDragging) return;
+      if (gameState.phase !== "guess") return;
+      const gData = gameState.guesses && gameState.guesses[guesserId];
+      if (gData && gData.locked) return;
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const svgX = (clientX - rect.left) * (400 / rect.width);
+      const svgY = (clientY - rect.top) * (230 / rect.height);
+
+      const dx = svgX - 200;
+      const dy = 200 - svgY;
+
+      let angleDeg;
+      if (dy <= 0) {
+        if (Math.abs(dx) < 2) return;
+        angleDeg = (dx < 0) ? 0 : 180;
+      } else {
+        const angleRad = Math.atan2(dy, dx);
+        angleDeg = 180 - (angleRad * 180 / Math.PI);
+        angleDeg = Math.max(0, Math.min(180, Math.round(angleDeg)));
+      }
+
+      applyGuesserNeedleAngle(guesserId, angleDeg, true);
+    };
+
+    const handlePointerStart = (e) => {
+      if (gameState.phase !== "guess") return;
+      const isSelf = (guesserId === clientId);
+      if (!isSelf && !isSoloPassAndPlay) return;
+      const gData = gameState.guesses && gameState.guesses[guesserId];
+      if (gData && gData.locked) return;
+      if (e.cancelable) e.preventDefault();
+
+      isDragging = true;
+      container.classList.add("dragging");
+      handlePointerMove(e);
+    };
+
+    const handlePointerEnd = () => {
+      if (isDragging) {
+        isDragging = false;
+        container.classList.remove("dragging");
+        if (!isSoloPassAndPlay && isConnected) {
+          publishMessage({
+            type: "GUESSER_DIAL_MOVE",
+            guesserId: guesserId,
+            angle: (gameState.guesses && gameState.guesses[guesserId] ? gameState.guesses[guesserId].angle : 90)
+          });
+        }
+      }
+    };
+
+    container.addEventListener("mousedown", handlePointerStart);
+    window.addEventListener("mousemove", handlePointerMove);
+    window.addEventListener("mouseup", handlePointerEnd);
+
+    container.addEventListener("touchstart", handlePointerStart, { passive: false });
+    window.addEventListener("touchmove", handlePointerMove, { passive: false });
+    window.addEventListener("touchend", handlePointerEnd);
+  }
+
+  let lastGuesserBroadcastTime = 0;
+  let lastGuesserBroadcastAngle = {};
+
+  function applyGuesserNeedleAngle(guesserId, deg, broadcast = false) {
+    if (!gameState.guesses) gameState.guesses = {};
+    if (!gameState.guesses[guesserId]) {
+      gameState.guesses[guesserId] = { angle: deg, locked: false, points: 0 };
+    }
+    gameState.guesses[guesserId].angle = deg;
+    updateGuesserDialVisual(guesserId, deg);
+    playTickSound();
+
+    if (broadcast && (!isSoloPassAndPlay) && isConnected) {
+      const now = Date.now();
+      const lastAngle = lastGuesserBroadcastAngle[guesserId] || -999;
+      if (now - lastGuesserBroadcastTime > 40 || Math.abs(deg - lastAngle) >= 3) {
+        lastGuesserBroadcastTime = now;
+        lastGuesserBroadcastAngle[guesserId] = deg;
+        publishMessage({
+          type: "GUESSER_DIAL_MOVE",
+          guesserId: guesserId,
+          angle: deg
+        });
+      }
+    }
+  }
+
+  function stepGuesserNeedle(guesserId, deltaDeg) {
+    if (gameState.phase !== "guess") return;
+    const isSelf = (guesserId === clientId);
+    if (!isSelf && !isSoloPassAndPlay) return;
+    const gData = gameState.guesses && gameState.guesses[guesserId];
+    if (gData && gData.locked) return;
+
+    const cur = gData ? gData.angle : 90;
+    const nextAng = Math.max(0, Math.min(180, cur + deltaDeg));
+    applyGuesserNeedleAngle(guesserId, nextAng, true);
+    if (!isSoloPassAndPlay && isConnected) {
+      publishMessage({
+        type: "GUESSER_DIAL_MOVE",
+        guesserId: guesserId,
+        angle: nextAng
+      });
+    }
+  }
+
+  function resetGuesserNeedle(guesserId) {
+    if (gameState.phase !== "guess") return;
+    const isSelf = (guesserId === clientId);
+    if (!isSelf && !isSoloPassAndPlay) return;
+    const gData = gameState.guesses && gameState.guesses[guesserId];
+    if (gData && gData.locked) return;
+
+    applyGuesserNeedleAngle(guesserId, 90, true);
+    if (!isSoloPassAndPlay && isConnected) {
+      publishMessage({
+        type: "GUESSER_DIAL_MOVE",
+        guesserId: guesserId,
+        angle: 90
+      });
+    }
+  }
+
+  function updateGuesserDialVisual(guesserId, deg) {
+    const needle = document.getElementById(`needle-group-${guesserId}`);
+    if (needle) {
+      needle.setAttribute("transform", `rotate(${deg - 90}, 200, 200)`);
+    }
+    const badge = document.getElementById(`dial-angle-display-${guesserId}`);
+    if (badge) {
+      badge.innerText = `${Math.round((deg / 180) * 100)}%`;
+    }
+  }
+
+  function updateGuesserLockStatus(guesserId, isLocked) {
+    const card = document.getElementById(`guesser-dial-card-${guesserId}`);
+    if (card && isLocked) {
+      card.classList.add("is-locked");
+    }
+    const statusEl = document.getElementById(`guesser-status-${guesserId}`);
+    if (statusEl && isLocked) {
+      statusEl.className = "guesser-dial-status locked";
+      statusEl.innerText = "🔒 Locked In";
+    }
+    const btn = document.getElementById(`lock-guesser-btn-${guesserId}`);
+    if (btn && isLocked) {
+      btn.disabled = true;
+      const angle = (gameState.guesses && gameState.guesses[guesserId]) ? gameState.guesses[guesserId].angle : 90;
+      btn.innerText = `🔒 Locked In (${Math.round((angle / 180) * 100)}%)`;
+    }
+    const steppers = document.getElementById(`stepper-row-${guesserId}`);
+    if (steppers && isLocked) {
+      steppers.querySelectorAll("button").forEach(b => b.disabled = true);
+    }
+  }
+
+  function lockGuesserGuess(guesserId) {
+    if (gameState.phase !== "guess") return;
+    const isSelf = (guesserId === clientId);
+    if (!isSelf && !isSoloPassAndPlay) return;
+
+    if (!gameState.guesses) gameState.guesses = {};
+    if (!gameState.guesses[guesserId]) {
+      gameState.guesses[guesserId] = { angle: 90, locked: false, points: 0 };
+    }
+    const angle = Math.max(0, Math.min(180, gameState.guesses[guesserId].angle));
+    const points = calculatePoints(angle, gameState.targetAngle);
+
+    gameState.guesses[guesserId].angle = angle;
+    gameState.guesses[guesserId].locked = true;
+    gameState.guesses[guesserId].points = points;
+
+    updateGuesserLockStatus(guesserId, true);
+    playTickSound();
+
+    publishMessage({
+      type: "GUESSER_LOCK",
+      guesserId: guesserId,
+      angle: angle,
+      points: points,
+      senderName: playerName
+    });
+
+    checkAllGuessersLocked();
+  }
+
+  function checkAllGuessersLocked() {
+    if (!gameState.guesserIds || gameState.guesserIds.length === 0) return;
+    const allLocked = gameState.guesserIds.every(gid => gameState.guesses && gameState.guesses[gid] && gameState.guesses[gid].locked);
+    if (allLocked && gameState.phase === "guess") {
+      if (isCurrentUserHost() || isSoloPassAndPlay) {
+        triggerMultiGuesserReveal();
+      }
+    }
+  }
+
+  function forceRevealAllGuesses() {
+    if (gameState.phase !== "guess") return;
+    if (!isCurrentUserHost() && !isSoloPassAndPlay) return;
+    if (!gameState.guesserIds) return;
+
+    gameState.guesserIds.forEach(gid => {
+      if (!gameState.guesses[gid]) {
+        gameState.guesses[gid] = { angle: 90, locked: false, points: 0 };
+      }
+      if (!gameState.guesses[gid].locked) {
+        const angle = gameState.guesses[gid].angle || 90;
+        gameState.guesses[gid].angle = angle;
+        gameState.guesses[gid].locked = true;
+        gameState.guesses[gid].points = calculatePoints(angle, gameState.targetAngle);
+      }
+    });
+
+    triggerMultiGuesserReveal();
+  }
+
+  function triggerMultiGuesserReveal() {
+    gameState.phase = "reveal";
+
+    let hadBullseye = false;
+    gameState.guesserIds.forEach(gid => {
+      const g = gameState.guesses[gid];
+      if (g) {
+        if (typeof g.points !== "number") {
+          g.points = calculatePoints(g.angle, gameState.targetAngle);
+        }
+        if (gameState.scores[gid] !== undefined) {
+          gameState.scores[gid] += g.points;
+        }
+        if (g.points === 4) {
+          hadBullseye = true;
+        }
+      }
+    });
+
+    // Psychic bullseye bonus
+    if (hadBullseye && gameState.psychicId && gameState.scores[gameState.psychicId] !== undefined) {
+      gameState.scores[gameState.psychicId] += 1;
+    }
+
+    const guessSummary = {};
+    gameState.guesserIds.forEach(gid => {
+      guessSummary[gid] = {
+        name: roomPlayers[gid] ? roomPlayers[gid].name : gid,
+        angle: gameState.guesses[gid].angle,
+        points: gameState.guesses[gid].points
+      };
+    });
+
+    gameState.history.push({
+      round: gameState.round,
+      clue: gameState.clue,
+      card: { ...gameState.card },
+      target: gameState.targetAngle,
+      guesses: guessSummary,
+      hadBullseye: hadBullseye
+    });
+
+    publishMessage({
+      type: "ALL_GUESSES_LOCKED",
+      guesses: gameState.guesses,
+      scores: gameState.scores,
+      targetAngle: gameState.targetAngle
+    });
+
+    executeMultiGuesserRevealUI();
+  }
+
+  function executeMultiGuesserRevealUI() {
+    gameState.phase = "reveal";
+    renderGameUI();
+    playShutterSound();
+
+    let maxPts = 0;
+    if (gameState.guesserIds && gameState.guesses) {
+      gameState.guesserIds.forEach(gid => {
+        if (gameState.guesses[gid] && gameState.guesses[gid].points > maxPts) {
+          maxPts = gameState.guesses[gid].points;
+        }
+      });
+    }
+    setTimeout(() => {
+      playRevealChime(maxPts);
+    }, 500);
+  }
+
+  /* ==========================================================================
      9. HISTORY & GAME OVER CELEBRATION
      ========================================================================== */
   function toggleHistoryDrawer() {
@@ -2644,16 +3323,38 @@
     gameState.history.slice().reverse().forEach(h => {
       const item = document.createElement("div");
       item.className = "history-item";
-      const guessPct = Math.round((h.guess / 180) * 100);
       const targetPct = Math.round((h.target / 180) * 100);
 
-      item.innerHTML = `
-        <div>
-          <strong>R${h.round}: "${escapeHTML(h.clue)}"</strong>
-          <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} ◀──▶ ${escapeHTML(h.card.right)} (Guess: ${guessPct}% | Target: ${targetPct}%)</div>
-        </div>
-        <span class="roster-tag" style="background: rgba(255,214,10,0.15); color: var(--score-4); font-size: 0.8rem;">+${h.points} PTS</span>
-      `;
+      if (h.guesses) {
+        let guessersHtml = "";
+        let maxPts = 0;
+        Object.entries(h.guesses).forEach(([gid, g]) => {
+          const gPct = Math.round((g.angle / 180) * 100);
+          guessersHtml += `<div style="font-size: 0.72rem; color: #cbd5e1; margin-top: 2px;">${escapeHTML(g.name)}: ${gPct}% (+${g.points} pts)</div>`;
+          if (g.points > maxPts) maxPts = g.points;
+        });
+        if (h.hadBullseye) {
+          guessersHtml += `<div style="font-size: 0.72rem; color: #ffd60a; margin-top: 2px;">🔮 Bullseye Bonus: +1 PT to Psychic</div>`;
+        }
+
+        item.innerHTML = `
+          <div>
+            <strong>R${h.round}: "${escapeHTML(h.clue)}"</strong>
+            <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} ◀──▶ ${escapeHTML(h.card.right)} (Target: ${targetPct}%)</div>
+            <div style="margin-top: 4px;">${guessersHtml}</div>
+          </div>
+          <span class="roster-tag" style="background: rgba(255,214,10,0.15); color: var(--score-4); font-size: 0.8rem;">Top +${maxPts}</span>
+        `;
+      } else {
+        const guessPct = Math.round((h.guess / 180) * 100);
+        item.innerHTML = `
+          <div>
+            <strong>R${h.round}: "${escapeHTML(h.clue)}"</strong>
+            <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} ◀──▶ ${escapeHTML(h.card.right)} (Guess: ${guessPct}% | Target: ${targetPct}%)</div>
+          </div>
+          <span class="roster-tag" style="background: rgba(255,214,10,0.15); color: var(--score-4); font-size: 0.8rem;">+${h.points} PTS</span>
+        `;
+      }
       listEl.appendChild(item);
     });
   }
@@ -2685,7 +3386,11 @@
         if (players.length === 2) {
           summaryEl.innerText = `${escapeHTML(winner.name)} defeated ${escapeHTML(players[1].name)} (${topScore} to ${runnerUpScore} pts) in the 1v1 Telepathy Duel!`;
         } else {
-          summaryEl.innerText = `${escapeHTML(winner.name)} finished 1st with ${topScore} total points!`;
+          const podium = players.map((p, idx) => {
+            const medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : "🎖️"));
+            return `${medal} ${escapeHTML(p.name)}: ${gameState.scores[p.id] || 0} pts`;
+          }).join(" • ");
+          summaryEl.innerHTML = `<strong>${escapeHTML(winner.name)}</strong> finished 1st with ${topScore} total points!<br><span style="font-size: 0.85rem; color: #aaa; margin-top: 6px; display: inline-block;">Final Standings: ${podium}</span>`;
         }
       }
     } else {
