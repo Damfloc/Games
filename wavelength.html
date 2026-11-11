@@ -1,42 +1,54 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wavelength Online - Telepathic Party Game</title>
-<meta name="description" content="Play Wavelength online with 2, 3, or more players! Read your teammates' minds on a spectrum from Hot to Cold, Underrated to Overrated, and more.">
+<meta name="description" content="Play Wavelength online! Read your teammates' minds across a spectrum from Hot to Cold, Underrated to Overrated, and more.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="manifest" href="site.webmanifest">
-<meta name="theme-color" content="#0d0e12">
+<meta name="theme-color" content="#0a0b10">
+
+<!-- Open Graph / Social Previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Wavelength Online - Room Invite">
+<meta property="og:description" content="You've been invited to play Wavelength! Tune into the same frequency and guess where the clue lands.">
+<meta property="og:image" content="favicon.svg">
+
+<!-- iOS Mobile Web App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wavelength">
 
 <!-- Paho MQTT Library for Real-Time Multiplayer -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
 <style>
-  :root {
-    --bg-dark: #0a0b10;
-    --card-bg: #141620;
-    --card-surface: #1c1f2e;
-    --border-soft: rgba(255, 255, 255, 0.08);
-    --border-glow: rgba(0, 242, 254, 0.4);
-    --cyan-glow: #00f2fe;
-    --orange-glow: #ff7e40;
-    --gold-glow: #ffd200;
-    --accent-blue: #4facfe;
-    --text-main: #f5f5f7;
-    --text-muted: #8e8e93;
-    --score-4: #ffd200;
-    --score-3: #ff9f0a;
-    --score-2: #ff453a;
-    --safe-bottom: env(safe-area-inset-bottom, 16px);
-  }
-
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
-    user-select: none;
+  }
+
+  :root {
+    --bg-dark: #0a0b10;
+    --card-bg: #14161f;
+    --card-surface: #1a1c28;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 242, 254, 0.4);
+    --cyan-glow: #00f2fe;
+    --orange-glow: #ff7e40;
+    --accent-blue: #0a84ff;
+    --accent-gold: #ffd60a;
+    --accent-green: #30d158;
+    --accent-red: #ff3b30;
+    --text-primary: #f5f5f7;
+    --text-secondary: #8e8e93;
+    --score-4: #ffd60a;
+    --score-3: #ff9f0a;
+    --score-2: #ff453a;
   }
 
   body {
@@ -44,117 +56,125 @@
     background-color: var(--bg-dark);
     background-image: 
       radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.12) 0%, transparent 40%),
-      radial-gradient(circle at 85% 85%, rgba(255, 88, 88, 0.10) 0%, transparent 40%);
-    color: var(--text-main);
+      radial-gradient(circle at 85% 85%, rgba(255, 126, 64, 0.10) 0%, transparent 40%);
+    background-attachment: fixed;
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     overflow-x: hidden;
+    touch-action: manipulation;
+  }
+
+  /* Canvas Confetti */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
   }
 
   /* Top Navigation Bar */
-  .navbar {
+  .top-navbar {
     width: 100%;
     max-width: 900px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    z-index: 20;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 11, 16, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
   }
 
-  .nav-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid var(--border-soft);
-    color: var(--text-main);
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
-    transition: background 0.2s, transform 0.15s;
-  }
-  .back-btn:hover { background: rgba(255, 255, 255, 0.14); transform: translateY(-1px); }
-
-  .brand-tag {
+  .nav-brand {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 1.15rem;
     font-weight: 800;
+    font-size: 1.15rem;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #ff7e40 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #fff;
+    text-decoration: none;
   }
 
-  .nav-right {
+  .nav-controls {
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .net-badge {
+  .nav-pill-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1a6;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 5px 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--border-soft);
-    color: var(--text-muted);
+    gap: 5px;
+    transition: all 0.2s;
   }
-  .net-dot {
+  .nav-pill-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+  .network-status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #ff453a;
+    display: inline-block;
   }
-  .net-dot.connected { background: #32d74b; box-shadow: 0 0 8px #32d74b; }
-  .net-dot.solo { background: #ff9f0a; box-shadow: 0 0 8px #ff9f0a; }
+  .network-status-dot.connected { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+  .network-status-dot.connecting { background: var(--accent-gold); animation: pulseDot 1s infinite alternate; }
+  .network-status-dot.disconnected { background: var(--accent-red); }
+  .network-status-dot.solo { background: var(--cyan-glow); box-shadow: 0 0 8px var(--cyan-glow); }
 
-  .btn-icon {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid var(--border-soft);
-    color: var(--text-main);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: inline-flex;
+  @keyframes pulseDot {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  /* Screens Wrapper */
+  .app-container {
+    width: 100%;
+    max-width: 680px;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-size: 1.05rem;
-    cursor: pointer;
-    transition: background 0.2s;
+    flex: 1;
   }
-  .btn-icon:hover { background: rgba(255, 255, 255, 0.16); }
 
-  /* App Screens */
   .screen {
     width: 100%;
-    max-width: 640px;
     display: none;
     flex-direction: column;
     align-items: center;
-    padding: 0 16px 40px;
+    animation: fadeInScreen 0.25s ease-out;
   }
-  .screen.active {
-    display: flex;
+  .screen.active { display: flex; }
+
+  @keyframes fadeInScreen {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Lobby Screen */
+  /* Typography */
+  h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; text-align: center; }
+  p.subtitle { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.45; text-align: center; margin-bottom: 24px; max-width: 500px; }
+
   .hero-badge {
     display: inline-flex;
     align-items: center;
@@ -171,197 +191,193 @@
     margin-bottom: 12px;
   }
 
-  h1.title {
-    font-size: clamp(2rem, 5vw, 2.6rem);
-    font-weight: 900;
-    text-align: center;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    margin-bottom: 8px;
-    background: linear-gradient(180deg, #ffffff 0%, #b0b4c3 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  p.tagline {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    text-align: center;
-    max-width: 440px;
-    margin-bottom: 24px;
-    line-height: 1.45;
-  }
-
-  .card-box {
-    width: 100%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 24px 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  }
-
-  .section-label {
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-
-  input.text-field {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--border-soft);
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-size: 1rem;
-    color: var(--text-main);
-    outline: none;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  input.text-field:focus {
-    border-color: var(--cyan-glow);
-    background: rgba(255, 255, 255, 0.09);
-  }
-
-  .avatar-row {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    margin-bottom: 16px;
-  }
-  .avatar-row::-webkit-scrollbar { display: none; }
-
-  .avatar-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid transparent;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: transform 0.15s, border-color 0.2s;
-  }
-  .avatar-btn.selected {
-    border-color: var(--cyan-glow);
-    background: rgba(0, 242, 254, 0.15);
-    transform: scale(1.08);
-  }
-
-  /* Mode Selector Buttons */
-  .mode-selector {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .mode-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 2px solid var(--border-soft);
-    border-radius: 14px;
-    padding: 14px 12px;
-    cursor: pointer;
-    text-align: center;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .mode-card.active {
-    border-color: var(--cyan-glow);
-    background: rgba(0, 242, 254, 0.1);
-  }
-  .mode-card .mode-icon { font-size: 1.5rem; margin-bottom: 4px; }
-  .mode-card .mode-title { font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 2px; }
-  .mode-card .mode-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.25; }
-
-  /* Room Actions */
+  /* Buttons */
   .btn-primary {
     width: 100%;
-    padding: 15px;
+    padding: 15px 24px;
     font-size: 1.05rem;
     font-weight: 700;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-    color: #050a14;
+    background: linear-gradient(135deg, #00f2fe 0%, #0a84ff 100%);
+    color: #fff;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 242, 254, 0.35);
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: transform 0.15s, box-shadow 0.2s;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(0, 242, 254, 0.45);
   }
   .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .btn-secondary {
-    width: 100%;
-    padding: 13px;
-    font-size: 0.98rem;
+    padding: 11px 18px;
+    font-size: 0.92rem;
     font-weight: 600;
-    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+  .btn-secondary:active { transform: scale(0.98); }
+
+  /* Section Containers */
+  .card-box {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+
+  .card-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+  }
+
+  /* Form Inputs */
+  .input-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #a1a1a6;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .text-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1.05rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 16px;
+  }
+  .text-input:focus {
+    border-color: var(--cyan-glow);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+  }
+
+  /* Avatar Picker */
+  .avatar-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+  .avatar-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-soft);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-main);
+    font-size: 1.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    margin-top: 8px;
-    transition: background 0.2s;
+    flex-shrink: 0;
+    transition: all 0.2s;
   }
-  .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+  .avatar-btn:hover { background: rgba(255, 255, 255, 0.12); }
+  .avatar-btn.selected {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: var(--cyan-glow);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+    transform: scale(1.08);
+  }
 
-  .divider-or {
+  /* Pill Radio Options */
+  .pill-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .pill-option {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .pill-option:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .pill-option.selected {
+    background: linear-gradient(135deg, #00f2fe 0%, #0a84ff 100%);
+    border-color: var(--cyan-glow);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 242, 254, 0.35);
+  }
+
+  /* Room Code Display in Waiting Room */
+  .room-code-display {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin: 16px 0;
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
   }
-  .divider-or::before, .divider-or::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--border-soft);
+  .room-code-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--cyan-glow);
+    font-family: monospace;
   }
 
-  /* Lobby Roster */
+  /* Roster Grid */
   .roster-grid {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: 100%;
     margin-bottom: 16px;
   }
-
   .roster-player {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-soft);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
+    padding: 10px 14px;
+    transition: background 0.2s;
   }
   .roster-player-info {
     display: flex;
@@ -369,49 +385,18 @@
     gap: 10px;
   }
   .roster-avatar { font-size: 1.3rem; }
-  .roster-name { font-size: 0.95rem; font-weight: 700; }
+  .roster-name { font-weight: 700; font-size: 0.95rem; }
   .roster-tag {
-    font-size: 0.70rem;
-    font-weight: 700;
-    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
     border-radius: 999px;
-    background: rgba(0, 242, 254, 0.15);
-    color: var(--cyan-glow);
+    background: rgba(255, 214, 10, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid rgba(255, 214, 10, 0.3);
   }
 
-  /* Options Grid */
-  .options-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  .options-row:last-child { border-bottom: none; }
-  .opt-label { font-size: 0.88rem; font-weight: 600; color: #ddd; }
-  .opt-select {
-    background: #1e2230;
-    border: 1px solid var(--border-soft);
-    color: #ffffff;
-    padding: 7px 12px;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    outline: none;
-    cursor: pointer;
-  }
-  .opt-select:focus {
-    border-color: var(--cyan-glow);
-  }
-  .opt-select option {
-    background: #171a24;
-    color: #ffffff;
-    padding: 8px 12px;
-  }
-
-  /* ==========================================================================
-     GAMEPLAY SCREEN STYLING
-     ========================================================================== */
+  /* In-Game Status Bar */
   .game-status-bar {
     width: 100%;
     display: flex;
@@ -420,71 +405,65 @@
     background: var(--card-bg);
     border: 1px solid var(--border-soft);
     border-radius: 16px;
-    padding: 10px 16px;
+    padding: 12px 18px;
     margin-bottom: 14px;
   }
-
   .status-badge {
     display: flex;
     flex-direction: column;
   }
-  .status-badge .sub-label {
-    font-size: 0.68rem;
+  .sub-label {
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
   }
-  .status-badge .main-val {
+  .main-val {
     font-size: 1.15rem;
-    font-weight: 900;
+    font-weight: 800;
     color: #fff;
   }
 
   /* Role Banner */
   .role-banner {
     width: 100%;
-    padding: 10px 16px;
+    padding: 12px 16px;
     border-radius: 14px;
-    text-align: center;
-    font-size: 0.88rem;
+    font-size: 0.92rem;
     font-weight: 700;
-    margin-bottom: 14px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    gap: 10px;
+    margin-bottom: 14px;
+    border: 1px solid transparent;
   }
   .role-banner.psychic {
-    background: linear-gradient(135deg, rgba(255, 126, 64, 0.25) 0%, rgba(255, 88, 88, 0.25) 100%);
-    border: 1px solid rgba(255, 126, 64, 0.4);
-    color: #ff9e79;
+    background: linear-gradient(135deg, rgba(191, 90, 242, 0.2) 0%, rgba(10, 132, 255, 0.15) 100%);
+    border-color: rgba(191, 90, 242, 0.4);
+    color: #fff;
   }
   .role-banner.guesser {
-    background: linear-gradient(135deg, rgba(0, 242, 254, 0.2) 0%, rgba(79, 172, 254, 0.2) 100%);
-    border: 1px solid rgba(0, 242, 254, 0.35);
-    color: #7be4ff;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(10, 132, 255, 0.15) 100%);
+    border-color: rgba(0, 242, 254, 0.35);
+    color: #fff;
   }
 
-  /* Spectrum Card Component */
+  /* Spectrum Poles Card */
   .spectrum-card {
     width: 100%;
-    position: relative;
-    background: var(--card-surface);
-    border: 2px solid var(--border-soft);
+    background: var(--card-bg);
+    border: 1px solid var(--border-soft);
     border-radius: 20px;
-    padding: 16px 14px;
-    margin-bottom: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   }
-
   .spectrum-pole {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -495,14 +474,13 @@
     min-height: 72px;
   }
   .spectrum-pole.left {
-    background: linear-gradient(135deg, rgba(0, 242, 254, 0.16) 0%, rgba(79, 172, 254, 0.08) 100%);
-    border: 1px solid rgba(0, 242, 254, 0.25);
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.16) 0%, rgba(10, 132, 255, 0.08) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.3);
   }
   .spectrum-pole.right {
-    background: linear-gradient(135deg, rgba(255, 126, 64, 0.16) 0%, rgba(255, 88, 88, 0.08) 100%);
-    border: 1px solid rgba(255, 126, 64, 0.25);
+    background: linear-gradient(135deg, rgba(255, 126, 64, 0.16) 0%, rgba(255, 59, 48, 0.08) 100%);
+    border: 1px solid rgba(255, 126, 64, 0.3);
   }
-
   .pole-label {
     font-size: 0.68rem;
     font-weight: 800;
@@ -512,24 +490,18 @@
   }
   .pole-label.left { color: var(--cyan-glow); }
   .pole-label.right { color: var(--orange-glow); }
-
   .pole-concept {
     font-size: clamp(0.92rem, 3vw, 1.15rem);
     font-weight: 800;
     color: #fff;
     line-height: 1.25;
   }
-
   .spectrum-middle {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    color: var(--text-muted);
+    font-size: 1.2rem;
+    color: var(--text-secondary);
   }
 
-  /* Dial Board Stage */
+  /* Dial Stage */
   .dial-stage {
     width: 100%;
     position: relative;
@@ -544,6 +516,15 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
     touch-action: none;
   }
+  .sync-indicator {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-size: 0.75rem;
+    color: var(--cyan-glow);
+    font-weight: 700;
+    pointer-events: none;
+  }
 
   .dial-svg-container {
     width: 100%;
@@ -552,9 +533,7 @@
     position: relative;
     cursor: grab;
   }
-  .dial-svg-container.dragging {
-    cursor: grabbing;
-  }
+  .dial-svg-container.dragging { cursor: grabbing; }
 
   svg.dial-svg {
     width: 100%;
@@ -562,7 +541,7 @@
     overflow: visible;
   }
 
-  /* Shutter Screen Animation */
+  /* Shutter Cover */
   .shutter-cover {
     transition: transform 0.8s cubic-bezier(0.2, 0.9, 0.2, 1), opacity 0.4s ease;
     transform-origin: 200px 200px;
@@ -570,19 +549,6 @@
   .shutter-cover.opened {
     transform: scale(0.01);
     opacity: 0;
-  }
-
-  /* Dial Wheel Spin Animation */
-  @keyframes dialWheelSpin {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(14deg); }
-    55% { transform: rotate(-9deg); }
-    80% { transform: rotate(4deg); }
-    100% { transform: rotate(0deg); }
-  }
-  .dial-spinning {
-    animation: dialWheelSpin 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-    transform-origin: 200px 200px;
   }
 
   /* Fine-tuning Stepper Buttons */
@@ -595,7 +561,6 @@
     width: 100%;
     max-width: 420px;
   }
-
   .step-btn {
     flex: 1;
     background: rgba(255, 255, 255, 0.06);
@@ -609,198 +574,140 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
     transition: background 0.15s, transform 0.1s;
   }
-  .step-btn:hover { background: rgba(255, 255, 255, 0.12); }
+  .step-btn:hover { background: rgba(255, 255, 255, 0.14); }
   .step-btn:active { transform: scale(0.96); }
 
   .dial-value-badge {
-    padding: 4px 12px;
+    padding: 6px 14px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-soft);
-    border-radius: 999px;
-    font-size: 0.82rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
     font-weight: 800;
     color: var(--cyan-glow);
     min-width: 60px;
     text-align: center;
   }
 
-  /* Clue Box Component */
+  /* Clue Action Box */
   .clue-box {
     width: 100%;
-    background: var(--card-surface);
-    border: 1px solid var(--border-soft);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 16px;
-    text-align: center;
-  }
-
-  .clue-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .clue-text {
-    font-size: 1.35rem;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -0.01em;
-    line-height: 1.25;
-  }
-
-  /* Psychic Clue Form */
-  .psychic-form {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .hint-helper {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-    text-align: left;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 8px 12px;
-    border-radius: 10px;
-  }
-
-  /* Live Dial Sync Indicator */
-  .sync-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--cyan-glow);
-    margin-bottom: 8px;
-    min-height: 18px;
-  }
-
-  /* Reveal Result Banner */
-  .reveal-card {
-    width: 100%;
     background: var(--card-bg);
-    border: 2px solid var(--gold-glow);
+    border: 1px solid var(--border-soft);
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 16px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(255, 210, 0, 0.15);
-    display: none;
-    animation: popIn 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   }
-  @keyframes popIn {
-    0% { transform: scale(0.92); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+  .clue-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .clue-text {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.3;
+    margin: 6px 0;
+  }
+  .hint-helper {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    line-height: 1.4;
   }
 
-  .reveal-points {
-    font-size: 2.4rem;
-    font-weight: 900;
-    margin-bottom: 4px;
+  /* Reveal Result Card */
+  .reveal-card {
+    width: 100%;
+    background: var(--card-bg);
+    border: 2px solid var(--border-glow);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 16px;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(0, 242, 254, 0.2);
+    display: none;
+    animation: fadeInScreen 0.3s ease-out;
   }
-  .reveal-points.p4 { color: var(--score-4); text-shadow: 0 0 20px rgba(255,210,0,0.5); }
-  .reveal-points.p3 { color: var(--score-3); }
-  .reveal-points.p2 { color: var(--score-2); }
-  .reveal-points.p0 { color: #a1a1a6; }
+  .reveal-points {
+    display: inline-block;
+    font-size: 2.2rem;
+    font-weight: 900;
+    padding: 6px 20px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .reveal-points.p4 { background: rgba(255, 214, 10, 0.2); color: var(--score-4); border: 2px solid var(--score-4); box-shadow: 0 0 20px rgba(255, 214, 10, 0.4); }
+  .reveal-points.p3 { background: rgba(255, 159, 10, 0.2); color: var(--score-3); border: 2px solid var(--score-3); }
+  .reveal-points.p2 { background: rgba(255, 69, 58, 0.2); color: var(--score-2); border: 2px solid var(--score-2); }
+  .reveal-points.p0 { background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.2); }
 
   .reveal-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: #fff;
     margin-bottom: 6px;
   }
   .reveal-desc {
-    font-size: 0.88rem;
-    color: var(--text-muted);
-    line-height: 1.4;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
   }
 
-  /* Round History Drawer */
+  /* History Drawer */
   .history-drawer {
     width: 100%;
     background: var(--card-bg);
     border: 1px solid var(--border-soft);
-    border-radius: 18px;
-    padding: 16px;
-    margin-top: 10px;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
   }
   .history-header {
+    padding: 14px 18px;
+    font-size: 0.88rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.8rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
     cursor: pointer;
+    background: rgba(255, 255, 255, 0.03);
   }
   .history-list {
+    padding: 10px 14px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 12px;
   }
   .history-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-soft);
     padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 10px;
-    font-size: 0.82rem;
-  }
-  .history-item-left {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .history-clue { font-weight: 700; color: #fff; }
-  .history-poles { font-size: 0.72rem; color: var(--text-muted); }
-  .history-score {
-    font-weight: 800;
-    font-size: 0.95rem;
-    padding: 4px 8px;
-    border-radius: 6px;
-  }
-  .history-score.pts-4 { background: rgba(255,210,0,0.15); color: var(--score-4); }
-  .history-score.pts-3 { background: rgba(255,159,10,0.15); color: var(--score-3); }
-  .history-score.pts-2 { background: rgba(255,69,58,0.15); color: var(--score-2); }
-  .history-score.pts-0 { background: rgba(255,255,255,0.06); color: #8e8e93; }
-
-  /* Game Over Modal / Screen */
-  .gameover-badge {
-    font-size: 3.5rem;
-    margin-bottom: 8px;
-    animation: bounce 1.5s infinite;
-  }
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    font-size: 0.85rem;
   }
 
+  /* Game Over Screen */
+  .gameover-badge { font-size: 4rem; margin-bottom: 10px; }
   .rank-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 18px;
+    padding: 8px 20px;
     border-radius: 999px;
-    background: linear-gradient(135deg, rgba(0, 242, 254, 0.2) 0%, rgba(255, 126, 64, 0.2) 100%);
+    background: rgba(0, 242, 254, 0.15);
     border: 1px solid var(--cyan-glow);
     color: #fff;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     margin: 12px 0 20px;
   }
@@ -818,15 +725,14 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 100;
+    z-index: 1000;
   }
   .modal-overlay.active { display: flex; }
-
   .modal-card {
     width: 100%;
     max-width: 480px;
-    background: #181a24;
-    border: 1px solid var(--border-soft);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 24px;
     padding: 24px;
     max-height: 85vh;
@@ -841,413 +747,403 @@
     align-items: center;
     justify-content: space-between;
   }
-
-  /* Sound FX Toggle */
-  .sound-btn {
-    font-size: 1.1rem;
-    cursor: pointer;
-  }
-
-  /* Responsive Adjustments for Mobile */
-  @media (max-width: 480px) {
-    .navbar { padding: 12px 16px; }
-    .card-box { padding: 18px 14px; }
-    .spectrum-card { padding: 12px 10px; }
-    .spectrum-pole { padding: 8px 6px; min-height: 64px; }
-    .pole-concept { font-size: 0.88rem; }
-  }
 </style>
 </head>
 <body>
 
-<!-- Navigation Header -->
-<header class="navbar">
-  <div class="nav-left">
-    <a href="index.html" class="back-btn" title="Back to Games Hub">← Hub</a>
-    <div class="brand-tag">
-      <span>📻</span>
-      <span>WAVELENGTH</span>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Top Navbar Strip -->
+<header class="top-navbar">
+  <a href="index.html" class="nav-brand">
+    <span>ðŸ“»</span>
+    <span>WAVELENGTH</span>
+  </a>
+
+  <div class="nav-controls">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8e8e93;">
+      <span class="network-status-dot disconnected" id="network-dot"></span>
+      <span id="room-code-tag">No Room</span>
     </div>
-  </div>
-  <div class="nav-right">
-    <div class="net-badge" id="net-badge">
-      <span class="net-dot" id="net-dot"></span>
-      <span id="net-text">Offline</span>
-    </div>
-    <button class="btn-icon sound-btn" id="sound-toggle-btn" title="Toggle Sound" onclick="toggleSound()">🔊</button>
-    <button class="btn-icon" title="Rules & How to Play" onclick="openRulesModal()">❓</button>
+    <button class="nav-pill-btn" onclick="toggleSound()" id="sound-btn">ðŸ”Š</button>
+    <button class="nav-pill-btn" onclick="openRulesModal()">â“ Rules</button>
+    <a href="index.html" class="nav-pill-btn">Exit</a>
   </div>
 </header>
 
-<!-- ==========================================================================
-     SCREEN 1: LOBBY & SETUP SCREEN
-     ========================================================================== -->
-<main class="screen active" id="lobby-screen">
-  <div class="hero-badge">Mind-Reading Party Game</div>
-  <h1 class="title">Tune In To The Same Wavelength</h1>
-  <p class="tagline">Work together or battle it out across a spectrum of opposites. Built for 2, 3, or more players on phones and laptops.</p>
+<div class="app-container">
 
-  <!-- Player Profile Card -->
-  <div class="card-box">
-    <div class="section-label">
-      <span>1. Your Player Profile</span>
-    </div>
-    <div class="input-row">
-      <input type="text" id="player-name-input" class="text-field" placeholder="Enter your name" maxlength="15" autocomplete="off">
-    </div>
-    <div class="section-label">Choose Avatar</div>
-    <div class="avatar-row" id="avatar-picker-row"></div>
-  </div>
+  <!-- =========================================================================
+       SCREEN 1: WELCOME & ROOM LOBBY
+       ========================================================================= -->
+  <main id="lobby-screen" class="screen active">
+    <div class="hero-badge">Mind-Reading Party Game</div>
+    <h1>Wavelength Online</h1>
+    <p class="subtitle">Join a room on your phone! Read your friends' minds across a spectrum of opposites.</p>
 
-  <!-- Game Mode Selection (Co-op vs Competitive) -->
-  <div class="card-box">
-    <div class="section-label">
-      <span>2. Game Mode (2 or 3 Players)</span>
-    </div>
-    <div class="mode-selector">
-      <div class="mode-card active" id="mode-coop-card" onclick="selectGameMode('coop')">
-        <div class="mode-icon">🤝</div>
-        <div class="mode-title">Cooperative</div>
-        <div class="mode-desc">Work together as a team across 7 rounds to reach telepathic greatness!</div>
-      </div>
-      <div class="mode-card" id="mode-comp-card" onclick="selectGameMode('competitive')">
-        <div class="mode-icon">⚔️</div>
-        <div class="mode-title">Competitive</div>
-        <div class="mode-desc">Compete for individual points! First to 12 points wins the match.</div>
-      </div>
-    </div>
+    <!-- 1A: Entry Box (Visible when NOT in a room) -->
+    <div class="card-box" id="entry-box">
+      <label class="input-label">Your Player Name</label>
+      <input type="text" class="text-input" id="player-name-input" maxlength="15" placeholder="Enter your name" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
 
-    <!-- Match Settings -->
-    <div class="options-row">
-      <span class="opt-label">Rounds Per Match</span>
-      <select id="rounds-select" class="opt-select">
-        <option value="5">5 Rounds (Quick)</option>
-        <option value="7" selected>7 Rounds (Standard)</option>
-        <option value="10">10 Rounds (Full Game)</option>
-      </select>
-    </div>
-    <div class="options-row">
-      <span class="opt-label">Card Category</span>
-      <select id="category-select" class="opt-select">
-        <option value="all" selected>All Categories (160+ Cards)</option>
-        <option value="everyday">Everyday &amp; Life</option>
-        <option value="popculture">Pop Culture &amp; Movies</option>
-        <option value="deep">Spicy &amp; Deep Debates</option>
-      </select>
-    </div>
-  </div>
+      <label class="input-label">Choose Avatar</label>
+      <div class="avatar-row" id="avatar-picker-row"></div>
 
-  <!-- Multiplayer Room Host / Join Card -->
-  <div class="card-box">
-    <div class="section-label">
-      <span>3. Play Online or Pass &amp; Play</span>
-    </div>
-
-    <!-- Host Room Button -->
-    <button class="btn-primary" onclick="createOnlineRoom()">
-      <span>🌐</span> Create Online Room
-    </button>
-
-    <div class="divider-or">OR JOIN EXISTING ROOM</div>
-
-    <div class="input-row">
-      <input type="text" id="join-room-input" class="text-field" placeholder="Enter Room Code (e.g. WAVE-123)" maxlength="12" style="text-transform: uppercase;">
-      <button class="btn-primary" style="width: auto; padding: 12px 20px;" onclick="joinOnlineRoom()">Join</button>
-    </div>
-
-    <div class="divider-or">OR SAME DEVICE</div>
-
-    <button class="btn-secondary" onclick="startPassAndPlay()">
-      <span>📱</span> Play Pass &amp; Play (Single Phone)
-    </button>
-  </div>
-
-  <!-- Waiting Room / Roster Card (Visible Once in Room) -->
-  <div class="card-box" id="lobby-roster-box" style="display: none;">
-    <div class="section-label">
-      <span>Room Code: <strong id="lobby-room-code-tag" style="color: var(--cyan-glow); font-size: 1.1rem; letter-spacing: 0.05em;">WAVE-123</strong></span>
-      <button class="btn-secondary" style="width: auto; padding: 4px 10px; margin: 0; font-size: 0.75rem;" onclick="copyRoomLink()">📋 Copy Link</button>
-    </div>
-    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Share the room code or link with 1 or 2 friends to connect live:</p>
-    <div class="roster-grid" id="lobby-roster-list"></div>
-    <button class="btn-primary" id="lobby-start-game-btn" onclick="requestStartGame()">
-      <span>🚀</span> Start Game Now
-    </button>
-  </div>
-</main>
-
-<!-- ==========================================================================
-     SCREEN 2: GAMEPLAY SCREEN
-     ========================================================================== -->
-<main class="screen" id="game-screen">
-  <!-- Game Top Bar -->
-  <div class="game-status-bar">
-    <div class="status-badge">
-      <span class="sub-label">Round</span>
-      <span class="main-val" id="hud-round">1 / 7</span>
-    </div>
-    <div class="status-badge" style="text-align: center;">
-      <span class="sub-label" id="hud-score-label">Team Score</span>
-      <span class="main-val" id="hud-score" style="color: var(--gold-glow);">0 Pts</span>
-    </div>
-    <div class="status-badge" style="text-align: right;">
-      <span class="sub-label">Room</span>
-      <span class="main-val" id="hud-room" style="font-size: 0.95rem; color: var(--cyan-glow);">WAVE-123</span>
-    </div>
-  </div>
-
-  <!-- Role Banner -->
-  <div class="role-banner psychic" id="role-banner">
-    <span id="role-banner-icon">🔮</span>
-    <span id="role-banner-text">You are the Psychic! Think of a clue for the target.</span>
-  </div>
-
-  <!-- Spectrum Opposites Card -->
-  <div class="spectrum-card">
-    <div class="spectrum-pole left">
-      <div class="pole-label left">◀ Left (0%)</div>
-      <div class="pole-concept" id="pole-left-text">Cold</div>
-    </div>
-    <div class="spectrum-middle">
-      <span>⚡</span>
-    </div>
-    <div class="spectrum-pole right">
-      <div class="pole-label right">Right (100%) ▶</div>
-      <div class="pole-concept" id="pole-right-text">Hot</div>
-    </div>
-  </div>
-
-  <!-- Dial Gauge Stage -->
-  <div class="dial-stage">
-    <!-- Live sync message -->
-    <div class="sync-indicator" id="sync-indicator"></div>
-
-    <div class="dial-svg-container" id="dial-svg-container">
-      <svg class="dial-svg" viewBox="0 0 400 230" id="dial-svg">
-        <defs>
-          <!-- Gradients for Dial Frame and Target Wedges -->
-          <linearGradient id="frame-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#00f2fe"/>
-            <stop offset="50%" stop-color="#4facfe"/>
-            <stop offset="100%" stop-color="#ff7e40"/>
-          </linearGradient>
-
-          <linearGradient id="shutter-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#242838"/>
-            <stop offset="100%" stop-color="#12141c"/>
-          </linearGradient>
-
-          <filter id="glow-needle" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff3b30" flood-opacity="0.8"/>
-          </filter>
-          <filter id="glow-target" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffd200" flood-opacity="0.7"/>
-          </filter>
-        </defs>
-
-        <!-- Semicircular Outer Housing Arc -->
-        <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="#25293a" stroke-width="32" stroke-linecap="round"/>
-        <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="url(#frame-gradient)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
-
-        <!-- Tick Marks around the Arc -->
-        <g id="dial-ticks" opacity="0.4"></g>
-
-        <!-- TARGET WEDGES GROUP (Target slices generated dynamically) -->
-        <g id="target-wedges-group" style="display: none;"></g>
-
-        <!-- SLIDING SHUTTER COVER (Conceals target until revealed) -->
-        <g id="shutter-cover" class="shutter-cover">
-          <path d="M 36 200 A 164 164 0 0 1 364 200 Z" fill="url(#shutter-gradient)" stroke="#383d52" stroke-width="2"/>
-          <!-- Shutter decorative blinds / louvers -->
-          <path d="M 52 200 A 148 148 0 0 1 348 200" fill="none" stroke="#313649" stroke-width="2"/>
-          <path d="M 72 200 A 128 128 0 0 1 328 200" fill="none" stroke="#2a2e40" stroke-width="2"/>
-          <path d="M 96 200 A 104 104 0 0 1 304 200" fill="none" stroke="#232736" stroke-width="2"/>
-          <!-- Center emblem -->
-          <circle cx="200" cy="180" r="16" fill="#181a24" stroke="#383d52" stroke-width="1.5"/>
-          <text x="200" y="184" text-anchor="middle" font-size="12" fill="#8e8e93" font-weight="bold">🔒</text>
-        </g>
-
-        <!-- DIAL NEEDLE GROUP (Rotates 0° to 180°, centered at 90°) -->
-        <g id="needle-group" transform="rotate(0, 200, 200)">
-          <!-- Needle Pointer Line -->
-          <line x1="200" y1="200" x2="200" y2="16" stroke="#ff3b30" stroke-width="4" stroke-linecap="round" filter="url(#glow-needle)"/>
-          <line x1="200" y1="200" x2="200" y2="24" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-
-          <!-- Top Needle Knob for Touch Dragging -->
-          <circle cx="200" cy="18" r="14" fill="#ff3b30" stroke="#ffffff" stroke-width="2.5" filter="url(#glow-needle)"/>
-          <circle cx="200" cy="18" r="5" fill="#ffffff"/>
-        </g>
-
-        <!-- Center Hub Pivot -->
-        <circle cx="200" cy="200" r="28" fill="#1a1c26" stroke="#4facfe" stroke-width="2.5"/>
-        <circle cx="200" cy="200" r="12" fill="#ff3b30"/>
-        <circle cx="200" cy="200" r="4" fill="#ffffff"/>
-      </svg>
-    </div>
-
-    <!-- Fine Tuning Stepper Bar -->
-    <div class="stepper-bar" id="stepper-bar">
-      <button class="step-btn" onclick="stepNeedle(-5)" title="Step -5°">◀◀ -5°</button>
-      <button class="step-btn" onclick="stepNeedle(-1)" title="Step -1°">◀ -1°</button>
-      <div class="dial-value-badge" id="dial-angle-display" onclick="resetNeedleCenter()" title="Click to snap to Center (50%)" style="cursor: pointer;">50%</div>
-      <button class="step-btn" onclick="stepNeedle(1)" title="Step +1°">+1° ▶</button>
-      <button class="step-btn" onclick="stepNeedle(5)" title="Step +5°">+5° ▶▶</button>
-    </div>
-  </div>
-
-  <!-- Clue Container Box (States: Clue Input for Psychic, Clue Display for Guessers) -->
-  <div class="clue-box" id="clue-box">
-    <!-- State A: Psychic Form -->
-    <div class="psychic-form" id="psychic-clue-form" style="display: none;">
-      <div class="clue-label">🔮 You Are The Psychic</div>
-      <p style="font-size: 0.88rem; color: #fff; line-height: 1.35; margin-bottom: 6px;">
-        Look at the target highlighted on the dial above! Give a <strong>one-sentence clue</strong> that lands at that exact position:
-      </p>
-      <input type="text" id="clue-input-field" class="text-field" placeholder='e.g. "A steaming mug of fresh coffee"' maxlength="60" autocomplete="off">
-      <div style="display: flex; gap: 8px;">
-        <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="rerollSpectrumCard()" title="Draw a different spectrum card">🔄 New Card</button>
-        <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="spinTargetWheel()" title="Spin the dial to a new target position">🎲 Spin Target</button>
-        <button class="btn-primary" style="flex: 2; padding: 11px;" onclick="submitPsychicClue()">✅ Submit Clue</button>
-      </div>
-      <div class="hint-helper">
-        💡 <strong>Clue Rules:</strong> Be creative! You can give any concept, movie, celebrity, object, or feeling, but do not use words from the poles directly.
-      </div>
-    </div>
-
-    <!-- State B: Waiting for Clue (Guesser View) -->
-    <div id="guesser-waiting-box" style="display: none;">
-      <div class="clue-label">⏳ Waiting for Psychic</div>
-      <div class="clue-text" id="waiting-psychic-name" style="color: var(--cyan-glow); font-size: 1.15rem;">
-        Waiting for psychic to tune in and give a clue...
-      </div>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
-        Discuss with your teammate while the psychic selects their clue!
-      </p>
       <div style="margin-top: 10px;">
-        <button class="btn-secondary" style="font-size: 0.82rem; padding: 7px 14px;" onclick="spinTargetWheel()" title="Spin the dial wheel for the psychic">
-          🎲 Spin Wheel for Psychic
+        <button class="btn-primary" onclick="createOnlineRoom()">
+          <span>ðŸŒ</span> Create Online Room
+        </button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin: 18px 0;">
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        <span style="font-size: 0.8rem; color: #8e8e93; font-weight: 700;">OR JOIN ROOM</span>
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <input type="text" class="text-input" id="room-code-input" maxlength="8" placeholder="ROOM CODE" style="text-transform: uppercase; margin-bottom: 0; font-weight: 800; letter-spacing: 0.1em; text-align: center;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+        <button class="btn-secondary" onclick="joinOnlineRoom()" style="white-space: nowrap; font-weight: 700;">Join Room â†’</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin: 18px 0;">
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        <span style="font-size: 0.8rem; color: #8e8e93; font-weight: 700;">OR PASS &amp; PLAY</span>
+        <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+      </div>
+
+      <button class="btn-secondary" style="width: 100%;" onclick="startPassAndPlay()">
+        <span>ðŸ“±</span> Play Pass &amp; Play (Single Phone)
+      </button>
+    </div>
+
+    <!-- 1B: Active Room Dashboard (Visible once joined) -->
+    <div class="card-box" id="room-dashboard" style="display: none;">
+      <div class="room-code-display">
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--cyan-glow); font-weight: 800; letter-spacing: 0.06em;">Room Code</div>
+          <div class="room-code-val" id="display-room-code">----</div>
+        </div>
+        <button class="btn-secondary" onclick="copyRoomLink()" style="background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.35); color: #fff;">
+          <span>ðŸ”— Share Link</span>
+        </button>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="host-settings-panel">
+        <div class="card-box-header">
+          <span>Game Settings</span>
+          <span style="font-size: 0.75rem; color: var(--accent-gold);" id="host-indicator">ðŸ‘‘ You are the Host</span>
+        </div>
+
+        <label class="input-label">Game Mode</label>
+        <div class="pill-group" id="mode-pill-group">
+          <div class="pill-option selected" id="pill-mode-coop" onclick="selectGameMode('coop')">ðŸ¤ Cooperative</div>
+          <div class="pill-option" id="pill-mode-comp" onclick="selectGameMode('competitive')">âš”ï¸ Competitive</div>
+        </div>
+
+        <label class="input-label">Rounds Per Match</label>
+        <div class="pill-group" id="rounds-pill-group">
+          <div class="pill-option" id="pill-rounds-5" onclick="setRounds(5)">5 Rounds</div>
+          <div class="pill-option selected" id="pill-rounds-7" onclick="setRounds(7)">7 Rounds</div>
+          <div class="pill-option" id="pill-rounds-10" onclick="setRounds(10)">10 Rounds</div>
+        </div>
+
+        <label class="input-label">Card Category</label>
+        <div class="pill-group" id="cat-pill-group">
+          <div class="pill-option selected" id="pill-cat-all" onclick="setCategory('all')">All (160+)</div>
+          <div class="pill-option" id="pill-cat-everyday" onclick="setCategory('everyday')">Everyday</div>
+          <div class="pill-option" id="pill-cat-popculture" onclick="setCategory('popculture')">Pop Culture</div>
+          <div class="pill-option" id="pill-cat-deep" onclick="setCategory('deep')">Spicy &amp; Deep</div>
+        </div>
+      </div>
+
+      <!-- Joined Players Roster -->
+      <div class="card-box-header">
+        <span>Players in Room</span>
+        <span id="roster-count-badge">1 Player</span>
+      </div>
+      <div class="roster-grid" id="roster-grid"></div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn-primary" id="start-game-btn" onclick="requestStartGame()">Start Game ðŸš€</button>
+        <div id="guest-waiting-msg" style="display: none; text-align: center; color: var(--accent-gold); font-size: 0.95rem; font-weight: 700; margin-top: 10px; padding: 12px; background: rgba(255, 214, 10, 0.08); border-radius: 12px; border: 1px solid rgba(255, 214, 10, 0.2);">
+          â³ Waiting for Host to start the game...
+        </div>
+        <p id="min-players-hint" style="font-size: 0.8rem; color: #8e8e93; margin-top: 8px; text-align: center;">Recommended 2+ players for online play</p>
+      </div>
+
+      <button class="btn-secondary" style="width: 100%; margin-top: 14px;" onclick="leaveRoom()">
+        â† Leave Room
+      </button>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       SCREEN 2: GAMEPLAY SCREEN
+       ========================================================================= -->
+  <main class="screen" id="game-screen">
+    <!-- Top HUD Bar -->
+    <div class="game-status-bar">
+      <div class="status-badge">
+        <span class="sub-label">Round</span>
+        <span class="main-val" id="hud-round">1 / 7</span>
+      </div>
+      <div class="status-badge" style="text-align: center;">
+        <span class="sub-label" id="hud-score-label">Team Score</span>
+        <span class="main-val" id="hud-score" style="color: var(--score-4);">0 Pts</span>
+      </div>
+      <div class="status-badge" style="text-align: right;">
+        <span class="sub-label">Room</span>
+        <span class="main-val" id="hud-room" style="font-size: 0.95rem; color: var(--cyan-glow);">WAVE-123</span>
+      </div>
+    </div>
+
+    <!-- Role & Status Banner -->
+    <div class="role-banner psychic" id="role-banner">
+      <span id="role-banner-icon">ðŸ”®</span>
+      <span id="role-banner-text">You are the Psychic! Think of a clue for the target.</span>
+    </div>
+
+    <!-- Spectrum Opposites Card -->
+    <div class="spectrum-card">
+      <div class="spectrum-pole left">
+        <div class="pole-label left">â—€ Left (0%)</div>
+        <div class="pole-concept" id="pole-left-text">Cold</div>
+      </div>
+      <div class="spectrum-middle">
+        <span>âš¡</span>
+      </div>
+      <div class="spectrum-pole right">
+        <div class="pole-label right">Right (100%) â–¶</div>
+        <div class="pole-concept" id="pole-right-text">Hot</div>
+      </div>
+    </div>
+
+    <!-- Dial Gauge Board -->
+    <div class="dial-stage">
+      <div class="sync-indicator" id="sync-indicator"></div>
+
+      <div class="dial-svg-container" id="dial-svg-container">
+        <svg class="dial-svg" viewBox="0 0 400 230" id="dial-svg">
+          <defs>
+            <linearGradient id="frame-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00f2fe"/>
+              <stop offset="50%" stop-color="#0a84ff"/>
+              <stop offset="100%" stop-color="#ff7e40"/>
+            </linearGradient>
+
+            <linearGradient id="shutter-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#242838"/>
+              <stop offset="100%" stop-color="#12141c"/>
+            </linearGradient>
+
+            <filter id="glow-needle" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#ff3b30" flood-opacity="0.8"/>
+            </filter>
+            <filter id="glow-target" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffd60a" flood-opacity="0.7"/>
+            </filter>
+          </defs>
+
+          <!-- Outer Housing Arc -->
+          <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="#25293a" stroke-width="32" stroke-linecap="round"/>
+          <path d="M 20 200 A 180 180 0 0 1 380 200" fill="none" stroke="url(#frame-gradient)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+
+          <!-- Dial Tick Marks -->
+          <g id="dial-ticks" opacity="0.4"></g>
+
+          <!-- TARGET WEDGES GROUP (Target slices generated dynamically) -->
+          <g id="target-wedges-group" style="display: none;"></g>
+
+          <!-- SLIDING SHUTTER COVER (Conceals target until revealed) -->
+          <g id="shutter-cover" class="shutter-cover">
+            <path d="M 36 200 A 164 164 0 0 1 364 200 Z" fill="url(#shutter-gradient)" stroke="#383d52" stroke-width="2"/>
+            <path d="M 52 200 A 148 148 0 0 1 348 200" fill="none" stroke="#313649" stroke-width="2"/>
+            <path d="M 72 200 A 128 128 0 0 1 328 200" fill="none" stroke="#2a2e40" stroke-width="2"/>
+            <path d="M 96 200 A 104 104 0 0 1 304 200" fill="none" stroke="#232736" stroke-width="2"/>
+            <circle cx="200" cy="180" r="16" fill="#181a24" stroke="#383d52" stroke-width="1.5"/>
+            <text x="200" y="184" text-anchor="middle" font-size="12" fill="#8e8e93" font-weight="bold">ðŸ”’</text>
+          </g>
+
+          <!-- DIAL NEEDLE GROUP (Rotates 0Â° to 180Â°, centered at 90Â°) -->
+          <g id="needle-group" transform="rotate(0, 200, 200)">
+            <line x1="200" y1="200" x2="200" y2="16" stroke="#ff3b30" stroke-width="4" stroke-linecap="round" filter="url(#glow-needle)"/>
+            <line x1="200" y1="200" x2="200" y2="24" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="200" cy="18" r="14" fill="#ff3b30" stroke="#ffffff" stroke-width="2.5" filter="url(#glow-needle)"/>
+            <circle cx="200" cy="18" r="5" fill="#ffffff"/>
+          </g>
+
+          <!-- Center Pivot -->
+          <circle cx="200" cy="200" r="28" fill="#1a1c26" stroke="#00f2fe" stroke-width="2.5"/>
+          <circle cx="200" cy="200" r="12" fill="#ff3b30"/>
+          <circle cx="200" cy="200" r="4" fill="#ffffff"/>
+        </svg>
+      </div>
+
+      <!-- Fine Tuning Stepper Bar -->
+      <div class="stepper-bar" id="stepper-bar">
+        <button class="step-btn" onclick="stepNeedle(-5)" title="Step -5Â°">â—€â—€ -5Â°</button>
+        <button class="step-btn" onclick="stepNeedle(-1)" title="Step -1Â°">â—€ -1Â°</button>
+        <div class="dial-value-badge" id="dial-angle-display" onclick="resetNeedleCenter()" title="Click to snap to Center (50%)" style="cursor: pointer;">50%</div>
+        <button class="step-btn" onclick="stepNeedle(1)" title="Step +1Â°">+1Â° â–¶</button>
+        <button class="step-btn" onclick="stepNeedle(5)" title="Step +5Â°">+5Â° â–¶â–¶</button>
+      </div>
+    </div>
+
+    <!-- Clue & Action Container -->
+    <div class="clue-box" id="clue-box">
+      <!-- State A: Psychic Form -->
+      <div id="psychic-clue-form" style="display: none; flex-direction: column;">
+        <div class="clue-label">ðŸ”® You Are The Psychic</div>
+        <p style="font-size: 0.88rem; color: #fff; line-height: 1.35; margin-bottom: 8px;">
+          Look at the target highlighted on the dial above! Enter a <strong>one-concept clue</strong> that lands at that exact position:
+        </p>
+        <input type="text" id="clue-input-field" class="text-input" placeholder='e.g. "A steaming mug of fresh coffee"' maxlength="60" autocomplete="off" autocorrect="off">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="rerollSpectrumCard()" title="Draw a different spectrum card">ðŸ”„ New Card</button>
+          <button class="btn-secondary" style="flex: 1; padding: 11px;" onclick="spinTargetWheel()" title="Spin the dial to a new target position">ðŸŽ² Spin Target</button>
+          <button class="btn-primary" style="flex: 2; padding: 11px;" onclick="submitPsychicClue()">âœ… Submit Clue</button>
+        </div>
+        <div class="hint-helper">
+          ðŸ’¡ <strong>Clue Rules:</strong> Be creative! Name any concept, movie, celebrity, object, or feeling, but do not use words from the spectrum poles directly.
+        </div>
+      </div>
+
+      <!-- State B: Waiting for Clue (Guesser View) -->
+      <div id="guesser-waiting-box" style="display: none; text-align: center;">
+        <div class="clue-label">â³ Waiting for Psychic</div>
+        <div class="clue-text" id="waiting-psychic-name" style="color: var(--cyan-glow); font-size: 1.15rem;">
+          Waiting for psychic to tune in and give a clue...
+        </div>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px;">
+          Discuss with your teammates while the psychic formulates their clue!
+        </p>
+        <div style="margin-top: 12px;">
+          <button class="btn-secondary" style="font-size: 0.82rem; padding: 8px 16px;" onclick="spinTargetWheel()" title="Spin the dial wheel for the psychic">
+            ðŸŽ² Spin Wheel for Psychic
+          </button>
+        </div>
+      </div>
+
+      <!-- State C: Clue Given (Guessing Active) -->
+      <div id="guesser-active-box" style="display: none;">
+        <div class="clue-label">ðŸ”® The Psychic's Clue</div>
+        <div class="clue-text" id="display-clue-text">"Coffee on a cold winter morning"</div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;" id="guess-instruction-text">
+          Drag the red needle to where you believe this clue lands on the spectrum!
+        </p>
+        <button class="btn-primary" id="lock-guess-btn" style="margin-top: 14px;" onclick="lockInGuess()">
+          ðŸ”’ Lock In Team Guess
         </button>
       </div>
     </div>
 
-    <!-- State C: Clue Given (Guessing Active) -->
-    <div id="guesser-active-box" style="display: none;">
-      <div class="clue-label">🔮 The Psychic's Clue</div>
-      <div class="clue-text" id="display-clue-text">"Coffee on a cold winter morning"</div>
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-        Drag the red needle to where you believe this clue lands on the spectrum!
-      </p>
-      <button class="btn-primary" id="lock-guess-btn" style="margin-top: 14px;" onclick="lockInGuess()">
-        🔒 Lock In Team Guess
+    <!-- Reveal Result Card -->
+    <div class="reveal-card" id="reveal-card">
+      <div class="reveal-points p4" id="reveal-points">+4 PTS</div>
+      <div class="reveal-title" id="reveal-title">ðŸŽ¯ Bullseye! Direct Hit!</div>
+      <div class="reveal-desc" id="reveal-desc">Your telepathic link is unbreakable! Perfect calibration.</div>
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="spinTargetWheel()" title="Re-spin target to test dial">
+          ðŸŽ² Re-spin Target
+        </button>
+        <button class="btn-primary" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
+          <span>âž¡ï¸</span> Next Round
+        </button>
+      </div>
+    </div>
+
+    <!-- Match History Drawer -->
+    <div class="history-drawer">
+      <div class="history-header" onclick="toggleHistoryDrawer()">
+        <span>ðŸ“œ Match History (<span id="history-count">0</span> Rounds)</span>
+        <span id="history-toggle-icon">â–¼</span>
+      </div>
+      <div class="history-list" id="history-list" style="display: none;"></div>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       SCREEN 3: GAME OVER SCREEN
+       ========================================================================= -->
+  <main class="screen" id="gameover-screen">
+    <div class="gameover-badge" id="gameover-emoji">ðŸ§ </div>
+    <h1 id="gameover-title">Telepathic Sync</h1>
+    <div class="rank-pill" id="gameover-rank">ðŸŒŸ Galaxy Brain (24 Pts)</div>
+
+    <p class="subtitle" id="gameover-summary" style="margin-bottom: 20px;">
+      Incredible teamwork! You finished all rounds with high psychic resonance.
+    </p>
+
+    <!-- Scoreboard -->
+    <div class="card-box" id="final-scoreboard-box">
+      <div class="card-box-header">Final Scoreboard</div>
+      <div class="roster-grid" id="gameover-roster-list"></div>
+    </div>
+
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn-primary" onclick="restartMatch()">
+        <span>ðŸ”„</span> Play Another Match
+      </button>
+      <button class="btn-secondary" onclick="returnToLobby()">
+        <span>ðŸ </span> Return to Lobby
       </button>
     </div>
-  </div>
+  </main>
 
-  <!-- Reveal Result Card -->
-  <div class="reveal-card" id="reveal-card">
-    <div class="reveal-points p4" id="reveal-points">+4 PTS</div>
-    <div class="reveal-title" id="reveal-title">🎯 Bullseye! Direct Hit!</div>
-    <div class="reveal-desc" id="reveal-desc">Your telepathic link is unbreakable! Perfect calibration.</div>
-    <div style="display: flex; gap: 8px; margin-top: 14px;">
-      <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="spinTargetWheel()" title="Re-spin the target to test dial">
-        🎲 Re-spin Target
-      </button>
-      <button class="btn-primary" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
-        <span>➡️</span> Next Round
-      </button>
-    </div>
-  </div>
+</div>
 
-  <!-- Round History Drawer -->
-  <div class="history-drawer">
-    <div class="history-header" onclick="toggleHistoryDrawer()">
-      <span>📜 Match History (<span id="history-count">0</span> Rounds)</span>
-      <span id="history-toggle-icon">▼</span>
-    </div>
-    <div class="history-list" id="history-list" style="display: none;"></div>
-  </div>
-</main>
-
-<!-- ==========================================================================
-     SCREEN 3: GAME OVER / TELEPATHY RANK SCREEN
-     ========================================================================== -->
-<main class="screen" id="gameover-screen">
-  <div class="gameover-badge" id="gameover-emoji">🧠</div>
-  <h1 class="title" id="gameover-title">Telepathic Synchronization</h1>
-  <div class="rank-pill" id="gameover-rank">🌟 Galaxy Brain (24 Pts)</div>
-
-  <p class="tagline" id="gameover-summary" style="margin-bottom: 20px;">
-    Incredible teamwork! You finished all rounds with high psychic resonance.
-  </p>
-
-  <!-- Final Scoreboard -->
-  <div class="card-box" id="final-scoreboard-box">
-    <div class="section-label">Final Scoreboard</div>
-    <div class="roster-grid" id="gameover-roster-list"></div>
-  </div>
-
-  <button class="btn-primary" onclick="restartMatch()">
-    <span>🔄</span> Play Another Match
-  </button>
-  <button class="btn-secondary" onclick="returnToLobby()">
-    <span>🏠</span> Return to Lobby
-  </button>
-</main>
-
-<!-- ==========================================================================
-     MODALS: RULES MODAL & PASS-AND-PLAY SWITCH MODAL
-     ========================================================================== -->
-<!-- Rules Modal -->
+<!-- =========================================================================
+     MODALS: RULES MODAL & LOCAL PASS AND PLAY MODAL
+     ========================================================================= -->
 <div class="modal-overlay" id="rules-modal">
   <div class="modal-card">
     <div class="modal-title">
-      <span>📻 How to Play Wavelength</span>
-      <span style="cursor: pointer;" onclick="closeRulesModal()">✖</span>
+      <span>ðŸ“» How to Play Wavelength</span>
+      <button class="nav-pill-btn" onclick="closeRulesModal()">âœ•</button>
     </div>
-    <div style="font-size: 0.9rem; color: #ddd; line-height: 1.55; display: flex; flex-direction: column; gap: 12px;">
-      <p><strong>Wavelength</strong> is a social guessing game of telepathy and spectrums.</p>
-      <div style="background: rgba(255,255,255,0.04); padding: 10px; border-radius: 10px; border-left: 3px solid var(--cyan-glow);">
-        <strong>1. The Psychic:</strong> One player secretly sees where the colored target wedge is located on the dial (from Left to Right).
-      </div>
-      <div style="background: rgba(255,255,255,0.04); padding: 10px; border-radius: 10px; border-left: 3px solid var(--orange-glow);">
-        <strong>2. The Clue:</strong> The Psychic gives a clue that represents where the target falls on the spectrum (e.g. if the spectrum is <em>Cold &lt;-&gt; Hot</em> and the target is 80% to the right, clue might be <em>"Coffee fresh out of the kettle"</em>).
-      </div>
-      <div style="background: rgba(255,255,255,0.04); padding: 10px; border-radius: 10px; border-left: 3px solid var(--gold-glow);">
-        <strong>3. The Guess:</strong> The Guessers discuss live and turn the red dial needle to where they think the clue lands!
-      </div>
-      <div style="background: rgba(255,255,255,0.04); padding: 10px; border-radius: 10px; border-left: 3px solid #32d74b;">
-        <strong>4. The Reveal &amp; Scoring:</strong>
-        <ul style="margin-left: 20px; margin-top: 4px;">
-          <li>🎯 <strong>Bullseye (Center):</strong> 4 Points</li>
-          <li>🔶 <strong>Inner Ring:</strong> 3 Points</li>
-          <li>🔴 <strong>Outer Ring:</strong> 2 Points</li>
-          <li>⚫ <strong>Miss:</strong> 0 Points</li>
-        </ul>
-      </div>
+    <div style="font-size: 0.9rem; line-height: 1.55; color: #d1d1d6;">
+      <p style="margin-bottom: 12px;"><strong>Wavelength</strong> is a party game of mind reading, empathy, and hilarious debates where two or more players try to read each other's minds across a spectrum.</p>
+
+      <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">1. The Setup</h3>
+      <p style="margin-bottom: 10px;">One player is chosen as the <strong>Psychic</strong>. The psychic secretly sees where the hidden target wedge is positioned on the dial from 0% (Left) to 100% (Right).</p>
+
+      <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">2. The Clue</h3>
+      <p style="margin-bottom: 10px;">The Psychic gives a single clue that exists at that exact position on the spectrum. For example, on the spectrum <em>Cold â—€â”€â”€â–¶ Hot</em>, a target around 85% might prompt the clue <em>"Fresh black coffee"</em>.</p>
+
+      <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">3. Calibrating The Dial</h3>
+      <p style="margin-bottom: 10px;">Teammates discuss and drag the red needle to where they think the clue lands. Fine-tune using the stepper buttons, then lock in your guess!</p>
+
+      <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">4. Scoring</h3>
+      <ul style="margin-left: 20px; margin-bottom: 16px;">
+        <li><strong style="color: var(--score-4);">ðŸŽ¯ Bullseye (Center):</strong> 4 Points</li>
+        <li><strong style="color: var(--score-3);">ðŸ”¥ Very Close (Adjacent):</strong> 3 Points</li>
+        <li><strong style="color: var(--score-2);">âš¡ Outer Edge:</strong> 2 Points</li>
+        <li><strong>âŒ Outside Target:</strong> 0 Points</li>
+      </ul>
+
+      <button class="btn-primary" onclick="closeRulesModal()">Got It, Let's Play!</button>
     </div>
-    <button class="btn-primary" style="margin-top: 18px;" onclick="closeRulesModal()">Got It!</button>
   </div>
 </div>
 
-<!-- Pass & Play Hand-Off Modal -->
-<div class="modal-overlay" id="handoff-modal">
+<div class="modal-overlay" id="pass-modal">
   <div class="modal-card" style="text-align: center;">
-    <div style="font-size: 3rem; margin-bottom: 8px;">📱</div>
-    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;" id="handoff-title">Pass Phone to Player</h2>
-    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;" id="handoff-desc">
-      Pass the device to the next player. Keep the screen hidden!
+    <div style="font-size: 3rem; margin-bottom: 8px;" id="pass-modal-avatar">ðŸ”®</div>
+    <h2 id="pass-modal-title" style="margin-bottom: 6px;">Pass Phone to Psychic</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 18px;" id="pass-modal-desc">
+      Hand the device to Player 1. Only the psychic should look at the screen!
     </p>
-    <button class="btn-primary" onclick="confirmHandoff()">I Am Ready</button>
+    <button class="btn-primary" onclick="closePassModal()">I'm Ready (Show Screen)</button>
   </div>
 </div>
 
 <script>
   /* ==========================================================================
-     1. GLOBAL CONSTANTS & EXTENSIVE SPECTRUM CARD DECK (160+ PAIRS)
+     1. SPECTRUM CARDS DATABASE (160+ CARDS)
      ========================================================================== */
-  const AVATARS = ["🧠", "🔮", "📻", "⚡", "🦊", "🦉", "🚀", "🍕", "☕", "🌊", "🎭", "💎", "🎸", "🥑", "👾"];
-
-  const SPECTRUM_CARDS = [
+const SPECTRUM_CARDS = [
     // Everyday & Life
     { left: "Cold", right: "Hot", category: "everyday" },
     { left: "Cheap", right: "Expensive", category: "everyday" },
@@ -1432,28 +1328,101 @@
   ];
 
   /* ==========================================================================
-     2. CLIENT STATE & MULTIPLAYER VARIABLES
+     2. AUDIO SYNTHESIZER (WEB AUDIO API)
      ========================================================================== */
+  let audioCtx = null;
+  let isSoundEnabled = true;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) audioCtx = new AudioContext();
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, duration, type = "sine", gainVal = 0.2) {
+    if (!isSoundEnabled) return;
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playTickSound() {
+    playTone(700, 0.03, "triangle", 0.08);
+  }
+
+  function playShutterSound() {
+    if (!isSoundEnabled) return;
+    playTone(180, 0.12, "sawtooth", 0.15);
+    setTimeout(() => playTone(120, 0.18, "sine", 0.2), 80);
+  }
+
+  function playRevealChime(points) {
+    if (!isSoundEnabled) return;
+    if (points === 4) {
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) => setTimeout(() => playTone(f, 0.35, "triangle", 0.25), i * 110));
+      launchConfetti();
+    } else if (points === 3) {
+      const notes = [440, 554.37, 659.25];
+      notes.forEach((f, i) => setTimeout(() => playTone(f, 0.28, "triangle", 0.22), i * 110));
+    } else if (points === 2) {
+      playTone(440, 0.22, "sine", 0.2);
+      setTimeout(() => playTone(554.37, 0.26, "sine", 0.2), 120);
+    } else {
+      playTone(220, 0.35, "sawtooth", 0.2);
+    }
+  }
+
+  function toggleSound() {
+    isSoundEnabled = !isSoundEnabled;
+    const btn = document.getElementById("sound-btn");
+    if (btn) btn.innerText = isSoundEnabled ? "ðŸ”Š" : "ðŸ”‡";
+  }
+
+  /* ==========================================================================
+     3. CLIENT IDENTITY & MULTIPLAYER VARIABLES
+     ========================================================================== */
+  const AVATARS = ["ðŸ§ ", "ðŸ”®", "ðŸ“»", "âš¡", "ðŸŽ¯", "ðŸ‘½", "ðŸ¦Š", "ðŸŽ²", "ðŸš€", "ðŸŽ­"];
+
+  // Tab-isolated session ID for MQTT multiplayer
+  let sessionId = "";
+  try {
+    sessionId = sessionStorage.getItem("party_wavelength_session_id") || "";
+  } catch(e) {}
+  if (!sessionId) {
+    sessionId = "wv_" + Math.random().toString(36).substring(2, 9);
+    try { sessionStorage.setItem("party_wavelength_session_id", sessionId); } catch(e) {}
+  }
+  const clientId = sessionId;
+
+  let playerName = "";
+  try {
+    playerName = localStorage.getItem("party_games_player_name") || localStorage.getItem("wavelength_player_name") || "";
+  } catch(e) {}
+  let selectedAvatar = "ðŸ§ ";
+
   let client = null;
   let isConnected = false;
   let currentRoom = "";
   let isSoloPassAndPlay = false;
-  let isSoundEnabled = true;
 
-  // Persistent Client Identity
-  let savedClientId = "";
-  try {
-    savedClientId = localStorage.getItem("wavelength_client_id") || "";
-  } catch(e) {}
-  if (!savedClientId) {
-    savedClientId = "p_" + Math.random().toString(36).substring(2, 9);
-    try { localStorage.setItem("wavelength_client_id", savedClientId); } catch(e) {}
-  }
-  const clientId = savedClientId;
-  let playerName = "";
-  let selectedAvatar = "🧠";
-
-  // Game Room State
+  // Authoritative Room & Game State
+  let roomPlayers = {}; // { [id]: { id, name, avatar, isHost, score } }
   let gameState = {
     room: "",
     hostId: "",
@@ -1464,139 +1433,70 @@
     category: "all",
     psychicIndex: 0,
     psychicId: "",
-    phase: "clue", // 'clue' | 'guess' | 'reveal'
+    playerOrder: [],
     card: { left: "Cold", right: "Hot", category: "everyday" },
-    targetAngle: 90, // Degrees: 0° to 180°
-    guessAngle: 90,  // Degrees: 0° to 180°
+    targetAngle: 90, // 0.0 to 180.0
+    guessAngle: 90,
     clue: "",
-    lastPoints: 0,
+    phase: "clue", // 'clue' | 'guess' | 'reveal'
     totalScore: 0,
-    scores: {}, // playerId -> score (in competitive mode)
+    lastPoints: 0,
+    scores: {},
     history: []
   };
 
-  let roomPlayers = {}; // id -> { id, name, avatar, isHost, score }
-
-  // Dragging interaction state
+  // Dial Dragging & Throttling
   let isDraggingNeedle = false;
+  let currentNeedleAngle = 90;
+  let lastMoveBroadcastTime = 0;
   let lastBroadcastAngle = 90;
-  let lastMoveTime = 0;
 
   /* ==========================================================================
-     3. AUDIO SYNTHESIS ENGINE (Web Audio API)
-     ========================================================================== */
-  let audioCtx = null;
-  function getAudioContext() {
-    if (!audioCtx) {
-      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtxClass) audioCtx = new AudioCtxClass();
-    }
-    if (audioCtx && audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
-    return audioCtx;
-  }
-
-  function playTickSound() {
-    if (!isSoundEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800 + Math.random() * 200, ctx.currentTime);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.03);
-    } catch(e) {}
-  }
-
-  function playShutterSound() {
-    if (!isSoundEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(150, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.35);
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
-    } catch(e) {}
-  }
-
-  function playRevealChime(pts) {
-    if (!isSoundEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const freqs = pts === 4 ? [523.25, 659.25, 783.99, 1046.50] : (pts === 3 ? [440, 554.37, 659.25] : (pts === 2 ? [392, 493.88] : [220, 196]));
-      freqs.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = pts > 0 ? "sine" : "sawtooth";
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.08);
-        gain.gain.setValueAtTime(pts > 0 ? 0.15 : 0.08, ctx.currentTime + i * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.4);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + i * 0.08);
-        osc.stop(ctx.currentTime + i * 0.08 + 0.45);
-      });
-    } catch(e) {}
-  }
-
-  function toggleSound() {
-    isSoundEnabled = !isSoundEnabled;
-    const btn = document.getElementById("sound-toggle-btn");
-    if (btn) btn.innerText = isSoundEnabled ? "🔊" : "🔇";
-  }
-
-  /* ==========================================================================
-     4. NETWORKING: MQTT REAL-TIME MULTIPLAYER (broker.emqx.io)
+     4. NETWORKING: MQTT (broker.emqx.io:8084/mqtt)
      ========================================================================== */
   function updateNetworkStatus(status) {
-    const dot = document.getElementById("net-dot");
-    const txt = document.getElementById("net-text");
-    if (!dot || !txt) return;
+    const dot = document.getElementById("network-dot");
+    const tag = document.getElementById("room-code-tag");
+    if (!dot || !tag) return;
+
     if (status === "connected") {
-      dot.className = "net-dot connected";
-      txt.innerText = currentRoom || "Connected";
+      dot.className = "network-status-dot connected";
+      tag.innerText = currentRoom || "Connected";
     } else if (status === "solo") {
-      dot.className = "net-dot solo";
-      txt.innerText = "Pass & Play";
+      dot.className = "network-status-dot solo";
+      tag.innerText = "Pass & Play";
     } else if (status === "connecting") {
-      dot.className = "net-dot";
-      txt.innerText = "Connecting...";
+      dot.className = "network-status-dot connecting";
+      tag.innerText = "Connecting...";
     } else {
-      dot.className = "net-dot";
-      txt.innerText = "Offline";
+      dot.className = "network-status-dot disconnected";
+      tag.innerText = "Offline";
     }
   }
 
   function initMqtt(roomCode) {
+    initAudio();
     currentRoom = roomCode.toUpperCase().trim();
+    gameState.room = currentRoom;
     updateNetworkStatus("connecting");
 
     const host = "broker.emqx.io";
     const port = 8084;
     const path = "/mqtt";
+    // Unique connection nonce prevents kicking out other tabs
+    const mqttConnId = "wv_" + clientId + "_" + Math.random().toString(36).substring(2, 6);
 
     try {
       if (typeof Paho !== "undefined" && Paho.MQTT) {
         if (client) {
-          try { client.disconnect(); } catch(e) {}
+          try {
+            client.onConnectionLost = null;
+            client.onMessageArrived = null;
+            client.disconnect();
+          } catch(e) {}
         }
-        client = new Paho.MQTT.Client(host, port, path, clientId);
+
+        client = new Paho.MQTT.Client(host, port, path, mqttConnId);
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
 
@@ -1604,7 +1504,7 @@
           useSSL: true,
           timeout: 5,
           keepAliveInterval: 30,
-          cleanSession: false,
+          cleanSession: true,
           onSuccess: onConnectSuccess,
           onFailure: onConnectFailure
         });
@@ -1635,22 +1535,22 @@
 
   function onConnectFailure(err) {
     console.warn("MQTT connect failed:", err);
-    updateNetworkStatus("offline");
+    updateNetworkStatus("disconnected");
   }
 
   function onConnectionLost(response) {
     console.warn("MQTT connection lost:", response);
     isConnected = false;
-    updateNetworkStatus("offline");
+    updateNetworkStatus("disconnected");
     if (response.errorCode !== 0) {
-      setTimeout(() => { if (currentRoom && !isSoloPassAndPlay) initMqtt(currentRoom); }, 3000);
+      setTimeout(() => {
+        if (currentRoom && !isSoloPassAndPlay) initMqtt(currentRoom);
+      }, 3000);
     }
   }
 
   function publishMessage(payload) {
-    if (!payload.senderId) {
-      payload.senderId = clientId;
-    }
+    if (!payload.senderId) payload.senderId = clientId;
     if (isSoloPassAndPlay) {
       handleIncomingMessage(payload);
       return;
@@ -1678,15 +1578,21 @@
 
   function handleIncomingMessage(data) {
     if (!data || !data.type) return;
-    // Discard echo of our own messages in online mode
-    if (!isSoloPassAndPlay && data.senderId === clientId) return;
+
+    // Discard echo of our own messages in online mode, EXCEPT for lock-guess if not handled locally
+    if (!isSoloPassAndPlay && data.senderId === clientId) {
+      return;
+    }
 
     if (data.type === "PLAYER_JOIN") {
       const p = data.player;
       if (p) {
         roomPlayers[p.id] = { ...p, isOnline: true };
+        if (!gameState.playerOrder.includes(p.id)) {
+          gameState.playerOrder.push(p.id);
+        }
         renderLobbyRoster();
-        // If host, reply with state
+        // If host, send authoritative room state
         if (isCurrentUserHost()) {
           publishMessage({
             type: "SYNC_ROOM_STATE",
@@ -1695,30 +1601,24 @@
           });
         }
       }
-    } else if (data.type === "SPIN_TARGET") {
-      gameState.targetAngle = data.targetAngle;
-      renderTargetWedges(gameState.targetAngle);
-      playTickSound();
-      animateWheelSpin();
-      const spinner = data.senderName || roomPlayers[data.senderId]?.name || "Teammate";
-      showSyncIndicator(`🎲 ${spinner} re-spun the target!`);
-    } else if (data.type === "REROLL_CARD") {
-      gameState.card = data.card;
-      document.getElementById("pole-left-text").innerText = gameState.card.left;
-      document.getElementById("pole-right-text").innerText = gameState.card.right;
-      playTickSound();
-      const roller = data.senderName || roomPlayers[data.senderId]?.name || "Psychic";
-      showSyncIndicator(`🔄 ${roller} drew a new card!`);
     } else if (data.type === "SYNC_ROOM_STATE") {
-      gameState = data.gameState;
-      if (data.players) Object.assign(roomPlayers, data.players);
-      renderLobbyRoster();
-      if (gameState.status === "playing") {
-        switchScreen("game-screen");
-        renderGameUI();
-      } else if (gameState.status === "over") {
-        showGameOverScreen();
+      if (data.gameState) {
+        gameState = data.gameState;
+        if (data.players) Object.assign(roomPlayers, data.players);
+        syncSettingsPillsToState();
+        renderLobbyRoster();
+        if (gameState.status === "playing") {
+          switchScreen("game-screen");
+          renderGameUI();
+        } else if (gameState.status === "over") {
+          showGameOverScreen();
+        }
       }
+    } else if (data.type === "UPDATE_SETTINGS") {
+      if (data.mode) gameState.mode = data.mode;
+      if (data.maxRounds) gameState.maxRounds = data.maxRounds;
+      if (data.category) gameState.category = data.category;
+      syncSettingsPillsToState();
     } else if (data.type === "START_GAME") {
       gameState = data.gameState;
       if (data.players) Object.assign(roomPlayers, data.players);
@@ -1730,7 +1630,7 @@
       if (data.card) gameState.card = data.card;
       gameState.phase = "guess";
       renderGameUI();
-      showSyncIndicator("🔮 Psychic submitted their clue!");
+      showSyncIndicator("ðŸ”® Psychic submitted clue!");
     } else if (data.type === "DIAL_MOVE") {
       gameState.guessAngle = data.angle;
       applyNeedleAngle(data.angle, false);
@@ -1745,10 +1645,29 @@
       gameState = data.gameState;
       if (data.players) Object.assign(roomPlayers, data.players);
       renderGameUI();
-    } else if (data.type === "RESTART_GAME") {
-      gameState = data.gameState;
-      if (data.players) Object.assign(roomPlayers, data.players);
-      renderGameUI();
+    } else if (data.type === "REQUEST_NEXT_ROUND") {
+      if (isCurrentUserHost()) {
+        advanceNextRound();
+      }
+    } else if (data.type === "SPIN_TARGET") {
+      gameState.targetAngle = data.targetAngle;
+      renderTargetWedges(gameState.targetAngle);
+      playTickSound();
+      const spinner = data.senderName || roomPlayers[data.senderId]?.name || "Teammate";
+      showSyncIndicator(`ðŸŽ² ${spinner} re-spun target!`);
+    } else if (data.type === "REROLL_CARD") {
+      gameState.card = data.card;
+      document.getElementById("pole-left-text").innerText = gameState.card.left;
+      document.getElementById("pole-right-text").innerText = gameState.card.right;
+      playTickSound();
+      const roller = data.senderName || roomPlayers[data.senderId]?.name || "Psychic";
+      showSyncIndicator(`ðŸ”„ ${roller} drew a new card!`);
+    } else if (data.type === "RETURN_TO_LOBBY") {
+      gameState.status = "lobby";
+      switchScreen("lobby-screen");
+      document.getElementById("entry-box").style.display = "none";
+      document.getElementById("room-dashboard").style.display = "block";
+      renderLobbyRoster();
     }
   }
 
@@ -1757,10 +1676,9 @@
   }
 
   /* ==========================================================================
-     5. LOBBY & SETUP CONTROLS
+     5. LOBBY, AVATAR & ROOM SETUP CONTROLS
      ========================================================================== */
   function initLobbyUI() {
-    // Generate Avatars
     const avatarRow = document.getElementById("avatar-picker-row");
     if (avatarRow) {
       avatarRow.innerHTML = "";
@@ -1777,31 +1695,100 @@
       });
     }
 
-    // Default player name
     const nameInput = document.getElementById("player-name-input");
     if (nameInput) {
-      const storedName = localStorage.getItem("wavelength_player_name");
-      if (storedName) {
-        nameInput.value = storedName;
-        playerName = storedName;
+      if (playerName) {
+        nameInput.value = playerName;
       } else {
-        const defaultNames = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Riley", "Casey"];
+        const defaultNames = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Riley", "Casey", "Dakota"];
         nameInput.value = defaultNames[Math.floor(Math.random() * defaultNames.length)];
         playerName = nameInput.value;
       }
       nameInput.oninput = (e) => {
         playerName = e.target.value.trim();
-        try { localStorage.setItem("wavelength_player_name", playerName); } catch(err) {}
+        try {
+          localStorage.setItem("party_games_player_name", playerName);
+          localStorage.setItem("wavelength_player_name", playerName);
+        } catch(err) {}
       };
+    }
+
+    // Auto-fill room parameter from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get("room");
+    if (roomParam) {
+      const roomInput = document.getElementById("room-code-input");
+      if (roomInput) roomInput.value = roomParam.trim().toUpperCase();
     }
   }
 
+  function ensureNameFilled() {
+    const nameInput = document.getElementById("player-name-input");
+    if (nameInput && nameInput.value.trim()) {
+      playerName = nameInput.value.trim();
+    } else {
+      playerName = "Player " + Math.floor(10 + Math.random() * 90);
+    }
+    try {
+      localStorage.setItem("party_games_player_name", playerName);
+      localStorage.setItem("wavelength_player_name", playerName);
+    } catch(e) {}
+  }
+
   function selectGameMode(mode) {
+    if (!isCurrentUserHost()) return;
     gameState.mode = mode;
-    const coopCard = document.getElementById("mode-coop-card");
-    const compCard = document.getElementById("mode-comp-card");
-    if (coopCard) coopCard.className = `mode-card ${mode === 'coop' ? 'active' : ''}`;
-    if (compCard) compCard.className = `mode-card ${mode === 'competitive' ? 'active' : ''}`;
+    syncSettingsPillsToState();
+    if (isConnected) publishMessage({ type: "UPDATE_SETTINGS", mode: mode });
+  }
+
+  function setRounds(rounds) {
+    if (!isCurrentUserHost()) return;
+    gameState.maxRounds = rounds;
+    syncSettingsPillsToState();
+    if (isConnected) publishMessage({ type: "UPDATE_SETTINGS", maxRounds: rounds });
+  }
+
+  function setCategory(cat) {
+    if (!isCurrentUserHost()) return;
+    gameState.category = cat;
+    syncSettingsPillsToState();
+    if (isConnected) publishMessage({ type: "UPDATE_SETTINGS", category: cat });
+  }
+
+  function syncSettingsPillsToState() {
+    // Mode
+    const coopPill = document.getElementById("pill-mode-coop");
+    const compPill = document.getElementById("pill-mode-comp");
+    if (coopPill && compPill) {
+      coopPill.className = `pill-option ${gameState.mode === 'coop' ? 'selected' : ''}`;
+      compPill.className = `pill-option ${gameState.mode === 'competitive' ? 'selected' : ''}`;
+    }
+
+    // Rounds
+    [5, 7, 10].forEach(r => {
+      const pill = document.getElementById(`pill-rounds-${r}`);
+      if (pill) pill.className = `pill-option ${gameState.maxRounds === r ? 'selected' : ''}`;
+    });
+
+    // Category
+    ["all", "everyday", "popculture", "deep"].forEach(c => {
+      const pill = document.getElementById(`pill-cat-${c}`);
+      if (pill) pill.className = `pill-option ${gameState.category === c ? 'selected' : ''}`;
+    });
+
+    // Host indicator
+    const hostInd = document.getElementById("host-indicator");
+    if (hostInd) {
+      if (isCurrentUserHost()) {
+        hostInd.innerText = "ðŸ‘‘ You are the Host";
+        hostInd.style.color = "var(--accent-gold)";
+      } else {
+        const hostPlayer = roomPlayers[gameState.hostId];
+        hostInd.innerText = `ðŸ‘‘ Host: ${hostPlayer ? hostPlayer.name : 'Host'}`;
+        hostInd.style.color = "var(--text-secondary)";
+      }
+    }
   }
 
   function createOnlineRoom() {
@@ -1811,8 +1798,7 @@
     currentRoom = code;
     gameState.room = code;
     gameState.hostId = clientId;
-    gameState.maxRounds = parseInt(document.getElementById("rounds-select")?.value || "7", 10);
-    gameState.category = document.getElementById("category-select")?.value || "all";
+    gameState.playerOrder = [clientId];
 
     roomPlayers = {
       [clientId]: {
@@ -1825,8 +1811,11 @@
       }
     };
 
-    document.getElementById("lobby-room-code-tag").innerText = currentRoom;
-    document.getElementById("lobby-roster-box").style.display = "block";
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    document.getElementById("display-room-code").innerText = currentRoom;
+
+    syncSettingsPillsToState();
     renderLobbyRoster();
     initMqtt(currentRoom);
   }
@@ -1834,15 +1823,31 @@
   function joinOnlineRoom() {
     isSoloPassAndPlay = false;
     ensureNameFilled();
-    const codeInput = document.getElementById("join-room-input");
+    const codeInput = document.getElementById("room-code-input");
     const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
     if (!code) {
-      alert("Please enter a valid room code (e.g. WAVE-123).");
+      alert("Please enter a room code (e.g. WAVE-123).");
       return;
     }
+
     currentRoom = code;
-    document.getElementById("lobby-room-code-tag").innerText = currentRoom;
-    document.getElementById("lobby-roster-box").style.display = "block";
+    gameState.room = currentRoom;
+    roomPlayers = {
+      [clientId]: {
+        id: clientId,
+        name: playerName,
+        avatar: selectedAvatar,
+        isHost: false,
+        score: 0,
+        isOnline: true
+      }
+    };
+
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
+    document.getElementById("display-room-code").innerText = currentRoom;
+
+    renderLobbyRoster();
     initMqtt(currentRoom);
   }
 
@@ -1852,71 +1857,87 @@
     currentRoom = "SOLO";
     gameState.room = "PASS & PLAY";
     gameState.hostId = clientId;
-    gameState.maxRounds = parseInt(document.getElementById("rounds-select")?.value || "7", 10);
-    gameState.category = document.getElementById("category-select")?.value || "all";
+    gameState.playerOrder = [clientId, "p2", "p3"];
 
-    // Setup 2 or 3 local players
     roomPlayers = {
       [clientId]: { id: clientId, name: playerName || "Player 1", avatar: selectedAvatar, isHost: true, score: 0 },
-      "p2": { id: "p2", name: "Player 2", avatar: "🔮", isHost: false, score: 0 },
-      "p3": { id: "p3", name: "Player 3", avatar: "📻", isHost: false, score: 0 }
+      "p2": { id: "p2", name: "Player 2", avatar: "ðŸ”®", isHost: false, score: 0 },
+      "p3": { id: "p3", name: "Player 3", avatar: "ðŸ“»", isHost: false, score: 0 }
     };
 
     updateNetworkStatus("solo");
     startNewMatch();
   }
 
-  function ensureNameFilled() {
-    const nameInput = document.getElementById("player-name-input");
-    if (nameInput && nameInput.value.trim()) {
-      playerName = nameInput.value.trim();
+  function leaveRoom() {
+    if (client && isConnected) {
+      try { client.disconnect(); } catch(e) {}
+    }
+    isConnected = false;
+    currentRoom = "";
+    gameState.status = "lobby";
+    document.getElementById("entry-box").style.display = "block";
+    document.getElementById("room-dashboard").style.display = "none";
+    updateNetworkStatus("disconnected");
+  }
+
+  function copyRoomLink() {
+    const url = window.location.origin + window.location.pathname + "?room=" + encodeURIComponent(currentRoom);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert("Room link copied to clipboard!");
+      }).catch(() => {
+        prompt("Copy this room invite link:", url);
+      });
     } else {
-      playerName = "Doc " + Math.floor(10 + Math.random() * 90);
+      prompt("Copy this room invite link:", url);
     }
   }
 
   function renderLobbyRoster() {
-    const list = document.getElementById("lobby-roster-list");
-    if (!list) return;
-    list.innerHTML = "";
+    const grid = document.getElementById("roster-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
 
     const players = Object.values(roomPlayers);
+    const countBadge = document.getElementById("roster-count-badge");
+    if (countBadge) {
+      countBadge.innerText = `${players.length} Player${players.length === 1 ? '' : 's'}`;
+    }
+
     players.forEach(p => {
       const item = document.createElement("div");
       item.className = "roster-player";
+      const isHostP = (p.id === gameState.hostId);
+      const isYou = (p.id === clientId);
+
       item.innerHTML = `
         <div class="roster-player-info">
-          <span class="roster-avatar">${p.avatar}</span>
+          <span class="roster-avatar">${p.avatar || 'ðŸ§ '}</span>
           <span class="roster-name">${escapeHTML(p.name)}</span>
         </div>
-        ${p.id === gameState.hostId ? '<span class="roster-tag">HOST</span>' : (p.id === clientId ? '<span class="roster-tag" style="background: rgba(255,255,255,0.1); color: #fff;">YOU</span>' : '')}
+        <div style="display: flex; gap: 6px; align-items: center;">
+          ${isHostP ? '<span class="roster-tag">ðŸ‘‘ HOST</span>' : ''}
+          ${isYou ? '<span class="roster-tag" style="background: rgba(0, 242, 254, 0.15); color: var(--cyan-glow); border-color: rgba(0, 242, 254, 0.3);">YOU</span>' : ''}
+        </div>
       `;
-      list.appendChild(item);
+      grid.appendChild(item);
     });
 
-    const startBtn = document.getElementById("lobby-start-game-btn");
-    if (startBtn) {
-      if (isCurrentUserHost()) {
-        startBtn.style.display = "flex";
-        startBtn.disabled = players.length < 2 && !isSoloPassAndPlay;
-        startBtn.innerHTML = `<span>🚀</span> Start Game (${players.length} Player${players.length === 1 ? '' : 's'})`;
-      } else {
-        startBtn.style.display = "none";
-      }
+    const startBtn = document.getElementById("start-game-btn");
+    const guestMsg = document.getElementById("guest-waiting-msg");
+
+    if (isCurrentUserHost()) {
+      if (startBtn) startBtn.style.display = "flex";
+      if (guestMsg) guestMsg.style.display = "none";
+    } else {
+      if (startBtn) startBtn.style.display = "none";
+      if (guestMsg) guestMsg.style.display = "block";
     }
   }
 
-  function copyRoomLink() {
-    const url = window.location.href.split("?")[0] + `?room=${currentRoom}`;
-    navigator.clipboard.writeText(url).then(() => {
-      alert("Room link copied to clipboard! Send it to your friends to play.");
-    }).catch(() => {
-      prompt("Copy room code:", currentRoom);
-    });
-  }
-
   /* ==========================================================================
-     6. GAME LOOP & CORE WAVELENGTH MECHANICS
+     6. GAME LOOP & DETERMINISTIC ROUND COORDINATION
      ========================================================================== */
   function requestStartGame() {
     if (!isCurrentUserHost()) return;
@@ -1926,8 +1947,13 @@
   function startNewMatch() {
     const playerList = Object.values(roomPlayers);
     if (playerList.length < 2 && !isSoloPassAndPlay) {
-      alert("Wavelength requires at least 2 players to play!");
-      return;
+      if (!confirm("Wavelength is most fun with 2 or more players. Start anyway to test?")) {
+        return;
+      }
+    }
+
+    if (!gameState.playerOrder || gameState.playerOrder.length === 0) {
+      gameState.playerOrder = Object.keys(roomPlayers);
     }
 
     gameState.status = "playing";
@@ -1943,212 +1969,191 @@
       gameState: gameState,
       players: roomPlayers
     });
+
+    switchScreen("game-screen");
+    renderGameUI();
   }
 
-  /* True High-Entropy Cryptographic Random Angle Generator */
+  // True High-Entropy Random Dial Generator across full 0.0Â° to 180.0Â°
   function generateRandomTargetAngle() {
     let randFloat;
     if (window.crypto && window.crypto.getRandomValues) {
       const buffer = new Uint32Array(2);
       window.crypto.getRandomValues(buffer);
-      // Combine 64-bit entropy for uniform 0 to 1 float
       randFloat = (buffer[0] * 4294967296 + buffer[1]) / (4294967296 * 4294967296);
     } else {
       randFloat = Math.random();
     }
-
-    // Complete dial spectrum from 0.0° (0%) to 180.0° (100%) with 0.1° continuous precision
-    // Allows the 4-point bullseye to land anywhere across the spectrum, including the extreme poles at 0% or 100%!
     const angle = randFloat * 180;
     return Math.round(angle * 10) / 10;
   }
 
   function setupRound(roundNumber) {
-    const playerList = Object.values(roomPlayers);
-    const psychicIdx = (roundNumber - 1) % playerList.length;
+    if (!gameState.playerOrder || gameState.playerOrder.length === 0) {
+      gameState.playerOrder = Object.keys(roomPlayers);
+    }
+    const order = gameState.playerOrder;
+    const psychicIdx = (roundNumber - 1) % order.length;
     gameState.psychicIndex = psychicIdx;
-    gameState.psychicId = playerList[psychicIdx].id;
+    gameState.psychicId = order[psychicIdx] || clientId;
     gameState.round = roundNumber;
     gameState.phase = "clue";
     gameState.clue = "";
 
     // Pick genuinely random target angle across full dial spectrum
     gameState.targetAngle = generateRandomTargetAngle();
+    gameState.guessAngle = 90; // Center needle at 50%
+    currentNeedleAngle = 90;
 
-    // Needle arm always starts centered at 90° (50%)
-    gameState.guessAngle = 90;
-
-    // Pick random spectrum card
-    gameState.card = pickRandomSpectrumCard(gameState.category);
-
-    // Update UI needle position to center
-    applyNeedleAngle(90, false);
-  }
-
-  function animateWheelSpin() {
-    const dialSvg = document.getElementById("dial-svg");
-    if (!dialSvg) return;
-    dialSvg.classList.remove("dial-spinning");
-    void dialSvg.offsetWidth;
-    dialSvg.classList.add("dial-spinning");
-    setTimeout(() => {
-      if (dialSvg) dialSvg.classList.remove("dial-spinning");
-    }, 550);
-  }
-
-  function spinTargetWheel() {
-    if (gameState.phase !== "clue" && gameState.phase !== "reveal") return;
-    gameState.targetAngle = generateRandomTargetAngle();
-    renderGameUI();
-    playTickSound();
-    animateWheelSpin();
-
-    publishMessage({
-      type: "SPIN_TARGET",
-      senderId: clientId,
-      targetAngle: gameState.targetAngle,
-      senderName: playerName
-    });
-
-    publishMessage({
-      type: "SYNC_ROOM_STATE",
-      senderId: clientId,
-      gameState: gameState,
-      players: roomPlayers
-    });
-  }
-
-  function resetNeedleCenter() {
-    if (gameState.phase !== "guess") return;
-    if (gameState.psychicId === clientId && !isSoloPassAndPlay) return;
-    applyNeedleAngle(90, true);
-  }
-
-  function pickRandomSpectrumCard(catFilter) {
+    // Pick a card matching category
     let pool = SPECTRUM_CARDS;
-    if (catFilter && catFilter !== "all") {
-      pool = SPECTRUM_CARDS.filter(c => c.category === catFilter);
+    if (gameState.category && gameState.category !== "all") {
+      pool = SPECTRUM_CARDS.filter(c => c.category === gameState.category);
     }
     if (pool.length === 0) pool = SPECTRUM_CARDS;
-    return pool[Math.floor(Math.random() * pool.length)];
+    const pickedCard = pool[Math.floor(Math.random() * pool.length)];
+    gameState.card = pickedCard;
+
+    if (isSoloPassAndPlay) {
+      showPassModal();
+    }
   }
 
   function rerollSpectrumCard() {
     if (gameState.phase !== "clue") return;
-    gameState.card = pickRandomSpectrumCard(gameState.category);
-    renderGameUI();
+    if (gameState.psychicId !== clientId && !isSoloPassAndPlay) return;
+
+    let pool = SPECTRUM_CARDS;
+    if (gameState.category && gameState.category !== "all") {
+      pool = SPECTRUM_CARDS.filter(c => c.category === gameState.category);
+    }
+    if (pool.length === 0) pool = SPECTRUM_CARDS;
+    gameState.card = pool[Math.floor(Math.random() * pool.length)];
+
+    document.getElementById("pole-left-text").innerText = gameState.card.left;
+    document.getElementById("pole-right-text").innerText = gameState.card.right;
     playTickSound();
 
     publishMessage({
       type: "REROLL_CARD",
-      senderId: clientId,
       card: gameState.card,
       senderName: playerName
     });
+  }
+
+  function spinTargetWheel() {
+    const newAngle = generateRandomTargetAngle();
+    gameState.targetAngle = newAngle;
+    renderTargetWedges(newAngle);
+    playTickSound();
 
     publishMessage({
-      type: "SYNC_ROOM_STATE",
-      senderId: clientId,
-      gameState: gameState,
-      players: roomPlayers
+      type: "SPIN_TARGET",
+      targetAngle: newAngle,
+      senderName: playerName
     });
   }
 
   function submitPsychicClue() {
+    if (gameState.phase !== "clue") return;
+    if (gameState.psychicId !== clientId && !isSoloPassAndPlay) return;
+
     const input = document.getElementById("clue-input-field");
-    const clue = input ? input.value.trim() : "";
-    if (!clue) {
-      alert("Please type a clue before submitting!");
+    const clueText = input ? input.value.trim() : "";
+    if (!clueText) {
+      alert("Please enter a clue before submitting!");
       return;
     }
 
-    gameState.clue = clue;
+    gameState.clue = clueText;
     gameState.phase = "guess";
     if (input) input.value = "";
-    renderGameUI();
 
     publishMessage({
       type: "SUBMIT_CLUE",
-      senderId: clientId,
-      clue: clue,
+      clue: clueText,
       targetAngle: gameState.targetAngle,
       card: gameState.card
     });
+
+    renderGameUI();
+    if (isSoloPassAndPlay) {
+      showPassModal();
+    }
   }
 
   function lockInGuess() {
-    // Only non-psychic guessers can lock in (or any player in pass-and-play)
-    if (gameState.psychicId === clientId && !isSoloPassAndPlay) {
-      alert("Only the Guessers can lock in the dial!");
-      return;
-    }
+    if (gameState.phase !== "guess") return;
+    const angle = Math.max(0, Math.min(180, gameState.guessAngle));
+    const points = calculatePoints(angle, gameState.targetAngle);
 
-    // Compute scoring difference
-    const diff = Math.abs(gameState.guessAngle - gameState.targetAngle);
-    let points = 0;
-    if (diff <= 3.5) {
-      points = 4; // Bullseye
-    } else if (diff <= 9.5) {
-      points = 3; // Inner
-    } else if (diff <= 16.5) {
-      points = 2; // Outer
-    } else {
-      points = 0; // Miss
-    }
+    gameState.guessAngle = angle;
+    currentNeedleAngle = angle;
+    gameState.phase = "reveal";
 
+    // Broadcast to peers
     publishMessage({
       type: "LOCK_GUESS",
-      senderId: clientId,
-      guessAngle: gameState.guessAngle,
+      guessAngle: angle,
       targetAngle: gameState.targetAngle,
-      points: points
+      points: points,
+      senderName: playerName
     });
+
+    if (!isSoloPassAndPlay) {
+      executeRevealScore(points);
+    }
+  }
+
+  function calculatePoints(guess, target) {
+    const delta = Math.abs(guess - target);
+    if (delta <= 3.5) return 4;
+    if (delta <= 9.5) return 3;
+    if (delta <= 16.5) return 2;
+    return 0;
   }
 
   function executeRevealScore(points) {
-    gameState.phase = "reveal";
     gameState.lastPoints = points;
-    gameState.totalScore += points;
+    gameState.phase = "reveal";
 
-    // Award competitive points
-    if (gameState.mode === "competitive") {
-      const playerList = Object.values(roomPlayers);
-      playerList.forEach(p => {
-        if (p.id !== gameState.psychicId) {
-          gameState.scores[p.id] = (gameState.scores[p.id] || 0) + points;
-        } else {
-          // Psychic earns points for successful communication!
-          const psychicBonus = points >= 3 ? points : (points === 2 ? 1 : 0);
-          gameState.scores[p.id] = (gameState.scores[p.id] || 0) + psychicBonus;
-        }
-      });
+    if (gameState.mode === "coop") {
+      gameState.totalScore += points;
+    } else {
+      // In competitive mode: all active players earn points for psychic synchrony
+      if (gameState.scores) {
+        Object.keys(gameState.scores).forEach(pid => {
+          gameState.scores[pid] = (gameState.scores[pid] || 0) + points;
+        });
+      }
     }
 
-    // Add round history entry
-    gameState.history.unshift({
+    gameState.history.push({
       round: gameState.round,
       clue: gameState.clue,
-      left: gameState.card.left,
-      right: gameState.card.right,
-      targetAngle: gameState.targetAngle,
-      guessAngle: gameState.guessAngle,
-      points: points,
-      psychicName: roomPlayers[gameState.psychicId]?.name || "Psychic"
+      card: { ...gameState.card },
+      target: gameState.targetAngle,
+      guess: gameState.guessAngle,
+      points: points
     });
 
     renderGameUI();
     playShutterSound();
     setTimeout(() => {
       playRevealChime(points);
-    }, 600);
+    }, 500);
   }
 
   function advanceNextRound() {
+    if (!isCurrentUserHost()) {
+      publishMessage({ type: "REQUEST_NEXT_ROUND" });
+      return;
+    }
+
     if (gameState.round >= gameState.maxRounds) {
       gameState.status = "over";
       publishMessage({
         type: "SYNC_ROOM_STATE",
-        senderId: clientId,
         gameState: gameState,
         players: roomPlayers
       });
@@ -2161,7 +2166,6 @@
 
     publishMessage({
       type: "NEXT_ROUND",
-      senderId: clientId,
       gameState: gameState,
       players: roomPlayers
     });
@@ -2175,11 +2179,12 @@
   function returnToLobby() {
     gameState.status = "lobby";
     switchScreen("lobby-screen");
+    document.getElementById("entry-box").style.display = "none";
+    document.getElementById("room-dashboard").style.display = "block";
     renderLobbyRoster();
+
     publishMessage({
-      type: "SYNC_ROOM_STATE",
-      gameState: gameState,
-      players: roomPlayers
+      type: "RETURN_TO_LOBBY"
     });
   }
 
@@ -2188,15 +2193,16 @@
      ========================================================================== */
   function renderGameUI() {
     const isPsychic = (gameState.psychicId === clientId) || isSoloPassAndPlay;
-    const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "🔮" };
+    const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "ðŸ”®" };
 
-    // 1. HUD Bar
+    // 1. HUD Status Bar
     document.getElementById("hud-round").innerText = `${gameState.round} / ${gameState.maxRounds}`;
-    document.getElementById("hud-room").innerText = currentRoom || "LOCAL";
+    document.getElementById("hud-room").innerText = currentRoom;
+
     const scoreLabel = document.getElementById("hud-score-label");
     const scoreVal = document.getElementById("hud-score");
     if (gameState.mode === "competitive") {
-      scoreLabel.innerText = "Leader Score";
+      scoreLabel.innerText = "Top Score";
       const highest = Math.max(0, ...Object.values(gameState.scores));
       scoreVal.innerText = `${highest} Pts`;
     } else {
@@ -2208,40 +2214,38 @@
     const roleBanner = document.getElementById("role-banner");
     const roleIcon = document.getElementById("role-banner-icon");
     const roleText = document.getElementById("role-banner-text");
+
     if (isPsychic && gameState.phase === "clue") {
       roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "🔮";
+      roleIcon.innerText = "ðŸ”®";
       roleText.innerText = "You are the Psychic! Read the spectrum and enter your clue.";
     } else if (isPsychic && gameState.phase === "guess") {
       roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "🤫";
-      roleText.innerText = "Clue submitted! Keep poker face while guessers calibrate the dial.";
+      roleIcon.innerText = "ðŸ¤«";
+      roleText.innerText = "Clue submitted! Keep your poker face while teammates calibrate the dial.";
     } else {
       roleBanner.className = "role-banner guesser";
-      roleIcon.innerText = "🎯";
-      roleText.innerText = `Psychic is ${psychicPlayer.name} ${psychicPlayer.avatar}. Tune in to their frequency!`;
+      roleIcon.innerText = "ðŸŽ¯";
+      roleText.innerText = `Psychic is ${psychicPlayer.name} ${psychicPlayer.avatar}. Tune into their frequency!`;
     }
 
     // 3. Spectrum Poles
     document.getElementById("pole-left-text").innerText = gameState.card.left;
     document.getElementById("pole-right-text").innerText = gameState.card.right;
 
-    // 4. Dial Needle & Wedges
+    // 4. Dial Target Wedges & Shutter
     renderTargetWedges(gameState.targetAngle);
 
     const shutter = document.getElementById("shutter-cover");
     const wedgesGroup = document.getElementById("target-wedges-group");
 
     if (gameState.phase === "reveal") {
-      // Reveal phase: Open shutter for EVERYONE!
       if (shutter) shutter.classList.add("opened");
       if (wedgesGroup) wedgesGroup.style.display = "block";
     } else if (isPsychic && gameState.phase === "clue") {
-      // Psychic clue phase: Psychic sees target
       if (shutter) shutter.classList.add("opened");
       if (wedgesGroup) wedgesGroup.style.display = "block";
     } else {
-      // Guessers view: Shutter CLOSED!
       if (shutter) shutter.classList.remove("opened");
       if (wedgesGroup) wedgesGroup.style.display = "none";
     }
@@ -2249,7 +2253,7 @@
     // Position Needle
     applyNeedleAngle(gameState.guessAngle, false);
 
-    // 5. Clue & Interactive Boxes
+    // 5. Interactive Clue Form & Actions
     const formBox = document.getElementById("psychic-clue-form");
     const waitBox = document.getElementById("guesser-waiting-box");
     const activeBox = document.getElementById("guesser-active-box");
@@ -2271,8 +2275,13 @@
       activeBox.style.display = "block";
       document.getElementById("display-clue-text").innerText = `"${gameState.clue}"`;
       const lockBtn = document.getElementById("lock-guess-btn");
-      if (lockBtn) {
-        lockBtn.style.display = (isPsychic && !isSoloPassAndPlay) ? "none" : "block";
+      const instr = document.getElementById("guess-instruction-text");
+      if (isPsychic && !isSoloPassAndPlay) {
+        if (lockBtn) lockBtn.style.display = "none";
+        if (instr) instr.innerText = "Teammates are dragging the needle now...";
+      } else {
+        if (lockBtn) lockBtn.style.display = "block";
+        if (instr) instr.innerText = "Drag the red needle to where you believe this clue lands on the spectrum!";
       }
     } else if (gameState.phase === "reveal") {
       revealCard.style.display = "block";
@@ -2285,25 +2294,24 @@
       ptsEl.innerText = `+${pts} PTS`;
 
       if (pts === 4) {
-        titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
+        titleEl.innerText = "ðŸŽ¯ BULLSEYE! PERFECT TELEPATHY!";
         descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
       } else if (pts === 3) {
-        titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
+        titleEl.innerText = "ðŸ”¥ CLOSE! GREAT VIBES!";
         descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
       } else if (pts === 2) {
-        titleEl.innerText = "⚡ ON THE WAVELENGTH!";
+        titleEl.innerText = "âš¡ ON THE WAVELENGTH!";
         descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
       } else {
-        titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
+        titleEl.innerText = "âŒ STATIC ON THE RADIO (MISS)";
         descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
       }
     }
 
-    // 6. Round History Drawer
     renderHistoryDrawer();
   }
 
-  /* Render High-Fidelity Target Wedges: Seamless layered 4pt, 3pt, 2pt zones with precision markers */
+  /* Render High-Fidelity Target Wedges: 4pt, 3pt, 2pt layered zones */
   function renderTargetWedges(targetAngle) {
     const group = document.getElementById("target-wedges-group");
     if (!group) return;
@@ -2311,11 +2319,11 @@
 
     const cx = 200, cy = 200, rOuter = 162, rInner = 68;
 
-    // Layered wedges (drawn back to front: 2pt outer -> 3pt inner -> 4pt bullseye)
+    // Layers drawn back to front: 2pt outer -> 3pt inner -> 4pt bullseye
     const layers = [
-      { delta: 16.5, color: "#ff453a", opacity: "0.85" }, // 2 Points
-      { delta: 9.5,  color: "#ff9500", opacity: "0.92" }, // 3 Points
-      { delta: 3.5,  color: "#ffd60a", opacity: "0.98", isBullseye: true } // 4 Points
+      { delta: 16.5, color: "#ff453a", opacity: "0.85" },
+      { delta: 9.5,  color: "#ff9500", opacity: "0.92" },
+      { delta: 3.5,  color: "#ffd60a", opacity: "0.98", isBullseye: true }
     ];
 
     layers.forEach(l => {
@@ -2332,7 +2340,7 @@
       group.appendChild(elem);
     });
 
-    // Sleek divider pinstripes between zones
+    // Pinstripes between zones
     const dividerDeltas = [-9.5, -3.5, 3.5, 9.5];
     dividerDeltas.forEach(d => {
       const ang = targetAngle + d;
@@ -2354,7 +2362,7 @@
       }
     });
 
-    // Precision Bullseye Centerline Marker (Crisp white reticle)
+    // Centerline Marker
     if (targetAngle >= 0 && targetAngle <= 180) {
       const rad = (180 - targetAngle) * Math.PI / 180;
       const x1 = cx + (rInner + 4) * Math.cos(rad);
@@ -2373,18 +2381,17 @@
       group.appendChild(centerLine);
     }
 
-    // Centered score markers in each visible zone
-    // When target is at 0° or 180°, center the Bullseye label within the visible half-slice
+    // Number score labels
     const bullseyeLabelAng = Math.max(1.8, Math.min(178.2, targetAngle));
     const labelMarkers = [
       { ang: targetAngle - 13.0, label: "2", size: "11" },
       { ang: targetAngle - 6.5,  label: "3", size: "12" },
-      { ang: bullseyeLabelAng,   label: "4", size: "15", isBullseye: true },
+      { ang: bullseyeLabelAng,   label: "4", size: "15" },
       { ang: targetAngle + 6.5,  label: "3", size: "12" },
       { ang: targetAngle + 13.0, label: "2", size: "11" }
     ];
 
-    const rText = 115; // Centered radially in the 68-162 band
+    const rText = 115;
     labelMarkers.forEach(m => {
       if (m.ang >= 1.5 && m.ang <= 178.5) {
         const rad = (180 - m.ang) * Math.PI / 180;
@@ -2440,7 +2447,7 @@
       line.setAttribute("y1", y1);
       line.setAttribute("x2", x2);
       line.setAttribute("y2", y2);
-      line.setAttribute("stroke", isMajor ? "#ffffff" : "#a1a1a6");
+      line.setAttribute("stroke", isMajor ? "#ffffff" : "#8e8e93");
       line.setAttribute("stroke-width", isMajor ? "2" : "1");
       group.appendChild(line);
     }
@@ -2460,20 +2467,18 @@
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-      // SVG coordinate ratio
       const svgX = (clientX - rect.left) * (400 / rect.width);
       const svgY = (clientY - rect.top) * (230 / rect.height);
 
       const dx = svgX - 200;
-      const dy = 200 - svgY; // Invert Y so up is positive (above center diameter)
+      const dy = 200 - svgY;
 
       let angleDeg;
       if (dy <= 0) {
-        // Below the center horizontal axis: clamp to left (0°) or right (180°) based on X position to avoid angle wrap
         if (Math.abs(dx) < 2) return;
         angleDeg = (dx < 0) ? 0 : 180;
       } else {
-        const angleRad = Math.atan2(dy, dx); // dy > 0, angle is strictly in (0, PI)
+        const angleRad = Math.atan2(dy, dx);
         angleDeg = 180 - (angleRad * 180 / Math.PI);
         angleDeg = Math.max(0, Math.min(180, Math.round(angleDeg)));
       }
@@ -2483,7 +2488,6 @@
 
     const handlePointerStart = (e) => {
       if (gameState.phase !== "guess") return;
-      // If psychic in multiplayer, cannot drag
       if (gameState.psychicId === clientId && !isSoloPassAndPlay) return;
       if (e.cancelable) e.preventDefault();
 
@@ -2493,8 +2497,18 @@
     };
 
     const handlePointerEnd = () => {
-      isDraggingNeedle = false;
-      container.classList.remove("dragging");
+      if (isDraggingNeedle) {
+        isDraggingNeedle = false;
+        container.classList.remove("dragging");
+        // Broadcast final settled angle
+        if (!isSoloPassAndPlay && isConnected) {
+          publishMessage({
+            type: "DIAL_MOVE",
+            senderId: clientId,
+            angle: gameState.guessAngle
+          });
+        }
+      }
     };
 
     container.addEventListener("mousedown", handlePointerStart);
@@ -2512,28 +2526,46 @@
 
     const nextAng = Math.max(0, Math.min(180, gameState.guessAngle + deltaDeg));
     applyNeedleAngle(nextAng, true);
+    if (!isSoloPassAndPlay && isConnected) {
+      publishMessage({
+        type: "DIAL_MOVE",
+        senderId: clientId,
+        angle: nextAng
+      });
+    }
+  }
+
+  function resetNeedleCenter() {
+    if (gameState.phase !== "guess") return;
+    if (gameState.psychicId === clientId && !isSoloPassAndPlay) return;
+    applyNeedleAngle(90, true);
+    if (!isSoloPassAndPlay && isConnected) {
+      publishMessage({
+        type: "DIAL_MOVE",
+        senderId: clientId,
+        angle: 90
+      });
+    }
   }
 
   function applyNeedleAngle(deg, broadcast = false) {
     gameState.guessAngle = deg;
+    currentNeedleAngle = deg;
     const needle = document.getElementById("needle-group");
     if (needle) {
-      // Needle is drawn pointing up (at 90° center); rotate by (deg - 90) so 0° is left and 180° is right
       needle.setAttribute("transform", `rotate(${deg - 90}, 200, 200)`);
     }
 
-    // Percentage Display
     const pct = Math.round((deg / 180) * 100);
     const badge = document.getElementById("dial-angle-display");
     if (badge) badge.innerText = `${pct}%`;
 
     playTickSound();
 
-    // Broadcast throttled position over MQTT
     if (broadcast && (!isSoloPassAndPlay) && isConnected) {
       const now = Date.now();
-      if (now - lastMoveTime > 45 || Math.abs(deg - lastBroadcastAngle) >= 3) {
-        lastMoveTime = now;
+      if (now - lastMoveBroadcastTime > 40 || Math.abs(deg - lastBroadcastAngle) >= 3) {
+        lastMoveBroadcastTime = now;
         lastBroadcastAngle = deg;
         publishMessage({
           type: "DIAL_MOVE",
@@ -2558,122 +2590,120 @@
   function toggleHistoryDrawer() {
     const list = document.getElementById("history-list");
     const icon = document.getElementById("history-toggle-icon");
-    if (!list || !icon) return;
-    const isOpen = list.style.display !== "none";
-    list.style.display = isOpen ? "none" : "flex";
-    icon.innerText = isOpen ? "▼" : "▲";
+    if (!list) return;
+    const isHidden = (list.style.display === "none");
+    list.style.display = isHidden ? "flex" : "none";
+    if (icon) icon.innerText = isHidden ? "â–²" : "â–¼";
   }
 
   function renderHistoryDrawer() {
-    const list = document.getElementById("history-list");
-    const count = document.getElementById("history-count");
-    if (!list || !count) return;
-    count.innerText = gameState.history.length;
-    list.innerHTML = "";
+    const countEl = document.getElementById("history-count");
+    const listEl = document.getElementById("history-list");
+    if (countEl) countEl.innerText = gameState.history.length;
+    if (!listEl) return;
+    listEl.innerHTML = "";
 
-    gameState.history.forEach(h => {
+    gameState.history.slice().reverse().forEach(h => {
       const item = document.createElement("div");
       item.className = "history-item";
+      const guessPct = Math.round((h.guess / 180) * 100);
+      const targetPct = Math.round((h.target / 180) * 100);
+
       item.innerHTML = `
-        <div class="history-item-left">
-          <div class="history-clue">"${escapeHTML(h.clue)}"</div>
-          <div class="history-poles">R${h.round} • ${escapeHTML(h.left)} ↔ ${escapeHTML(h.right)} (${h.psychicName})</div>
+        <div>
+          <strong>R${h.round}: "${escapeHTML(h.clue)}"</strong>
+          <div style="font-size: 0.75rem; color: #8e8e93;">${escapeHTML(h.card.left)} â—€â”€â”€â–¶ ${escapeHTML(h.card.right)} (Guess: ${guessPct}% | Target: ${targetPct}%)</div>
         </div>
-        <div class="history-score pts-${h.points}">+${h.points} Pts</div>
+        <span class="roster-tag" style="background: rgba(255,214,10,0.15); color: var(--score-4); font-size: 0.8rem;">+${h.points} PTS</span>
       `;
-      list.appendChild(item);
+      listEl.appendChild(item);
     });
   }
 
   function showGameOverScreen() {
     switchScreen("gameover-screen");
-    const emoji = document.getElementById("gameover-emoji");
-    const title = document.getElementById("gameover-title");
-    const rankPill = document.getElementById("gameover-rank");
-    const summary = document.getElementById("gameover-summary");
-    const rosterList = document.getElementById("gameover-roster-list");
+    const total = gameState.totalScore;
+    const rankEl = document.getElementById("gameover-rank");
+    const emojiEl = document.getElementById("gameover-emoji");
+    const summaryEl = document.getElementById("gameover-summary");
 
-    if (gameState.mode === "competitive") {
-      // Find winner
-      const playerList = Object.values(roomPlayers);
-      playerList.sort((a, b) => (gameState.scores[b.id] || 0) - (gameState.scores[a.id] || 0));
-      const winner = playerList[0];
-
-      emoji.innerText = "🏆";
-      title.innerText = `${winner.name} Wins!`;
-      rankPill.innerText = `Top Telepath: ${gameState.scores[winner.id] || 0} Points`;
-      summary.innerText = `A fierce telepathic showdown across ${gameState.maxRounds} rounds!`;
-
-      if (rosterList) {
-        rosterList.innerHTML = "";
-        playerList.forEach((p, idx) => {
-          const row = document.createElement("div");
-          row.className = "roster-player";
-          row.innerHTML = `
-            <div class="roster-player-info">
-              <span>${idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉')}</span>
-              <span class="roster-avatar">${p.avatar}</span>
-              <span class="roster-name">${escapeHTML(p.name)}</span>
-            </div>
-            <strong style="color: var(--gold-glow); font-size: 1.1rem;">${gameState.scores[p.id] || 0} Pts</strong>
-          `;
-          rosterList.appendChild(row);
-        });
-      }
+    if (total >= 22) {
+      emojiEl.innerText = "ðŸ§ ";
+      rankEl.innerText = `ðŸŒŸ Galaxy Brain (${total} Pts)`;
+      summaryEl.innerText = "Incredible! Your minds are intertwined on an astronomical level.";
+    } else if (total >= 16) {
+      emojiEl.innerText = "ðŸ”®";
+      rankEl.innerText = `ðŸ”® Mind Readers (${total} Pts)`;
+      summaryEl.innerText = "Great connection! You read each other with uncanny accuracy.";
+    } else if (total >= 10) {
+      emojiEl.innerText = "ðŸ“»";
+      rankEl.innerText = `ðŸ“» Good Reception (${total} Pts)`;
+      summaryEl.innerText = "Solid telepathy! A few static frequencies, but overall on wavelength.";
     } else {
-      // Co-op rank evaluation
-      const total = gameState.totalScore;
-      let rankText = "";
-      let rankEmoji = "📻";
-      let summaryText = "";
-
-      if (total >= 24) {
-        rankEmoji = "🌟";
-        rankText = `Galaxy Brain (${total} Pts)`;
-        summaryText = "Ascended telepathic mastery! You and your friends share a single cosmic brain.";
-      } else if (total >= 19) {
-        rankEmoji = "🧠";
-        rankText = `Mind Readers (${total} Pts)`;
-        summaryText = "Virtually telepathic! Exceptional calibration and harmony.";
-      } else if (total >= 14) {
-        rankEmoji = "🔮";
-        rankText = `Wavelength Masters (${total} Pts)`;
-        summaryText = "Great psychic resonance! Strong intuition and mutual understanding.";
-      } else if (total >= 9) {
-        rankEmoji = "📻";
-        rankText = `Tuning In (${total} Pts)`;
-        summaryText = "Solid performance! A few static bursts, but overall great teamwork.";
-      } else {
-        rankEmoji = "⚡";
-        rankText = `Static on the Radio (${total} Pts)`;
-        summaryText = "Need more calibration! Grab another cup of coffee and try again.";
-      }
-
-      emoji.innerText = rankEmoji;
-      title.innerText = "Match Complete!";
-      rankPill.innerText = rankText;
-      summary.innerText = summaryText;
-
-      if (rosterList) {
-        rosterList.innerHTML = `
-          <div class="roster-player" style="justify-content: center; font-size: 1.1rem; font-weight: 800; color: var(--gold-glow);">
-            Total Cooperative Score: ${total} / ${gameState.maxRounds * 4} Possible Points
-          </div>
-        `;
-      }
+      emojiEl.innerText = "ðŸ“‰";
+      rankEl.innerText = `ðŸ“¡ Static on the Radio (${total} Pts)`;
+      summaryEl.innerText = "Lost in transmission! Play another match to recalibrate your antennas.";
     }
+
+    // Scoreboard list
+    const sb = document.getElementById("gameover-roster-list");
+    if (sb) {
+      sb.innerHTML = "";
+      Object.values(roomPlayers).forEach(p => {
+        const item = document.createElement("div");
+        item.className = "roster-player";
+        const score = (gameState.mode === "competitive") ? (gameState.scores[p.id] || 0) : total;
+        item.innerHTML = `
+          <div class="roster-player-info">
+            <span class="roster-avatar">${p.avatar}</span>
+            <span class="roster-name">${escapeHTML(p.name)}</span>
+          </div>
+          <span class="roster-tag" style="font-size: 0.85rem; color: var(--score-4);">${score} PTS</span>
+        `;
+        sb.appendChild(item);
+      });
+    }
+
+    launchConfetti();
   }
 
-  /* ==========================================================================
-     10. UTILITIES & MODAL CONTROLS
-     ========================================================================== */
   function switchScreen(screenId) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     const target = document.getElementById(screenId);
     if (target) target.classList.add("active");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /* ==========================================================================
+     10. PASS AND PLAY SWITCH MODAL
+     ========================================================================== */
+  function showPassModal() {
+    const modal = document.getElementById("pass-modal");
+    const avatar = document.getElementById("pass-modal-avatar");
+    const title = document.getElementById("pass-modal-title");
+    const desc = document.getElementById("pass-modal-desc");
+    if (!modal) return;
+
+    if (gameState.phase === "clue") {
+      const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "ðŸ”®" };
+      avatar.innerText = psychicPlayer.avatar;
+      title.innerText = `Pass Phone to ${psychicPlayer.name}`;
+      desc.innerText = "Only the Psychic may look at the screen to see the secret target!";
+    } else if (gameState.phase === "guess") {
+      avatar.innerText = "ðŸŽ¯";
+      title.innerText = "Pass Phone to Guessers";
+      desc.innerText = "The Psychic has locked in their clue. Teammates, tune the dial together!";
+    }
+    modal.classList.add("active");
+  }
+
+  function closePassModal() {
+    const modal = document.getElementById("pass-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  /* ==========================================================================
+     11. RULES MODAL
+     ========================================================================== */
   function openRulesModal() {
     const modal = document.getElementById("rules-modal");
     if (modal) modal.classList.add("active");
@@ -2684,28 +2714,75 @@
     if (modal) modal.classList.remove("active");
   }
 
-  function escapeHTML(str) {
-    return (str || "").replace(/[&<>'"]/g, tag => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      "'": '&#39;',
-      '"': '&quot;'
-    }[tag] || tag));
+  /* ==========================================================================
+     12. CONFETTI CELEBRATION EFFECT
+     ========================================================================== */
+  function launchConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const pieces = [];
+    const colors = ["#00f2fe", "#0a84ff", "#ffd60a", "#ff3b30", "#30d158", "#bf5af2"];
+
+    for (let i = 0; i < 90; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * 50,
+        w: 8 + Math.random() * 8,
+        h: 6 + Math.random() * 6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 5,
+        vy: 2.5 + Math.random() * 5,
+        rot: Math.random() * 360,
+        vRot: (Math.random() - 0.5) * 8
+      });
+    }
+
+    let frames = 0;
+    function renderConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vRot;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+
+      frames++;
+      if (frames < 140) {
+        requestAnimationFrame(renderConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    requestAnimationFrame(renderConfetti);
   }
 
-  // Auto-fill room from URL parameter if present
+  function escapeHTML(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  /* ==========================================================================
+     13. INITIALIZATION
+     ========================================================================== */
   window.addEventListener("DOMContentLoaded", () => {
     initLobbyUI();
     renderTicks();
     setupDialInteraction();
-
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get("room");
-    if (roomParam) {
-      const joinInput = document.getElementById("join-room-input");
-      if (joinInput) joinInput.value = roomParam.toUpperCase();
-    }
   });
 </script>
 </body>
