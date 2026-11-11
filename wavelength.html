@@ -850,6 +850,9 @@
           <div class="pill-option selected" id="pill-mode-coop" onclick="selectGameMode('coop')">🤝 Cooperative</div>
           <div class="pill-option" id="pill-mode-comp" onclick="selectGameMode('competitive')">⚔️ Competitive</div>
         </div>
+        <div id="mode-desc-box" style="font-size: 0.82rem; color: var(--cyan-glow); margin-top: 6px; margin-bottom: 12px; padding: 8px 12px; background: rgba(0, 242, 254, 0.08); border-radius: 8px; border: 1px solid rgba(0, 242, 254, 0.2); line-height: 1.4;">
+          🤝 <strong>Cooperative:</strong> Work together as one team to achieve the highest combined score!
+        </div>
 
         <label class="input-label">Rounds Per Match</label>
         <div class="pill-group" id="rounds-pill-group">
@@ -1021,11 +1024,11 @@
 
       <!-- State B: Waiting for Clue (Guesser View) -->
       <div id="guesser-waiting-box" style="display: none; text-align: center;">
-        <div class="clue-label">⏳ Waiting for Psychic</div>
+        <div class="clue-label" id="guesser-waiting-badge">⏳ Waiting for Psychic</div>
         <div class="clue-text" id="waiting-psychic-name" style="color: var(--cyan-glow); font-size: 1.15rem;">
           Waiting for psychic to tune in and give a clue...
         </div>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px;">
+        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px;" id="guesser-waiting-subtext">
           Discuss with your teammates while the psychic formulates their clue!
         </p>
         <div style="margin-top: 12px;">
@@ -1057,7 +1060,7 @@
         <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="spinTargetWheel()" title="Re-spin target to test dial">
           🎲 Re-spin Target
         </button>
-        <button class="btn-primary" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
+        <button class="btn-primary" id="next-round-btn" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
           <span>➡️</span> Next Round
         </button>
       </div>
@@ -1131,6 +1134,13 @@
         <li><strong style="color: var(--score-2);">⚡ Outer Edge:</strong> 2 Points</li>
         <li><strong>❌ Outside Target:</strong> 0 Points</li>
       </ul>
+
+      <h3 style="color: var(--cyan-glow); margin: 14px 0 6px;">5. Game Modes</h3>
+      <p style="margin-bottom: 8px;"><strong>🤝 Cooperative Mode:</strong> All players unite as one team. Discuss together, calibrate the dial, and build the highest combined Team Score across all rounds to achieve Galaxy Brain rating!</p>
+      <p style="margin-bottom: 16px;"><strong>⚔️ Competitive Mode:</strong>
+        <br>• <strong>2 Players (1v1 Duel):</strong> Direct head-to-head duel! Players alternate as Psychic and Guesser. The guesser scores points on their opponent's clues (+1 bullseye bonus to psychic for giving a perfect clue).
+        <br>• <strong>3+ Players (Free-For-All):</strong> 1 psychic per round, all other players guess and compete on the individual leaderboard.
+      </p>
 
       <button class="btn-primary" onclick="closeRulesModal()">Got It, Let's Play!</button>
     </div>
@@ -1261,6 +1271,7 @@
     category: "all",
     psychicIndex: 0,
     psychicId: "",
+    guesserId: "",
     playerOrder: [],
     card: { left: "Cold", right: "Hot", category: "everyday" },
     targetAngle: 90, // 0.0 to 180.0
@@ -1359,6 +1370,11 @@
         score: 0
       }
     });
+
+    // Request authoritative state from host if joining an existing room
+    publishMessage({
+      type: "REQUEST_SYNC"
+    });
   }
 
   function onConnectFailure(err) {
@@ -1412,12 +1428,23 @@
       return;
     }
 
-    if (data.type === "PLAYER_JOIN") {
+    if (data.type === "REQUEST_SYNC") {
+      if (isCurrentUserHost()) {
+        publishMessage({
+          type: "SYNC_ROOM_STATE",
+          gameState: gameState,
+          players: roomPlayers
+        });
+      }
+    } else if (data.type === "PLAYER_JOIN") {
       const p = data.player;
       if (p) {
         roomPlayers[p.id] = { ...p, isOnline: true };
         if (!gameState.playerOrder.includes(p.id)) {
           gameState.playerOrder.push(p.id);
+        }
+        if (!gameState.hostId) {
+          gameState.hostId = Object.keys(roomPlayers)[0];
         }
         renderLobbyRoster();
         // If host, send authoritative room state
@@ -1500,7 +1527,12 @@
   }
 
   function isCurrentUserHost() {
-    return gameState.hostId === clientId || isSoloPassAndPlay;
+    if (isSoloPassAndPlay) return true;
+    if (gameState.hostId && gameState.hostId === clientId) return true;
+    const ids = Object.keys(roomPlayers);
+    if (!gameState.hostId && ids.length > 0 && ids[0] === clientId) return true;
+    if (gameState.hostId && !roomPlayers[gameState.hostId] && ids.length > 0 && ids[0] === clientId) return true;
+    return false;
   }
 
   /* ==========================================================================
@@ -1593,6 +1625,20 @@
       compPill.className = `pill-option ${gameState.mode === 'competitive' ? 'selected' : ''}`;
     }
 
+    const modeDesc = document.getElementById("mode-desc-box");
+    if (modeDesc) {
+      const pCount = Object.keys(roomPlayers).length;
+      if (gameState.mode === "competitive") {
+        if (pCount === 2) {
+          modeDesc.innerHTML = "⚔️ <strong>1v1 Head-to-Head Duel:</strong> Take turns as Psychic and Guesser. Score points on your opponent's clues (+1 bullseye bonus for psychic)!";
+        } else {
+          modeDesc.innerHTML = "⚔️ <strong>Competitive Free-For-All:</strong> 1 Psychic per round, all other players guess and compete on the individual leaderboard!";
+        }
+      } else {
+        modeDesc.innerHTML = "🤝 <strong>Cooperative:</strong> Work together as one team to achieve the highest combined score across all rounds!";
+      }
+    }
+
     // Rounds
     [5, 7, 10].forEach(r => {
       const pill = document.getElementById(`pill-rounds-${r}`);
@@ -1660,6 +1706,8 @@
 
     currentRoom = code;
     gameState.room = currentRoom;
+    gameState.hostId = "";
+    gameState.playerOrder = [clientId];
     roomPlayers = {
       [clientId]: {
         id: clientId,
@@ -1727,6 +1775,11 @@
     if (!grid) return;
     grid.innerHTML = "";
 
+    const playerIds = Object.keys(roomPlayers);
+    if (!gameState.hostId && playerIds.length > 0) {
+      gameState.hostId = playerIds[0];
+    }
+
     const players = Object.values(roomPlayers);
     const countBadge = document.getElementById("roster-count-badge");
     if (countBadge) {
@@ -1754,14 +1807,61 @@
 
     const startBtn = document.getElementById("start-game-btn");
     const guestMsg = document.getElementById("guest-waiting-msg");
+    const minHint = document.getElementById("min-players-hint");
+
+    const hostPlayer = roomPlayers[gameState.hostId] || (players.length > 0 ? players[0] : null);
 
     if (isCurrentUserHost()) {
-      if (startBtn) startBtn.style.display = "flex";
+      if (startBtn) {
+        startBtn.style.display = "flex";
+        if (gameState.mode === "competitive" && players.length === 2) {
+          startBtn.innerText = "Start 1v1 Duel 🚀";
+        } else {
+          startBtn.innerText = "Start Game 🚀";
+        }
+      }
       if (guestMsg) guestMsg.style.display = "none";
+
+      if (minHint) {
+        if (players.length === 1) {
+          minHint.innerText = "⏳ Waiting for opponent to join... Share room code or link above!";
+          minHint.style.color = "var(--accent-gold)";
+        } else if (players.length === 2) {
+          if (gameState.mode === "competitive") {
+            minHint.innerText = "⚔️ Ready! 2 players connected for a 1v1 Telepathy Duel.";
+          } else {
+            minHint.innerText = "🤝 Ready! 2 players connected for Cooperative play.";
+          }
+          minHint.style.color = "var(--cyan-glow)";
+        } else {
+          minHint.innerText = `✨ ${players.length} players connected and ready!`;
+          minHint.style.color = "var(--cyan-glow)";
+        }
+      }
     } else {
       if (startBtn) startBtn.style.display = "none";
-      if (guestMsg) guestMsg.style.display = "block";
+      if (guestMsg) {
+        guestMsg.style.display = "block";
+        const hostName = hostPlayer ? escapeHTML(hostPlayer.name) : "Host";
+        if (gameState.mode === "competitive" && players.length === 2) {
+          guestMsg.innerHTML = `⏳ Waiting for Host (<strong>${hostName}</strong>) to start the 1v1 Duel...`;
+        } else {
+          guestMsg.innerHTML = `⏳ Waiting for Host (<strong>${hostName}</strong>) to start the game...`;
+        }
+      }
+      if (minHint) {
+        if (players.length === 1) {
+          minHint.innerText = "⏳ Waiting for opponent to join...";
+          minHint.style.color = "var(--accent-gold)";
+        } else {
+          minHint.innerText = `Connected to ${escapeHTML(hostPlayer ? hostPlayer.name : 'Host')}'s room.`;
+          minHint.style.color = "var(--text-secondary)";
+        }
+      }
     }
+
+    // Refresh mode description box in case player count changed
+    syncSettingsPillsToState();
   }
 
   /* ==========================================================================
@@ -1824,6 +1924,14 @@
     const psychicIdx = (roundNumber - 1) % order.length;
     gameState.psychicIndex = psychicIdx;
     gameState.psychicId = order[psychicIdx] || clientId;
+
+    // Identify active guesser in 2-player competitive duel
+    if (gameState.mode === "competitive" && order.length === 2) {
+      gameState.guesserId = order.find(id => id !== gameState.psychicId) || clientId;
+    } else {
+      gameState.guesserId = null;
+    }
+
     gameState.round = roundNumber;
     gameState.phase = "clue";
     gameState.clue = "";
@@ -1948,11 +2056,29 @@
     if (gameState.mode === "coop") {
       gameState.totalScore += points;
     } else {
-      // In competitive mode: all active players earn points for psychic synchrony
-      if (gameState.scores) {
-        Object.keys(gameState.scores).forEach(pid => {
-          gameState.scores[pid] = (gameState.scores[pid] || 0) + points;
+      // Competitive Mode Scoring:
+      const pIds = Object.keys(roomPlayers);
+      if (pIds.length === 2) {
+        // 1v1 Duel: active guesser earns points
+        const guesserId = gameState.guesserId || pIds.find(id => id !== gameState.psychicId);
+        if (guesserId && gameState.scores[guesserId] !== undefined) {
+          gameState.scores[guesserId] += points;
+        }
+        // Psychic Bullseye Bonus: +1 point if guesser hits 4-pt bullseye!
+        if (points === 4 && gameState.psychicId && gameState.scores[gameState.psychicId] !== undefined) {
+          gameState.scores[gameState.psychicId] += 1;
+        }
+      } else {
+        // 3+ players: All guessers score points
+        const guesserIds = pIds.filter(id => id !== gameState.psychicId);
+        guesserIds.forEach(id => {
+          if (gameState.scores[id] !== undefined) {
+            gameState.scores[id] += points;
+          }
         });
+        if (points === 4 && gameState.psychicId && gameState.scores[gameState.psychicId] !== undefined) {
+          gameState.scores[gameState.psychicId] += 1;
+        }
       }
     }
 
@@ -1975,6 +2101,17 @@
   function advanceNextRound() {
     if (!isCurrentUserHost()) {
       publishMessage({ type: "REQUEST_NEXT_ROUND" });
+      const nextBtn = document.getElementById("next-round-btn");
+      if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = "<span>⏳</span> Requesting Next Round...";
+        setTimeout(() => {
+          if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.innerHTML = "<span>➡️</span> Next Round";
+          }
+        }, 3000);
+      }
       return;
     }
 
@@ -2022,6 +2159,10 @@
   function renderGameUI() {
     const isPsychic = (gameState.psychicId === clientId) || isSoloPassAndPlay;
     const psychicPlayer = roomPlayers[gameState.psychicId] || { name: "Psychic", avatar: "🔮" };
+    const pIds = Object.keys(roomPlayers);
+    const is2PlayerComp = (gameState.mode === "competitive" && pIds.length === 2);
+    const guesserId = gameState.guesserId || pIds.find(id => id !== gameState.psychicId) || clientId;
+    const guesserPlayer = roomPlayers[guesserId] || { name: "Guesser", avatar: "🎯" };
 
     // 1. HUD Status Bar
     document.getElementById("hud-round").innerText = `${gameState.round} / ${gameState.maxRounds}`;
@@ -2030,9 +2171,17 @@
     const scoreLabel = document.getElementById("hud-score-label");
     const scoreVal = document.getElementById("hud-score");
     if (gameState.mode === "competitive") {
-      scoreLabel.innerText = "Top Score";
-      const highest = Math.max(0, ...Object.values(gameState.scores));
-      scoreVal.innerText = `${highest} Pts`;
+      if (pIds.length === 2) {
+        const p1 = roomPlayers[pIds[0]];
+        const p2 = roomPlayers[pIds[1]];
+        scoreLabel.innerText = "1v1 Duel Score";
+        scoreVal.innerHTML = `<span style="color: ${p1.id === clientId ? 'var(--cyan-glow)' : '#fff'};">${escapeHTML(p1.name)}: ${gameState.scores[p1.id] || 0}</span> ⚔️ <span style="color: ${p2.id === clientId ? 'var(--cyan-glow)' : '#fff'};">${escapeHTML(p2.name)}: ${gameState.scores[p2.id] || 0}</span>`;
+      } else {
+        scoreLabel.innerText = "Your Score";
+        const myScore = gameState.scores[clientId] || 0;
+        const highest = Math.max(0, ...Object.values(gameState.scores));
+        scoreVal.innerText = `${myScore} Pts (Top: ${highest})`;
+      }
     } else {
       scoreLabel.innerText = "Team Score";
       scoreVal.innerText = `${gameState.totalScore} Pts`;
@@ -2043,18 +2192,46 @@
     const roleIcon = document.getElementById("role-banner-icon");
     const roleText = document.getElementById("role-banner-text");
 
-    if (isPsychic && gameState.phase === "clue") {
-      roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "🔮";
-      roleText.innerText = "You are the Psychic! Read the spectrum and enter your clue.";
-    } else if (isPsychic && gameState.phase === "guess") {
-      roleBanner.className = "role-banner psychic";
-      roleIcon.innerText = "🤫";
-      roleText.innerText = "Clue submitted! Keep your poker face while teammates calibrate the dial.";
+    if (is2PlayerComp) {
+      if (gameState.phase === "clue") {
+        if (isPsychic) {
+          roleBanner.className = "role-banner psychic";
+          roleIcon.innerText = "🔮";
+          roleText.innerText = `⚔️ Round ${gameState.round}: You are the Psychic! Enter a clue for ${guesserPlayer.name} to guess.`;
+        } else {
+          roleBanner.className = "role-banner guesser";
+          roleIcon.innerText = "⏳";
+          roleText.innerText = `⚔️ Round ${gameState.round}: ${psychicPlayer.name} is formulating a secret clue for YOU!`;
+        }
+      } else if (gameState.phase === "guess") {
+        if (isPsychic) {
+          roleBanner.className = "role-banner psychic";
+          roleIcon.innerText = "🤫";
+          roleText.innerText = `Clue sent! Keep poker face while ${guesserPlayer.name} calibrates the dial.`;
+        } else {
+          roleBanner.className = "role-banner guesser";
+          roleIcon.innerText = "🎯";
+          roleText.innerText = `⚔️ Your turn to guess! Drag the needle to decode ${psychicPlayer.name}'s clue!`;
+        }
+      } else {
+        roleBanner.className = "role-banner";
+        roleIcon.innerText = "✨";
+        roleText.innerText = `Round ${gameState.round} Result Revealed!`;
+      }
     } else {
-      roleBanner.className = "role-banner guesser";
-      roleIcon.innerText = "🎯";
-      roleText.innerText = `Psychic is ${psychicPlayer.name} ${psychicPlayer.avatar}. Tune into their frequency!`;
+      if (isPsychic && gameState.phase === "clue") {
+        roleBanner.className = "role-banner psychic";
+        roleIcon.innerText = "🔮";
+        roleText.innerText = "You are the Psychic! Read the spectrum and enter your clue.";
+      } else if (isPsychic && gameState.phase === "guess") {
+        roleBanner.className = "role-banner psychic";
+        roleIcon.innerText = "🤫";
+        roleText.innerText = "Clue submitted! Keep your poker face while teammates calibrate the dial.";
+      } else {
+        roleBanner.className = "role-banner guesser";
+        roleIcon.innerText = "🎯";
+        roleText.innerText = `Psychic is ${psychicPlayer.name} ${psychicPlayer.avatar}. Tune into their frequency!`;
+      }
     }
 
     // 3. Spectrum Poles
@@ -2098,6 +2275,14 @@
       } else {
         waitBox.style.display = "block";
         document.getElementById("waiting-psychic-name").innerText = `${psychicPlayer.name} (${psychicPlayer.avatar}) is tuning their mind...`;
+        const subtext = document.getElementById("guesser-waiting-subtext");
+        if (subtext) {
+          if (is2PlayerComp) {
+            subtext.innerText = `Get ready! As soon as ${psychicPlayer.name} submits their clue, you will take control of the dial!`;
+          } else {
+            subtext.innerText = "Discuss with your teammates while the psychic formulates their clue!";
+          }
+        }
       }
     } else if (gameState.phase === "guess") {
       activeBox.style.display = "block";
@@ -2106,10 +2291,19 @@
       const instr = document.getElementById("guess-instruction-text");
       if (isPsychic && !isSoloPassAndPlay) {
         if (lockBtn) lockBtn.style.display = "none";
-        if (instr) instr.innerText = "Teammates are dragging the needle now...";
+        if (instr) {
+          instr.innerText = is2PlayerComp
+            ? `${guesserPlayer.name} is dragging the dial now to make their guess...`
+            : "Teammates are dragging the needle now...";
+        }
       } else {
-        if (lockBtn) lockBtn.style.display = "block";
-        if (instr) instr.innerText = "Drag the red needle to where you believe this clue lands on the spectrum!";
+        if (lockBtn) {
+          lockBtn.style.display = "block";
+          lockBtn.innerText = is2PlayerComp ? "🔒 Lock In My Guess" : "🔒 Lock In Team Guess";
+        }
+        if (instr) {
+          instr.innerText = "Drag the red needle to where you believe this clue lands on the spectrum!";
+        }
       }
     } else if (gameState.phase === "reveal") {
       revealCard.style.display = "block";
@@ -2121,18 +2315,34 @@
       ptsEl.className = `reveal-points p${pts}`;
       ptsEl.innerText = `+${pts} PTS`;
 
-      if (pts === 4) {
-        titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
-        descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
-      } else if (pts === 3) {
-        titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
-        descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
-      } else if (pts === 2) {
-        titleEl.innerText = "⚡ ON THE WAVELENGTH!";
-        descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
+      if (is2PlayerComp) {
+        if (pts === 4) {
+          titleEl.innerText = "🎯 BULLSEYE! PERFECT HIT!";
+          descEl.innerText = `+4 PTS to ${guesserPlayer.name}! (+1 Telepathy Bonus to ${psychicPlayer.name} for the perfect clue!)`;
+        } else if (pts === 3) {
+          titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
+          descEl.innerText = `+3 PTS to ${guesserPlayer.name}! Near center calibration.`;
+        } else if (pts === 2) {
+          titleEl.innerText = "⚡ ON THE WAVELENGTH!";
+          descEl.innerText = `+2 PTS to ${guesserPlayer.name}! Caught outer edge of frequency.`;
+        } else {
+          titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
+          descEl.innerText = `0 PTS. ${guesserPlayer.name} missed the target band!`;
+        }
       } else {
-        titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
-        descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
+        if (pts === 4) {
+          titleEl.innerText = "🎯 BULLSEYE! PERFECT TELEPATHY!";
+          descEl.innerText = "Direct hit right on the center frequency! Absolute mind connection.";
+        } else if (pts === 3) {
+          titleEl.innerText = "🔥 CLOSE! GREAT VIBES!";
+          descEl.innerText = "Just slightly off center! Beautiful psychic resonance.";
+        } else if (pts === 2) {
+          titleEl.innerText = "⚡ ON THE WAVELENGTH!";
+          descEl.innerText = "Caught the outer edge of the spectrum. Points earned!";
+        } else {
+          titleEl.innerText = "❌ STATIC ON THE RADIO (MISS)";
+          descEl.innerText = "Fell outside the target frequency. Recalibrate for next round!";
+        }
       }
     }
 
@@ -2450,41 +2660,76 @@
 
   function showGameOverScreen() {
     switchScreen("gameover-screen");
-    const total = gameState.totalScore;
     const rankEl = document.getElementById("gameover-rank");
     const emojiEl = document.getElementById("gameover-emoji");
+    const titleEl = document.getElementById("gameover-title");
     const summaryEl = document.getElementById("gameover-summary");
 
-    if (total >= 22) {
-      emojiEl.innerText = "🧠";
-      rankEl.innerText = `🌟 Galaxy Brain (${total} Pts)`;
-      summaryEl.innerText = "Incredible! Your minds are intertwined on an astronomical level.";
-    } else if (total >= 16) {
-      emojiEl.innerText = "🔮";
-      rankEl.innerText = `🔮 Mind Readers (${total} Pts)`;
-      summaryEl.innerText = "Great connection! You read each other with uncanny accuracy.";
-    } else if (total >= 10) {
-      emojiEl.innerText = "📻";
-      rankEl.innerText = `📻 Good Reception (${total} Pts)`;
-      summaryEl.innerText = "Solid telepathy! A few static frequencies, but overall on wavelength.";
+    if (gameState.mode === "competitive") {
+      const players = Object.values(roomPlayers);
+      players.sort((a, b) => (gameState.scores[b.id] || 0) - (gameState.scores[a.id] || 0));
+      const topScore = gameState.scores[players[0]?.id] || 0;
+      const runnerUpScore = players[1] ? (gameState.scores[players[1].id] || 0) : 0;
+      const isTie = (players.length > 1 && topScore === runnerUpScore);
+
+      if (isTie) {
+        emojiEl.innerText = "🤝";
+        titleEl.innerText = "Telepathy Duel: Tie!";
+        rankEl.innerText = `⚖️ Dead Heat (${topScore} - ${runnerUpScore})`;
+        summaryEl.innerText = `An absolute stalemate! Both players showed identical telepathic precision (${topScore} pts each).`;
+      } else {
+        const winner = players[0];
+        emojiEl.innerText = "🏆";
+        titleEl.innerText = `${escapeHTML(winner.name)} Wins!`;
+        rankEl.innerText = `👑 Telepathy Champion (${topScore} Pts)`;
+        if (players.length === 2) {
+          summaryEl.innerText = `${escapeHTML(winner.name)} defeated ${escapeHTML(players[1].name)} (${topScore} to ${runnerUpScore} pts) in the 1v1 Telepathy Duel!`;
+        } else {
+          summaryEl.innerText = `${escapeHTML(winner.name)} finished 1st with ${topScore} total points!`;
+        }
+      }
     } else {
-      emojiEl.innerText = "📉";
-      rankEl.innerText = `📡 Static on the Radio (${total} Pts)`;
-      summaryEl.innerText = "Lost in transmission! Play another match to recalibrate your antennas.";
+      const total = gameState.totalScore;
+      titleEl.innerText = "Telepathic Sync";
+      if (total >= 22) {
+        emojiEl.innerText = "🧠";
+        rankEl.innerText = `🌟 Galaxy Brain (${total} Pts)`;
+        summaryEl.innerText = "Incredible! Your minds are intertwined on an astronomical level.";
+      } else if (total >= 16) {
+        emojiEl.innerText = "🔮";
+        rankEl.innerText = `🔮 Mind Readers (${total} Pts)`;
+        summaryEl.innerText = "Great connection! You read each other with uncanny accuracy.";
+      } else if (total >= 10) {
+        emojiEl.innerText = "📻";
+        rankEl.innerText = `📻 Good Reception (${total} Pts)`;
+        summaryEl.innerText = "Solid telepathy! A few static frequencies, but overall on wavelength.";
+      } else {
+        emojiEl.innerText = "📉";
+        rankEl.innerText = `📡 Static on the Radio (${total} Pts)`;
+        summaryEl.innerText = "Lost in transmission! Play another match to recalibrate your antennas.";
+      }
     }
 
     // Scoreboard list
     const sb = document.getElementById("gameover-roster-list");
     if (sb) {
       sb.innerHTML = "";
-      Object.values(roomPlayers).forEach(p => {
+      const sortedPlayers = Object.values(roomPlayers).sort((a, b) => {
+        if (gameState.mode === "competitive") {
+          return (gameState.scores[b.id] || 0) - (gameState.scores[a.id] || 0);
+        }
+        return 0;
+      });
+
+      sortedPlayers.forEach((p, idx) => {
         const item = document.createElement("div");
         item.className = "roster-player";
-        const score = (gameState.mode === "competitive") ? (gameState.scores[p.id] || 0) : total;
+        const score = (gameState.mode === "competitive") ? (gameState.scores[p.id] || 0) : gameState.totalScore;
+        const medal = idx === 0 ? "🥇 " : (idx === 1 ? "🥈 " : (idx === 2 ? "🥉 " : ""));
         item.innerHTML = `
           <div class="roster-player-info">
             <span class="roster-avatar">${p.avatar}</span>
-            <span class="roster-name">${escapeHTML(p.name)}</span>
+            <span class="roster-name">${medal}${escapeHTML(p.name)}</span>
           </div>
           <span class="roster-tag" style="font-size: 0.85rem; color: var(--score-4);">${score} PTS</span>
         `;
