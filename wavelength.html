@@ -572,6 +572,19 @@
     opacity: 0;
   }
 
+  /* Dial Wheel Spin Animation */
+  @keyframes dialWheelSpin {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(14deg); }
+    55% { transform: rotate(-9deg); }
+    80% { transform: rotate(4deg); }
+    100% { transform: rotate(0deg); }
+  }
+  .dial-spinning {
+    animation: dialWheelSpin 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    transform-origin: 200px 200px;
+  }
+
   /* Fine-tuning Stepper Buttons */
   .stepper-bar {
     display: flex;
@@ -1110,6 +1123,11 @@
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
         Discuss with your teammate while the psychic selects their clue!
       </p>
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary" style="font-size: 0.82rem; padding: 7px 14px;" onclick="spinTargetWheel()" title="Spin the dial wheel for the psychic">
+          🎲 Spin Wheel for Psychic
+        </button>
+      </div>
     </div>
 
     <!-- State C: Clue Given (Guessing Active) -->
@@ -1130,9 +1148,14 @@
     <div class="reveal-points p4" id="reveal-points">+4 PTS</div>
     <div class="reveal-title" id="reveal-title">🎯 Bullseye! Direct Hit!</div>
     <div class="reveal-desc" id="reveal-desc">Your telepathic link is unbreakable! Perfect calibration.</div>
-    <button class="btn-primary" style="margin-top: 14px;" onclick="advanceNextRound()">
-      <span>➡️</span> Next Round
-    </button>
+    <div style="display: flex; gap: 8px; margin-top: 14px;">
+      <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="spinTargetWheel()" title="Re-spin the target to test dial">
+        🎲 Re-spin Target
+      </button>
+      <button class="btn-primary" style="flex: 2; padding: 12px;" onclick="advanceNextRound()">
+        <span>➡️</span> Next Round
+      </button>
+    </div>
   </div>
 
   <!-- Round History Drawer -->
@@ -1625,6 +1648,9 @@
   }
 
   function publishMessage(payload) {
+    if (!payload.senderId) {
+      payload.senderId = clientId;
+    }
     if (isSoloPassAndPlay) {
       handleIncomingMessage(payload);
       return;
@@ -1652,6 +1678,8 @@
 
   function handleIncomingMessage(data) {
     if (!data || !data.type) return;
+    // Discard echo of our own messages in online mode
+    if (!isSoloPassAndPlay && data.senderId === clientId) return;
 
     if (data.type === "PLAYER_JOIN") {
       const p = data.player;
@@ -1667,44 +1695,59 @@
           });
         }
       }
+    } else if (data.type === "SPIN_TARGET") {
+      gameState.targetAngle = data.targetAngle;
+      renderTargetWedges(gameState.targetAngle);
+      playTickSound();
+      animateWheelSpin();
+      const spinner = data.senderName || roomPlayers[data.senderId]?.name || "Teammate";
+      showSyncIndicator(`🎲 ${spinner} re-spun the target!`);
+    } else if (data.type === "REROLL_CARD") {
+      gameState.card = data.card;
+      document.getElementById("pole-left-text").innerText = gameState.card.left;
+      document.getElementById("pole-right-text").innerText = gameState.card.right;
+      playTickSound();
+      const roller = data.senderName || roomPlayers[data.senderId]?.name || "Psychic";
+      showSyncIndicator(`🔄 ${roller} drew a new card!`);
     } else if (data.type === "SYNC_ROOM_STATE") {
-      if (!isCurrentUserHost() || Object.keys(roomPlayers).length === 0) {
-        gameState = data.gameState;
-        Object.assign(roomPlayers, data.players);
-        renderLobbyRoster();
-        if (gameState.status === "playing") {
-          switchScreen("game-screen");
-          renderGameUI();
-        } else if (gameState.status === "over") {
-          showGameOverScreen();
-        }
+      gameState = data.gameState;
+      if (data.players) Object.assign(roomPlayers, data.players);
+      renderLobbyRoster();
+      if (gameState.status === "playing") {
+        switchScreen("game-screen");
+        renderGameUI();
+      } else if (gameState.status === "over") {
+        showGameOverScreen();
       }
     } else if (data.type === "START_GAME") {
       gameState = data.gameState;
-      Object.assign(roomPlayers, data.players);
+      if (data.players) Object.assign(roomPlayers, data.players);
       switchScreen("game-screen");
       renderGameUI();
     } else if (data.type === "SUBMIT_CLUE") {
       gameState.clue = data.clue;
+      if (typeof data.targetAngle === "number") gameState.targetAngle = data.targetAngle;
+      if (data.card) gameState.card = data.card;
       gameState.phase = "guess";
       renderGameUI();
+      showSyncIndicator("🔮 Psychic submitted their clue!");
     } else if (data.type === "DIAL_MOVE") {
-      // Real-time dial move from another guesser
-      if (data.senderId !== clientId) {
-        gameState.guessAngle = data.angle;
-        applyNeedleAngle(data.angle, false);
-        const mover = roomPlayers[data.senderId];
-        showSyncIndicator(mover ? `${mover.name} is tuning the dial...` : "Teammate tuning dial...");
-      }
+      gameState.guessAngle = data.angle;
+      applyNeedleAngle(data.angle, false);
+      const mover = roomPlayers[data.senderId];
+      showSyncIndicator(mover ? `${mover.name} tuning dial...` : "Teammate tuning dial...");
     } else if (data.type === "LOCK_GUESS") {
       gameState.guessAngle = data.guessAngle;
+      if (typeof data.targetAngle === "number") gameState.targetAngle = data.targetAngle;
       gameState.phase = "reveal";
       executeRevealScore(data.points);
     } else if (data.type === "NEXT_ROUND") {
       gameState = data.gameState;
+      if (data.players) Object.assign(roomPlayers, data.players);
       renderGameUI();
     } else if (data.type === "RESTART_GAME") {
       gameState = data.gameState;
+      if (data.players) Object.assign(roomPlayers, data.players);
       renderGameUI();
     }
   }
@@ -1914,9 +1957,9 @@
       randFloat = Math.random();
     }
 
-    // Full dial spectrum from 16° to 164° with 0.1° continuous precision
-    // Genuinely uniform, unbiased random generation across the entire spectrum
-    const angle = 16 + randFloat * 148;
+    // Complete dial spectrum from 0.0° (0%) to 180.0° (100%) with 0.1° continuous precision
+    // Allows the 4-point bullseye to land anywhere across the spectrum, including the extreme poles at 0% or 100%!
+    const angle = randFloat * 180;
     return Math.round(angle * 10) / 10;
   }
 
@@ -1942,13 +1985,34 @@
     applyNeedleAngle(90, false);
   }
 
+  function animateWheelSpin() {
+    const dialSvg = document.getElementById("dial-svg");
+    if (!dialSvg) return;
+    dialSvg.classList.remove("dial-spinning");
+    void dialSvg.offsetWidth;
+    dialSvg.classList.add("dial-spinning");
+    setTimeout(() => {
+      if (dialSvg) dialSvg.classList.remove("dial-spinning");
+    }, 550);
+  }
+
   function spinTargetWheel() {
-    if (gameState.psychicId !== clientId && !isSoloPassAndPlay) return;
+    if (gameState.phase !== "clue" && gameState.phase !== "reveal") return;
     gameState.targetAngle = generateRandomTargetAngle();
     renderGameUI();
     playTickSound();
+    animateWheelSpin();
+
+    publishMessage({
+      type: "SPIN_TARGET",
+      senderId: clientId,
+      targetAngle: gameState.targetAngle,
+      senderName: playerName
+    });
+
     publishMessage({
       type: "SYNC_ROOM_STATE",
+      senderId: clientId,
       gameState: gameState,
       players: roomPlayers
     });
@@ -1970,11 +2034,21 @@
   }
 
   function rerollSpectrumCard() {
-    if (gameState.psychicId !== clientId && !isSoloPassAndPlay) return;
+    if (gameState.phase !== "clue") return;
     gameState.card = pickRandomSpectrumCard(gameState.category);
     renderGameUI();
+    playTickSound();
+
+    publishMessage({
+      type: "REROLL_CARD",
+      senderId: clientId,
+      card: gameState.card,
+      senderName: playerName
+    });
+
     publishMessage({
       type: "SYNC_ROOM_STATE",
+      senderId: clientId,
       gameState: gameState,
       players: roomPlayers
     });
@@ -1990,11 +2064,15 @@
 
     gameState.clue = clue;
     gameState.phase = "guess";
-    input.value = "";
+    if (input) input.value = "";
+    renderGameUI();
 
     publishMessage({
       type: "SUBMIT_CLUE",
-      clue: clue
+      senderId: clientId,
+      clue: clue,
+      targetAngle: gameState.targetAngle,
+      card: gameState.card
     });
   }
 
@@ -2020,7 +2098,9 @@
 
     publishMessage({
       type: "LOCK_GUESS",
+      senderId: clientId,
       guessAngle: gameState.guessAngle,
+      targetAngle: gameState.targetAngle,
       points: points
     });
   }
@@ -2064,12 +2144,11 @@
   }
 
   function advanceNextRound() {
-    if (!isCurrentUserHost()) return;
-
     if (gameState.round >= gameState.maxRounds) {
       gameState.status = "over";
       publishMessage({
         type: "SYNC_ROOM_STATE",
+        senderId: clientId,
         gameState: gameState,
         players: roomPlayers
       });
@@ -2078,9 +2157,11 @@
     }
 
     setupRound(gameState.round + 1);
+    renderGameUI();
 
     publishMessage({
       type: "NEXT_ROUND",
+      senderId: clientId,
       gameState: gameState,
       players: roomPlayers
     });
@@ -2293,17 +2374,19 @@
     }
 
     // Centered score markers in each visible zone
+    // When target is at 0° or 180°, center the Bullseye label within the visible half-slice
+    const bullseyeLabelAng = Math.max(1.8, Math.min(178.2, targetAngle));
     const labelMarkers = [
       { ang: targetAngle - 13.0, label: "2", size: "11" },
       { ang: targetAngle - 6.5,  label: "3", size: "12" },
-      { ang: targetAngle,        label: "4", size: "15", isBullseye: true },
+      { ang: bullseyeLabelAng,   label: "4", size: "15", isBullseye: true },
       { ang: targetAngle + 6.5,  label: "3", size: "12" },
       { ang: targetAngle + 13.0, label: "2", size: "11" }
     ];
 
     const rText = 115; // Centered radially in the 68-162 band
     labelMarkers.forEach(m => {
-      if (m.ang >= 2 && m.ang <= 178) {
+      if (m.ang >= 1.5 && m.ang <= 178.5) {
         const rad = (180 - m.ang) * Math.PI / 180;
         const lx = cx + rText * Math.cos(rad);
         const ly = cy - rText * Math.sin(rad);
